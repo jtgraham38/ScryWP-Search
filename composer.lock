@@ -1,0 +1,54 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "82f109a2ff665ee955399692c46a8dc7",
+    "packages": [
+        {
+            "name": "jtgraham38/jgwordpresskit",
+            "version": "2.0.4",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:jtgraham38/JGWordPressKit.git",
+                "reference": "fc3b272b91d32437dd03cb7fa0db7b5fc2d15fc2"
+            },
+            "dist": {
+                "type": "tar",
+                "url": "http://php.jacob-t-graham.com/dist/jtgraham38/jgwordpresskit/jtgraham38-jgwordpresskit-fc3b272b91d32437dd03cb7fa0db7b5fc2d15fc2-zip-cbdb0e.tar",
+                "reference": "fc3b272b91d32437dd03cb7fa0db7b5fc2d15fc2",
+                "shasum": "b9db5c2ce263231ef88868b4317d7d42f86ce0d9"
+            },
+            "require": {
+                "php": ">=7.3"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "jtgraham38\\jgwordpresskit\\": "src/"
+                }
+            },
+            "license": [
+                "GPLv3"
+            ],
+            "authors": [
+                {
+                    "name": "Jacob Graham",
+                    "email": "jtgraham38@gmail.com"
+                }
+            ],
+            "description": "A very simple, modular framework for developing WordPress plugins.",
+            "time": "2025-06-20T13:49:36+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": [],
+    "plugin-api-version": "2.2.0"
+}

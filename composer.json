@@ -1,0 +1,22 @@
+{
+    "name": "jtgraham38/wprag",
+    "description": "A powerful semantic search plugin with advanced filtering and sorting features.",
+    "version": "1.0.0",
+    "type": "wordpress-plugin",
+    "license": "GPLv3",
+    "authors": [
+        {
+            "name": "Jacob",
+            "email": "jtgraham38@gmail.com"
+        }
+    ],
+    "require": {
+        "jtgraham38/jgwordpresskit": "^2.0.4"
+    },
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://php.jacob-t-graham.com"
+        }
+    ]
+}
