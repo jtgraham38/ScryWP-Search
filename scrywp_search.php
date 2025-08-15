@@ -29,8 +29,9 @@ use jtgraham38\jgwordpresskit\PluginFeature;
 $plugin = new Plugin("scrywp_", plugin_dir_path( __FILE__ ), plugin_dir_url( __FILE__ ));
 
 //register features with the plugin manager here...
-//TODO: $feature = ... (import and instantiate a PluginFeature() subclass);
-//TODO: $plugin->register_feature("feature_key", $feature);
+require_once plugin_dir_path(__FILE__) . '/features/admin_page/feature.php';
+$feature = new ScryWpAdminPageFeature();
+$plugin->register_feature("scrywp_admin_page", $feature);
 
 //init the plugin
 $plugin->init();
