@@ -27,11 +27,20 @@ class ScryWpSearchSettingsFeature extends PluginFeature {
     coefficients and biases for each factor.  They will be stored in the database, and the scoring engine will use them to score the 
     results.
 
+    Each factor will be stored in the database in the following format:
+    {
+        "factor_name": {
+            "weight": 0.5,
+            "bias": 0.5
+        }
+    }
+    They will be stored as an array of objects in the wp-options tables, with the key being the factor name.
+
     Users should be able to enable different factors, such as semantic similarity, recency, keyword matching, category matching, etc.
     using a dropdown and add button.  When they are added, inputs for them should appear on the admin page, where they can customize the weight and bias using
     a slider or a checkbox.  All inputs should be validated and labelled for a good user experience.  When they are removed, then inputs should disapper.
 
-    
+
     NOTE: Make sure the only user who can access these settings is the admin.  They should NOT be visible to other users.
 
     It will be located in the WordPress admin area, under the admin page registered by the admin_page feature.
