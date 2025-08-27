@@ -125,6 +125,11 @@ class ScryWpSearchSettingsFeature extends PluginFeature {
             }
         }
         
+        // Ensure semantic similarity is always present with a weight
+        if (!isset($sanitized['semantic_similarity'])) {
+            $sanitized['semantic_similarity'] = 1.0;
+        }
+        
         // If no valid weights, use defaults
         if (empty($sanitized)) {
             $sanitized = $this->get_default_weights();
@@ -146,6 +151,11 @@ class ScryWpSearchSettingsFeature extends PluginFeature {
         $factor_name = sanitize_key($_POST['factor_name']);
         if (empty($factor_name)) {
             wp_send_json_error('Invalid factor name');
+        }
+        
+        // Prevent adding semantic similarity if it already exists
+        if ($factor_name === 'semantic_similarity') {
+            wp_send_json_error('Semantic similarity factor already exists and cannot be added again');
         }
         
         $current_weights = get_option($this->prefixed('search_weights'), $this->get_default_weights());
@@ -174,6 +184,11 @@ class ScryWpSearchSettingsFeature extends PluginFeature {
         $factor_name = sanitize_key($_POST['factor_name']);
         if (empty($factor_name)) {
             wp_send_json_error('Invalid factor name');
+        }
+        
+        // Prevent removal of semantic similarity factor
+        if ($factor_name === 'semantic_similarity') {
+            wp_send_json_error('Semantic similarity factor cannot be removed');
         }
         
         $current_weights = get_option($this->prefixed('search_weights'), $this->get_default_weights());

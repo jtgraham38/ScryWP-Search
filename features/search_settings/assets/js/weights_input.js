@@ -39,6 +39,12 @@ jQuery(document).ready(function($) {
         const factorKey = $(this).data('factor');
         const factorItem = $(this).closest('.scrywp-factor-item');
         
+        // Prevent removal of semantic similarity factor
+        if (factorKey === 'semantic_similarity') {
+            alert('Semantic similarity factor cannot be removed');
+            return;
+        }
+        
         $.ajax({
             url: ajaxurl,
             type: 'POST',

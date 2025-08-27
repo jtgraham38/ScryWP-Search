@@ -44,9 +44,11 @@ $available_factors = $search_settings->get_available_factors();
                     <div class="scrywp-factor-item" data-factor="<?php echo esc_attr($factor_key); ?>">
                         <div class="scrywp-factor-header">
                             <span class="scrywp-factor-label"><?php echo esc_html($available_factors[$factor_key] ?? $factor_key); ?></span>
-                            <button type="button" class="scrywp-remove-factor button-link-delete" data-factor="<?php echo esc_attr($factor_key); ?>">
-                                <?php _e('Remove', 'scry-wp'); ?>
-                            </button>
+                            <?php if ($factor_key !== 'semantic_similarity') : ?>
+                                <button type="button" class="scrywp-remove-factor button-link-delete" data-factor="<?php echo esc_attr($factor_key); ?>">
+                                    <?php _e('Remove', 'scry-wp'); ?>
+                                </button>
+                            <?php endif; ?>
                         </div>
                         <div class="scrywp-weight-control">
                             <label for="scrywp-weight-<?php echo esc_attr($factor_key); ?>">
