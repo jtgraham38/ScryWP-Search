@@ -37,5 +37,9 @@ require_once plugin_dir_path(__FILE__) . '/features/search_settings/feature.php'
 $search_settings_feature = new ScryWpSearchSettingsFeature();
 $plugin->register_feature("scrywp_search_settings", $search_settings_feature);
 
+require_once plugin_dir_path(__FILE__) . '/features/search_results/feature.php';
+$search_results_feature = new ScryWpSearchResultsFeature();
+$plugin->register_feature("scrywp_search_results", $search_results_feature);
+
 //init the plugin
 $plugin->init();
