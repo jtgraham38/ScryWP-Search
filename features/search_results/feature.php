@@ -101,7 +101,14 @@ class ScryWpSearchResultsFeature extends PluginFeature {
 
 
 
-
+/*
+Todo: I need text embedding generation in the plugin before I can implement any more of the search results feature.
+1) I will need to modify wpvectordb to devise a way to detect an existing vector db from contentoracle ai chat, and if it exists,
+use that, if not, create one for this plugin.  Then, COAI chat should use this one.
+2) Then, I will need to copy the generate embeddings feature over from coai chat.
+3) Then, I'll need to add functions to wpvectordb to compoentize the search process.
+Finally, once I have all the vectors generating and storing correctly, I can implement the scoring process.
+*/
 
     
 }
