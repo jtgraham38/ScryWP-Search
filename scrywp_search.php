@@ -33,5 +33,9 @@ require_once plugin_dir_path(__FILE__) . '/features/admin_page/feature.php';
 $feature = new ScryWpAdminPageFeature();
 $plugin->register_feature("scrywp_admin_page", $feature);
 
+require_once plugin_dir_path(__FILE__) . '/features/search_settings/feature.php';
+$search_settings_feature = new ScryWpSearchSettingsFeature();
+$plugin->register_feature("scrywp_search_settings", $search_settings_feature);
+
 //init the plugin
 $plugin->init();

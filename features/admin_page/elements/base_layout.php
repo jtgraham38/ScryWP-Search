@@ -17,8 +17,8 @@ $current_page = $_GET['page'] ?? '';
 // Define available tabs
 $tabs = array(
     'scrywp-search' => array(
-        'label' => __('Add pages here', 'scrywp-search'),
-        'icon' => 'dashicons-format-chat',
+        'label' => __('Search Settings', 'scry-wp'),
+        'icon' => 'dashicons-search',
         'url' => admin_url('admin.php?page=scrywp-search')
     ),
 );
@@ -26,8 +26,8 @@ $tabs = array(
 
 <div class="wrap">
     <h1 class="wp-heading-inline">
-        <span class="dashicons dashicons-admin-comments" style="font-size: 30px; width: 30px; height: 30px; margin-right: 10px;"></span>
-        <?php _e('ScryWP Search', 'scrywp-search'); ?>
+        <span class="dashicons dashicons-search" style="font-size: 30px; width: 30px; height: 30px; margin-right: 10px;"></span>
+        <?php _e('ScryWP Search', 'scry-wp'); ?>
     </h1>
     
     <hr class="wp-header-end">
