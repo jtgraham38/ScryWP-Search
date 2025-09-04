@@ -41,5 +41,14 @@ require_once plugin_dir_path(__FILE__) . '/features/search_results/feature.php';
 $search_results_feature = new ScryWpSearchResultsFeature();
 $plugin->register_feature("scrywp_search_results", $search_results_feature);
 
+require_once plugin_dir_path(__FILE__) . '/features/wp_api/feature.php';
+$wp_api_feature = new ScryWpApiFeature();
+$plugin->register_feature("scrywp_wp_api", $wp_api_feature);
+
+require_once plugin_dir_path(__FILE__) . '/features/embeddings/feature.php';
+$embeddings_feature = new ScryWpEmbeddingsFeature();
+$plugin->register_feature("scrywp_embeddings", $embeddings_feature);
+
+
 //init the plugin
 $plugin->init();

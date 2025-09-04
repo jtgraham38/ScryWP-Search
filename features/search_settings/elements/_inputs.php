@@ -13,9 +13,8 @@ if (!defined('ABSPATH')) {
 
     <form method="post" action="options.php">
         <?php
-            //TODO: put the correct settings fields here
-            //settings_fields('coai_chat_plugin_settings');
-            //do_settings_fields('contentoracle-ai-settings', 'coai_chat_plugin_settings');
+            settings_fields('scrywp_search_plugin_settings');
+            do_settings_fields('scrywp-search-settings', 'scrywp_search_plugin_settings');
         ?>
         <br>
         <?php submit_button(); ?>

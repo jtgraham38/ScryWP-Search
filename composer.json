@@ -11,7 +11,8 @@
         }
     ],
     "require": {
-        "jtgraham38/jgwordpresskit": "^2.0.4"
+        "jtgraham38/jgwordpresskit": "^2.0.4",
+        "nlp-tools/nlp-tools": "^0.1.3"
     },
     "repositories": [
         {

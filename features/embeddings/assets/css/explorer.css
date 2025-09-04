@@ -1,0 +1,124 @@
+/* Embeddings Queue Status */
+.scrywp_search_queue_status {
+    margin: 0.25rem;
+    padding: 0.375rem;
+    border-radius: 24px;
+}
+
+.scrywp_search_queue_status.pending {
+    background-color: #ffc107;
+    color: white;
+    animation: pulse-gradient 2s infinite;
+    background-image: linear-gradient(90deg, #ffc107, #ff9800, #ffc107);
+    background-size: 200% 100%;
+}
+
+.scrywp_search_queue_status.processing {
+    background-color: #007bff;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    animation: pulse-gradient 1s infinite;
+    background-image: linear-gradient(90deg, #007bff, #0056b3, #007bff);
+    background-size: 200% 100%;
+}
+
+.scrywp_search_queue_status.completed {
+    background-color: #28a745;
+    color: white;
+}
+
+.scrywp_search_queue_status.failed {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* Embeddings Queue Tips */
+#embeddings_queue_tips {
+    padding: 1rem;
+    border-radius: 4px;
+}
+
+#embeddings_queue_tips summary {
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#embeddings_queue_tips ul {
+    list-style-type: disc;
+    margin-left: 1rem;
+}
+
+#embeddings_queue_tips ul ul {
+    list-style-type: circle;
+    margin-left: 1rem;
+}
+
+
+
+
+
+/* Bulk Generate Embeddings */
+.scrywp_search_generate_embeddings_result_container {
+    padding: 1rem;
+}
+
+.scrywp_search_generate_embeddings_spinner {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    border: 2px solid #000;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+}
+
+.scrywp_search_generate_embeddings_hidden {
+    display: none;
+}
+
+.scrywp_search_generate_embeddings_show {
+    display: inline-block;
+}
+
+.scrywp_search_generate_embeddings_success_msg {
+    color: green;
+}
+
+.scrywp_search_generate_embeddings_error_msg {
+    color: red;
+}
+
+/* spin animation */
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes pulse-gradient {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+@keyframes processing-shine {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
+}

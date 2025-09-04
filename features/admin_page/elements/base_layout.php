@@ -1,8 +1,8 @@
 <?php
 /**
- * Base Layout for ContentOracle AI Chat Settings Page
+ * Base Layout for ScryWP Search Settings Page
  * 
- * @package ContentOracle_AI_Chat
+ * @package ScryWP_Search
  * @since 1.0.0
  */
 

@@ -56,7 +56,6 @@ class ScryWpSearchResultsFeature extends PluginFeature {
             // //dump the parsed search terms
             // var_dump($query->query_vars);
             // echo '</pre>';
-            die;
         }
     }
     
