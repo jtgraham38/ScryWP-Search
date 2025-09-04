@@ -407,7 +407,7 @@ class ScryWpEmbeddingsFeature extends PluginFeature{
     
     public function add_menu(){
             add_submenu_page(
-                'scrywp-search', // Parent menu slug (this page does not appear in the sidebar menu)
+                'scrywp-search-hidden', // Parent menu slug (this page does not appear in the sidebar menu)
                 'Embeddings', // page title
                 'Embeddings', // menu title
                 'manage_options', // capability

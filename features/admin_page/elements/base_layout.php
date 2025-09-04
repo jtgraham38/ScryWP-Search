@@ -17,9 +17,14 @@ $current_page = $_GET['page'] ?? '';
 // Define available tabs
 $tabs = array(
     'scrywp-search' => array(
-        'label' => __('Search Settings', 'scry-wp'),
+        'label' => __('Search', 'scry-wp'),
         'icon' => 'dashicons-search',
         'url' => admin_url('admin.php?page=scrywp-search')
+    ),
+    'scrywp-search-embeddings' => array(
+        'label' => __('Embeddings', 'scry-wp'),
+        'icon' => 'dashicons-format-status',
+        'url' => admin_url('admin.php?page=scrywp-search-embeddings')
     ),
 );
 ?>
