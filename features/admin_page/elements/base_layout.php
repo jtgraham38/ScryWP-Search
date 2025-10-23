@@ -21,10 +21,10 @@ $tabs = array(
         'icon' => 'dashicons-search',
         'url' => admin_url('admin.php?page=scrywp-search')
     ),
-    'scrywp-search-embeddings' => array(
-        'label' => __('Embeddings', 'scry-wp'),
-        'icon' => 'dashicons-format-status',
-        'url' => admin_url('admin.php?page=scrywp-search-embeddings')
+    'scrywp-search-settings' => array(
+        'label' => __('Connection Settings', 'scry-wp'),
+        'icon' => 'dashicons-admin-generic',
+        'url' => admin_url('admin.php?page=scrywp-search-settings')
     ),
 );
 ?>
