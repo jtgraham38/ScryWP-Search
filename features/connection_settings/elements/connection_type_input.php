@@ -1,0 +1,445 @@
+<?php
+
+//exit if accessed directly
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+// Get current connection settings for testing
+$connection_type = get_option($this->prefixed('connection_type'), '');
+?>
+
+<div class="scrywp-connection-settings">
+
+    <form method="post" action="options.php" class="scrywp-connection-form">
+        <?php
+        settings_fields($this->prefixed('search_settings_group'));
+        ?>
+        
+        <div class="scrywp-connection-type-section">
+            <h3><?php _e('Connection Type', 'scry-wp'); ?></h3>
+            <div class="scrywp-connection-type-cards">
+                
+                <!-- ScryWP Managed Service - Prominent card -->
+                <label class="scrywp-connection-card scrywp-connection-card-prominent">
+                    <input type="radio" name="<?php echo $this->prefixed('connection_type'); ?>" value="scrywp" <?php checked($connection_type, 'scrywp'); ?>>
+                    <div class="scrywp-card-content">
+                        <div class="scrywp-card-title">ScryWP Managed Service</div>
+                        <div class="scrywp-card-description">Recommended: Let ScryWP manage your Meilisearch instance</div>
+                    </div>
+                </label>
+                
+                <!-- Manual Configuration - Muted card -->
+                <label class="scrywp-connection-card scrywp-connection-card-muted">
+                    <input type="radio" name="<?php echo $this->prefixed('connection_type'); ?>" value="manual" <?php checked($connection_type, 'manual'); ?>>
+                    <div class="scrywp-card-content">
+                        <div class="scrywp-card-title">Manual Configuration</div>
+                        <div class="scrywp-card-description">Configure your own Meilisearch instance</div>
+                    </div>
+                </label>
+                
+            </div>
+        </div>
+        <div class="scrywp-managed-get-connection-info" <?php echo ($connection_type !== 'scrywp') ? 'style="display:none;"' : ''; ?>>
+            <h3><?php _e('Get Connection Info', 'scry-wp'); ?></h3>
+            <p class="description">
+                <?php _e('Get your connection info from ScryWP.', 'scry-wp'); ?>
+            </p>
+            <button type="button" id="scrywp-get-connection-info" class="button button-secondary">
+                <?php _e('Get Connection Info', 'scry-wp'); ?>
+            </button>
+            <div id="scrywp-connection-info" class="scrywp-connection-info"></div>
+            <small>
+                todo: implement this
+            </small>
+        </div>
+        
+        
+        <div class="scrywp-connection-test-section">
+            <h3><?php _e('Test Connection', 'scry-wp'); ?></h3>
+            <p class="description">
+                <?php _e('Test your connection settings before saving.', 'scry-wp'); ?>
+            </p>
+            <button type="button" id="scrywp-test-connection" class="button button-secondary">
+                <?php _e('Test Connection', 'scry-wp'); ?>
+            </button>
+            <div id="scrywp-connection-test-result" class="scrywp-test-result"></div>
+            <small>
+                todo: implement this
+            </small>
+        </div>
+    </form>
+</div>
+
+<style>
+.scrywp-connection-settings {
+    max-width: 800px;
+}
+
+.scrywp-managed-get-connection-info,
+.scrywp-connection-test-section,
+.scrywp-save-section {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.scrywp-managed-get-connection-info h3,
+.scrywp-connection-test-section h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #23282d;
+}
+
+.scrywp-connection-info {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 4px;
+    display: none;
+}
+
+.scrywp-connection-info.success {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.scrywp-connection-info.error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+.scrywp-test-result {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 4px;
+    display: none;
+}
+
+.scrywp-test-result.success {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.scrywp-test-result.error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+.scrywp-save-section {
+    text-align: left;
+}
+
+.scrywp-save-section .button-primary {
+    margin-right: 10px;
+}
+
+.scrywp-connection-type-section {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.scrywp-connection-type-section h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #23282d;
+}
+
+.scrywp-connection-type-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.scrywp-connection-card {
+    display: block;
+    border: 2px solid #ccd0d4;
+    border-radius: 8px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    background: #fff;
+}
+
+.scrywp-connection-card:hover {
+    border-color: #0073aa;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.scrywp-connection-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.scrywp-connection-card-prominent {
+    border-color: #2271b1;
+    background: linear-gradient(135deg, #f6f9fc 0%, #ffffff 100%);
+    box-shadow: 0 4px 12px rgba(34, 113, 177, 0.15);
+}
+
+.scrywp-connection-card-prominent:hover {
+    border-color: #135e96;
+    box-shadow: 0 6px 16px rgba(34, 113, 177, 0.25);
+}
+
+.scrywp-connection-card-prominent input[type="radio"]:checked ~ .scrywp-card-content::before {
+    content: '✓';
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: #2271b1;
+    color: #fff;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.scrywp-connection-card-prominent:has(input[type="radio"]:checked) {
+    border-color: #2271b1;
+    background: linear-gradient(135deg, #e6f2ff 0%, #f6f9fc 100%);
+    box-shadow: 0 4px 16px rgba(34, 113, 177, 0.3);
+}
+
+.scrywp-connection-card-muted {
+    border-color: #dcdcde;
+    background: #f9f9f9;
+    opacity: 0.8;
+}
+
+.scrywp-connection-card-muted:hover {
+    border-color: #8c8f94;
+    opacity: 1;
+    background: #fff;
+}
+
+.scrywp-connection-card-muted input[type="radio"]:checked ~ .scrywp-card-content::before {
+    content: '✓';
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: #646970;
+    color: #fff;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.scrywp-connection-card-muted:has(input[type="radio"]:checked) {
+    border-color: #646970;
+    background: #f0f0f1;
+    opacity: 1;
+}
+
+.scrywp-card-content {
+    position: relative;
+    pointer-events: none;
+}
+
+.scrywp-card-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #23282d;
+    margin-bottom: 8px;
+}
+
+.scrywp-connection-card-prominent .scrywp-card-title {
+    color: #2271b1;
+}
+
+.scrywp-connection-card-muted .scrywp-card-title {
+    color: #646970;
+}
+
+.scrywp-card-description {
+    font-size: 14px;
+    color: #646970;
+    line-height: 1.5;
+}
+
+.scrywp-connection-card-prominent .scrywp-card-description {
+    color: #50575e;
+}
+
+.scrywp-connection-card-muted .scrywp-card-description {
+    color: #8c8f94;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Helper function to query selector
+    function $(selector) {
+        return document.querySelector(selector);
+    }
+    
+    // Helper function to query all
+    function $$(selector) {
+        return document.querySelectorAll(selector);
+    }
+    
+    // Show/hide sections based on connection type
+    function toggleSectionsBasedOnConnectionType() {
+        var connectionTypeInput = $('input[name="<?php echo $this->prefixed('connection_type'); ?>"]:checked');
+        var connectionType = connectionTypeInput ? connectionTypeInput.value : '';
+        
+        // Toggle "Get Connection Info" section (show for scrywp)
+        var getConnectionInfoSection = $('.scrywp-managed-get-connection-info');
+        if (getConnectionInfoSection) {
+            if (connectionType === 'scrywp') {
+                getConnectionInfoSection.style.display = 'block';
+            } else {
+                getConnectionInfoSection.style.display = 'none';
+            }
+        }
+        
+        // Toggle manual config fields (enable for manual, readonly for scrywp)
+        var manualConfigFields = $$('.scrywp-manual-config-field');
+        manualConfigFields.forEach(function(field) {
+            var inputs = field.querySelectorAll('input');
+            inputs.forEach(function(input) {
+                if (connectionType === 'manual') {
+                    // Enable fields and make required for manual config
+                    input.removeAttribute('readonly');
+                    input.setAttribute('required', 'required');
+                } else {
+                    // Make fields readonly (uneditable but still submits) and remove required for scrywp managed service
+                    input.setAttribute('readonly', 'readonly');
+                    input.removeAttribute('required');
+                }
+            });
+        });
+    }
+    
+    // Initial check
+    toggleSectionsBasedOnConnectionType();
+    
+    // Watch for changes to connection type
+    var connectionTypeInputs = $$('input[name="<?php echo $this->prefixed('connection_type'); ?>"]');
+    connectionTypeInputs.forEach(function(input) {
+        input.addEventListener('change', function() {
+            toggleSectionsBasedOnConnectionType();
+        });
+    });
+    
+    // Test connection functionality
+    var testButton = $('#scrywp-test-connection');
+    if (testButton) {
+        testButton.addEventListener('click', function() {
+            var button = this;
+            var result = $('#scrywp-connection-test-result');
+            
+            button.disabled = true;
+            button.textContent = '<?php _e('Testing...', 'scry-wp'); ?>';
+            if (result) {
+                result.style.display = 'none';
+            }
+            
+            // Get form data using WordPress Settings API field names
+            var connectionTypeInput = $('input[name="<?php echo $this->prefixed('connection_type'); ?>"]:checked');
+            var urlInput = $('input[name="<?php echo $this->prefixed('meilisearch_url'); ?>"]');
+            var searchKeyInput = $('input[name="<?php echo $this->prefixed('meilisearch_search_key'); ?>"]');
+            var adminKeyInput = $('input[name="<?php echo $this->prefixed('meilisearch_admin_key'); ?>"]');
+            
+            var formData = new FormData();
+            formData.append('action', 'scrywp_test_connection');
+            formData.append('nonce', '<?php echo wp_create_nonce('scrywp_test_connection'); ?>');
+            formData.append('connection_type', connectionTypeInput ? connectionTypeInput.value : '');
+            formData.append('meilisearch_url', urlInput ? urlInput.value : '');
+            formData.append('meilisearch_search_key', searchKeyInput ? searchKeyInput.value : '');
+            formData.append('meilisearch_admin_key', adminKeyInput ? adminKeyInput.value : '');
+            
+            fetch(ajaxurl, {
+                method: 'POST',
+                body: formData
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (result) {
+                    result.classList.remove('success', 'error');
+                    
+                    if (data.success) {
+                        result.classList.add('success');
+                        result.innerHTML = '<strong><?php _e('Success!', 'scry-wp'); ?></strong> ' + (data.data && data.data.message ? data.data.message : '');
+                        result.style.display = 'block';
+                    } else {
+                        result.classList.add('error');
+                        result.innerHTML = '<strong><?php _e('Error:', 'scry-wp'); ?></strong> ' + (data.data && data.data.message ? data.data.message : '<?php _e('Connection test failed', 'scry-wp'); ?>');
+                        result.style.display = 'block';
+                    }
+                }
+            })
+            .catch(function(error) {
+                if (result) {
+                    result.classList.remove('success', 'error');
+                    result.classList.add('error');
+                    result.innerHTML = '<strong><?php _e('Error:', 'scry-wp'); ?></strong> <?php _e('Failed to test connection', 'scry-wp'); ?>';
+                    result.style.display = 'block';
+                }
+            })
+            .finally(function() {
+                button.disabled = false;
+                button.textContent = '<?php _e('Test Connection', 'scry-wp'); ?>';
+            });
+        });
+    }
+    
+    // Form validation
+    var form = $('form.scrywp-connection-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            var connectionTypeInput = $('input[name="<?php echo $this->prefixed('connection_type'); ?>"]:checked');
+            var connectionType = connectionTypeInput ? connectionTypeInput.value : '';
+            
+            if (!connectionType) {
+                alert('<?php _e('Please select a connection type', 'scry-wp'); ?>');
+                e.preventDefault();
+                return false;
+            }
+            
+            // Only validate manual config fields when manual is selected
+            if (connectionType === 'manual') {
+                var urlInput = $('input[name="<?php echo $this->prefixed('meilisearch_url'); ?>"]');
+                var searchKeyInput = $('input[name="<?php echo $this->prefixed('meilisearch_search_key'); ?>"]');
+                var adminKeyInput = $('input[name="<?php echo $this->prefixed('meilisearch_admin_key'); ?>"]');
+                
+                var url = urlInput ? urlInput.value : '';
+                var searchKey = searchKeyInput ? searchKeyInput.value : '';
+                var adminKey = adminKeyInput ? adminKeyInput.value : '';
+                
+                if (!url || !searchKey || !adminKey) {
+                    alert('<?php _e('Please fill in all required fields', 'scry-wp'); ?>');
+                    e.preventDefault();
+                    return false;
+                }
+            }
+        });
+    }
+});
+</script>

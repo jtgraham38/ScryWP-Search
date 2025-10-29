@@ -12,8 +12,7 @@ use jtgraham38\jgwordpresskit\PluginFeature;
 class ScryWpConnectionSettingsFeature extends PluginFeature {
     
     public function add_filters() {
-        // Add filters for sanitizing and validating settings
-        add_filter('sanitize_option_' . $this->prefixed('connection_settings'), array($this, 'sanitize_connection_settings'));
+        // Individual settings are sanitized via register_setting sanitize_callback
     }
     
     public function add_actions() {
@@ -52,7 +51,10 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
             'manage_options',            //capability
             'scrywp-search-settings', //menu slug
             function() {
+                ob_start();
                 require_once plugin_dir_path(__FILE__) . 'elements/_inputs.php';
+                $content = ob_get_clean();
+                $this->get_feature('scrywp_admin_page')->render_admin_page($content);
             }
         );
     }
@@ -81,13 +83,7 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
             $this->prefixed('connection_type'),
             'Connection Type',
             function() {
-                $settings = get_option($this->prefixed('meilisearch_connection_settings'), array());
-                $connection_type = isset($settings['connection_type']) ? $settings['connection_type'] : '';
-                
-                echo '<fieldset>';
-                echo '<label><input type="radio" name="' . $this->prefixed('meilisearch_connection_settings[connection_type]') . '" value="manual" ' . checked($connection_type, 'manual', false) . '> Manual Configuration</label><br>';
-                echo '<label><input type="radio" name="' . $this->prefixed('meilisearch_connection_settings[connection_type]') . '" value="scrywp" ' . checked($connection_type, 'scrywp', false) . '> ScryWP Managed Service</label>';
-                echo '</fieldset>';
+                require_once plugin_dir_path(__FILE__) . 'elements/connection_type_input.php';
             },
             $this->prefixed('search_settings_group'),
             $this->prefixed('connection_settings_section')
@@ -98,11 +94,7 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
             $this->prefixed('meilisearch_url'),
             'Meilisearch URL',
             function() {
-                $settings = get_option($this->prefixed('meilisearch_connection_settings'), array());
-                $url = isset($settings['meilisearch_url']) ? $settings['meilisearch_url'] : '';
-                
-                echo '<input type="url" name="' . $this->prefixed('meilisearch_connection_settings[meilisearch_url]') . '" value="' . esc_attr($url) . '" class="regular-text" placeholder="https://your-meilisearch-instance.com" required>';
-                echo '<p class="description">The URL of your Meilisearch instance.</p>';
+                require_once plugin_dir_path(__FILE__) . 'elements/meilisearch_url_input.php';
             },
             $this->prefixed('search_settings_group'),
             $this->prefixed('connection_settings_section')
@@ -113,73 +105,94 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
             $this->prefixed('meilisearch_search_key'),
             'Search API Key',
             function() {
-                $settings = get_option($this->prefixed('meilisearch_connection_settings'), array());
-                $search_key = isset($settings['meilisearch_search_key']) ? $settings['meilisearch_search_key'] : '';
-                
-                echo '<input type="password" name="' . $this->prefixed('meilisearch_connection_settings[meilisearch_search_key]') . '" value="' . esc_attr($search_key) . '" class="regular-text" placeholder="Your search API key" required>';
-                echo '<p class="description">The API key with search permissions for your Meilisearch instance.</p>';
+                require_once plugin_dir_path(__FILE__) . 'elements/meilisearch_search_key_input.php';
             },
             $this->prefixed('search_settings_group'),
             $this->prefixed('connection_settings_section')
         );
 
-        //add the admin key field
+        //add the admin key field 
         add_settings_field(
             $this->prefixed('meilisearch_admin_key'),
             'Admin API Key',
             function() {
-                $settings = get_option($this->prefixed('meilisearch_connection_settings'), array());
-                $admin_key = isset($settings['meilisearch_admin_key']) ? $settings['meilisearch_admin_key'] : '';
-                
-                echo '<input type="password" name="' . $this->prefixed('meilisearch_connection_settings[meilisearch_admin_key]') . '" value="' . esc_attr($admin_key) . '" class="regular-text" placeholder="Your admin API key" required>';
-                echo '<p class="description">The API key with admin permissions for managing indexes and settings.</p>';
+                require_once plugin_dir_path(__FILE__) . 'elements/meilisearch_admin_key_input.php';
             },
             $this->prefixed('search_settings_group'),
             $this->prefixed('connection_settings_section')
         );
 
-        //options are: manual and scrywp
+        // Register connection type setting
         register_setting(
             $this->prefixed('search_settings_group'),
-            $this->prefixed('meilisearch_connection_settings'),
+            $this->prefixed('connection_type'),
             array(
-                'type' => 'array',
-                'description' => 'Meilisearch connection settings for ScryWP Search.',
+                'type' => 'string',
+                'description' => 'Connection type for ScryWP Search (manual or scrywp).',
                 'sanitize_callback' => function($input) {
-
-                    //ensure the connection type is either manual or scrywp
-                    if ($input['connection_type'] !== 'manual' && $input['connection_type'] !== 'scrywp') {
-                        return new WP_Error('invalid_connection_type', 'Invalid connection type');
+                    // Ensure the connection type is either manual or scrywp
+                    $allowed_values = array('manual', 'scrywp');
+                    $sanitized = sanitize_text_field($input);
+                    if (!in_array($sanitized, $allowed_values, true)) {
+                        return '';
                     }
-
-                    //ensure the meilisearch search key is set
-                    if (empty($input['meilisearch_search_key'])) {
-                        return new WP_Error('invalid_meilisearch_search_key', 'Meilisearch search key is required');
-                    }
-
-                    //ensure the meilisearch admin key is set
-                    if (empty($input['meilisearch_admin_key'])) {
-                        return new WP_Error('invalid_meilisearch_admin_key', 'Meilisearch admin key is required');
-                    }
-
-                    //ensure the meilisearch url is set
-                    if (empty($input['meilisearch_url'])) {
-                        return new WP_Error('invalid_meilisearch_url', 'Meilisearch url is required');
-                    }
-
-                    return array(
-                        'connection_type' => sanitize_text_field($input['connection_type']),
-                        'meilisearch_search_key' => sanitize_text_field($input['meilisearch_search_key']),
-                        'meilisearch_admin_key' => sanitize_text_field($input['meilisearch_admin_key']),
-                        'meilisearch_url' => sanitize_text_field($input['meilisearch_url']),
-                    );
+                    return $sanitized;
                 },
-                'default' => array(
-                    'connection_type' => '',
-                    'meilisearch_search_key' => '',
-                    'meilisearch_admin_key' => '',
-                    'meilisearch_url' => '',
-                )
+                'default' => '',
+                'show_in_rest' => false,
+            )
+        );
+
+        // Register Meilisearch URL setting
+        register_setting(
+            $this->prefixed('search_settings_group'),
+            $this->prefixed('meilisearch_url'),
+            array(
+                'type' => 'string',
+                'description' => 'Meilisearch instance URL for ScryWP Search.',
+                'sanitize_callback' => function($input) {
+                    // Sanitize URL
+                    $sanitized = esc_url_raw(trim($input));
+                    // Validate URL format
+                    if (!empty($sanitized) && !filter_var($sanitized, FILTER_VALIDATE_URL)) {
+                        return '';
+                    }
+                    return $sanitized;
+                },
+                'default' => '',
+                'show_in_rest' => false,
+            )
+        );
+
+        // Register Meilisearch search key setting
+        register_setting(
+            $this->prefixed('search_settings_group'),
+            $this->prefixed('meilisearch_search_key'),
+            array(
+                'type' => 'string',
+                'description' => 'Meilisearch search API key for ScryWP Search.',
+                'sanitize_callback' => function($input) {
+                    // Sanitize as text field but preserve the key
+                    return sanitize_text_field(trim($input));
+                },
+                'default' => '',
+                'show_in_rest' => false,
+            )
+        );
+
+        // Register Meilisearch admin key setting
+        register_setting(
+            $this->prefixed('search_settings_group'),
+            $this->prefixed('meilisearch_admin_key'),
+            array(
+                'type' => 'string',
+                'description' => 'Meilisearch admin API key for ScryWP Search.',
+                'sanitize_callback' => function($input) {
+                    // Sanitize as text field but preserve the key
+                    return sanitize_text_field(trim($input));
+                },
+                'default' => '',
+                'show_in_rest' => false,
             )
         );
     }
