@@ -7,6 +7,10 @@ if (!defined('ABSPATH')) {
 
 // Get current connection settings for testing
 $connection_type = get_option($this->prefixed('connection_type'), '');
+
+//get the urls of images for cards
+$coai_dark_url = $this->get_base_url() . 'assets/images/coai_dark.png';
+$manual_url = $this->get_base_url() . 'assets/images/manual.png';
 ?>
 
 <div class="scrywp-connection-settings">
@@ -25,6 +29,7 @@ $connection_type = get_option($this->prefixed('connection_type'), '');
                     <input type="radio" name="<?php echo $this->prefixed('connection_type'); ?>" value="scrywp" <?php checked($connection_type, 'scrywp'); ?>>
                     <div class="scrywp-card-content">
                         <div class="scrywp-card-title">ScryWP Managed Service</div>
+                        <img src="<?php echo $coai_dark_url; ?>" alt="ScryWP Managed Service" class="scrywp-connection-card-image">
                         <div class="scrywp-card-description">Recommended: Let ScryWP manage your Meilisearch instance</div>
                     </div>
                 </label>
@@ -34,13 +39,14 @@ $connection_type = get_option($this->prefixed('connection_type'), '');
                     <input type="radio" name="<?php echo $this->prefixed('connection_type'); ?>" value="manual" <?php checked($connection_type, 'manual'); ?>>
                     <div class="scrywp-card-content">
                         <div class="scrywp-card-title">Manual Configuration</div>
+                        <!-- <img src="<?php echo $manual_url; ?>" alt="Manual Configuration" class="scrywp-connection-card-image"> -->
                         <div class="scrywp-card-description">Configure your own Meilisearch instance</div>
                     </div>
                 </label>
                 
             </div>
         </div>
-        <div class="scrywp-managed-get-connection-info" <?php echo ($connection_type !== 'scrywp') ? 'style="display:none;"' : ''; ?>>
+        <div class="scrywp-managed-get-connection-info<?php echo ($connection_type === 'scrywp') ? ' scrywp-section-visible' : ''; ?>">
             <h3><?php _e('Get Connection Info', 'scry-wp'); ?></h3>
             <p class="description">
                 <?php _e('Get your connection info from ScryWP.', 'scry-wp'); ?>
@@ -84,6 +90,25 @@ $connection_type = get_option($this->prefixed('connection_type'), '');
     border-radius: 4px;
     padding: 20px;
     margin-bottom: 20px;
+    transition: opacity 0.3s ease, max-height 0.3s ease, margin 0.3s ease, padding 0.3s ease;
+    overflow: hidden;
+}
+
+.scrywp-managed-get-connection-info {
+    max-height: 0;
+    opacity: 0;
+    margin: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-width: 0;
+}
+
+.scrywp-managed-get-connection-info.scrywp-section-visible {
+    max-height: 500px;
+    opacity: 1;
+    margin-bottom: 20px;
+    padding: 20px;
+    border-width: 1px;
 }
 
 .scrywp-managed-get-connection-info h3,
@@ -184,6 +209,55 @@ $connection_type = get_option($this->prefixed('connection_type'), '');
     height: 0;
 }
 
+.scrywp-connection-card-image {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    display: block;
+    margin: 20px auto;
+    transition: all 0.3s ease;
+}
+
+.scrywp-connection-card:hover .scrywp-connection-card-image {
+    transform: scale(1.05);
+}
+
+/* Images become muted when card is not selected */
+.scrywp-connection-card:not(:has(input[type="radio"]:checked)) .scrywp-connection-card-image {
+    opacity: 0.4;
+    filter: grayscale(60%);
+}
+
+/* Prominent card image when selected */
+.scrywp-connection-card-prominent:has(input[type="radio"]:checked) .scrywp-connection-card-image {
+    opacity: 1;
+    filter: drop-shadow(0 2px 4px rgba(34, 113, 177, 0.2)) grayscale(0%);
+}
+
+/* Prominent card image when not selected */
+.scrywp-connection-card-prominent:not(:has(input[type="radio"]:checked)) .scrywp-connection-card-image {
+    opacity: 0.3;
+    filter: grayscale(70%);
+}
+
+/* Muted card image when selected */
+.scrywp-connection-card-muted:has(input[type="radio"]:checked) .scrywp-connection-card-image {
+    opacity: 1;
+    filter: grayscale(0%);
+}
+
+/* Muted card image when not selected - already muted but make it more muted */
+.scrywp-connection-card-muted:not(:has(input[type="radio"]:checked)) .scrywp-connection-card-image {
+    opacity: 0.25;
+    filter: grayscale(80%);
+}
+
+/* Hover effect - restore some visibility on hover even when not selected */
+.scrywp-connection-card:not(:has(input[type="radio"]:checked)):hover .scrywp-connection-card-image {
+    opacity: 0.6;
+    filter: grayscale(40%);
+}
+
 .scrywp-connection-card-prominent {
     border-color: #2271b1;
     background: linear-gradient(135deg, #f6f9fc 0%, #ffffff 100%);
@@ -258,13 +332,17 @@ $connection_type = get_option($this->prefixed('connection_type'), '');
 .scrywp-card-content {
     position: relative;
     pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
 }
 
 .scrywp-card-title {
     font-size: 18px;
     font-weight: 600;
     color: #23282d;
-    margin-bottom: 8px;
+    margin-bottom: 0;
 }
 
 .scrywp-connection-card-prominent .scrywp-card-title {
@@ -279,6 +357,7 @@ $connection_type = get_option($this->prefixed('connection_type'), '');
     font-size: 14px;
     color: #646970;
     line-height: 1.5;
+    margin-top: 0;
 }
 
 .scrywp-connection-card-prominent .scrywp-card-description {
@@ -307,13 +386,15 @@ document.addEventListener('DOMContentLoaded', function() {
         var connectionTypeInput = $('input[name="<?php echo $this->prefixed('connection_type'); ?>"]:checked');
         var connectionType = connectionTypeInput ? connectionTypeInput.value : '';
         
-        // Toggle "Get Connection Info" section (show for scrywp)
+        // Toggle "Get Connection Info" section (show for scrywp) with smooth animation
         var getConnectionInfoSection = $('.scrywp-managed-get-connection-info');
         if (getConnectionInfoSection) {
             if (connectionType === 'scrywp') {
-                getConnectionInfoSection.style.display = 'block';
+                // Show section with animation
+                getConnectionInfoSection.classList.add('scrywp-section-visible');
             } else {
-                getConnectionInfoSection.style.display = 'none';
+                // Hide section with animation
+                getConnectionInfoSection.classList.remove('scrywp-section-visible');
             }
         }
         
