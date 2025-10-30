@@ -1,0 +1,202 @@
+<?php
+
+//exit if accessed directly
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+require_once plugin_dir_path(__FILE__) . '../../vendor/autoload.php';
+
+use jtgraham38\jgwordpresskit\PluginFeature;
+use Meilisearch\Client;
+use Meilisearch\Exceptions\CommunicationException;
+use Meilisearch\Exceptions\ApiException;
+
+class ScryWpIndexesFeature extends PluginFeature {
+    
+    public function add_filters() {
+        // Individual settings are sanitized via register_setting sanitize_callback
+    }
+    
+    public function add_actions() {
+        // Register settings
+        add_action('admin_init', array($this, 'register_settings'));
+
+        //add an admin page for the indexes
+        add_action('admin_menu', array($this, 'add_admin_page'));
+
+        //ensure indexes exist in meilisearch for all selected post types
+        add_action('init', array($this, 'ensure_post_indexes_exist'));
+    }
+
+    //function to ensure indexes exist in meilisearch for all selected post types
+    public function ensure_post_indexes_exist() {
+        global $wpdb;
+
+        //ensure  that the meilisearch url and admin key are set
+        if (empty(get_option($this->prefixed('meilisearch_url'))) || empty(get_option($this->prefixed('meilisearch_admin_key')))) {
+            return;
+        }
+
+        //first, we will construct all index names from the post
+        //types, wpdb prefixed table name, and the post type name
+        $index_names = $this->get_index_names();
+
+        //ensure we handle meielisearch errors correctly
+        try {
+            //create a meilisearch client
+            $client = new Client(
+                get_option($this->prefixed('meilisearch_url')), 
+                get_option($this->prefixed('meilisearch_admin_key'))
+            );
+
+            //now, we will check if an index exists, and if not, we will create it
+            foreach ($index_names as $index_name) {
+                //determine if the index exists by trying to fetch it
+                try {
+                    $client->index($index_name)->fetchRawInfo();
+                    // Index exists, continue to next
+                    continue;
+                } catch (ApiException $e) {
+                    // check that the code is 404
+                    if ($e->getCode() === 404) {
+                        // Index doesn't exist, create it
+                        $client->createIndex($index_name, ['primaryKey' => 'ID']);
+                    } else {
+                        //rethrow the exception
+                        throw $e;
+                    }
+                }
+            }
+        }
+        catch (CommunicationException $e) {
+            //report the exception with an admin notice, including a summary/details dropdown with the full stack trace
+            add_action('admin_notices', function() use ($e) {
+                ?>
+                <div class="notice notice-error">
+                    <p><?php echo $e->getMessage(); ?></p>
+                    <details>
+                        <summary>View Details</summary>
+                        <pre><?php echo esc_html(print_r($e, true)); ?></pre>
+                    </details>
+                </div>
+                <?php
+            });
+        }
+        catch (Exception $e) {
+            //report the exception with an admin notice, including a summary/details dropdown with the full stack trace
+            add_action('admin_notices', function() use ($e) {
+                ?>
+                <div class="notice notice-error">
+                    <p><?php echo $e->getMessage(); ?></p>
+                    <details>
+                        <summary>View Details</summary>
+                        <pre><?php echo esc_html(print_r($e, true)); ?></pre>
+                    </details>
+                </div>
+                <?php
+            });
+        }
+    }
+
+    //register settings (select which post types to index)
+    public function register_settings() {
+
+        //register the indexes settings section
+        add_settings_section(
+            $this->prefixed('indexes_settings_section'),
+            'Indexes',
+            function() {
+                echo '<p>Configure the indexes for ScryWP Search.</p>';
+            },
+            $this->prefixed('indexes_settings_group')
+        );
+
+        //add the settings fields
+        add_settings_field(
+            $this->prefixed('post_types'),
+            'Post Types to Index',
+            function() {
+                require_once plugin_dir_path(__FILE__) . 'elements/settings/post_types_input.php';
+            },
+            $this->prefixed('indexes_settings_group'),
+            $this->prefixed('indexes_settings_section')
+        );
+
+        add_settings_field(
+            $this->prefixed('index_affix'),
+            'Index Affix',
+            function() {
+                require_once plugin_dir_path(__FILE__) . 'elements/settings/index_affix_input.php';
+            },
+            $this->prefixed('indexes_settings_group'),
+            $this->prefixed('indexes_settings_section')
+        );
+
+        // Register settings
+        register_setting(
+            $this->prefixed('indexes_settings_group'),
+            $this->prefixed('post_types'),
+            array(
+                'type' => 'array',
+                'description' => 'Post types to index for ScryWP Search.',
+                'sanitize_callback' => function($input) {
+                    if (!is_array($input)) {
+                        return array();
+                    }
+                    return array_map('sanitize_text_field', $input);
+                },
+                'default' => array(),
+                'show_in_rest' => false,
+            )
+        );
+
+        register_setting(
+            $this->prefixed('indexes_settings_group'),
+            $this->prefixed('index_affix'),
+            array(
+                'type' => 'string',
+                'description' => 'Index affix for the indexes.',
+                'sanitize_callback' => function($input) {
+                    //ensure input ends in an underscore
+                    if (substr($input, -1) !== '_') {
+                        $input .= '_';
+                    }
+                    return sanitize_text_field($input);
+                },
+                'default' => '',
+                'show_in_rest' => false,
+            )
+        );
+
+
+    }
+
+    //add an admin page for the indexes
+    public function add_admin_page() {
+        add_submenu_page(
+            'scrywp-search',
+            'Indexing Settings',
+            'Indexing Settings',
+            'manage_options',
+            'scrywp-indexes',
+            function() {
+                ob_start();
+                require_once plugin_dir_path(__FILE__) . 'elements/_inputs.php';
+                $content = ob_get_clean();
+                $this->get_feature('scrywp_admin_page')->render_admin_page($content);
+            }
+        );
+    }
+
+    //  \\  //  \\  //  \\  Helpers  //  \\  //  \\  //  \\ 
+    public function get_index_names() {
+        global $wpdb;
+        $index_names = array();
+        $post_types_to_index = get_option($this->prefixed('post_types'));
+        foreach ($post_types_to_index as $post_type) {
+            $index_names[] = $wpdb->prefix . $this->get_prefix() . get_option($this->prefixed('index_affix')) . $post_type;
+        }
+        return $index_names;
+    }
+}
