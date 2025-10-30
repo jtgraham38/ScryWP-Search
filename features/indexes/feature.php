@@ -51,7 +51,7 @@ class ScryWpIndexesFeature extends PluginFeature {
             );
 
             //now, we will check if an index exists, and if not, we will create it
-            foreach ($index_names as $index_name) {
+            foreach ($index_names as $post_type => $index_name) {
                 //determine if the index exists by trying to fetch it
                 try {
                     $client->index($index_name)->fetchRawInfo();
@@ -195,8 +195,8 @@ class ScryWpIndexesFeature extends PluginFeature {
         $index_names = array();
         $post_types_to_index = get_option($this->prefixed('post_types'));
         foreach ($post_types_to_index as $post_type) {
-            $index_names[] = $wpdb->prefix . $this->get_prefix() . get_option($this->prefixed('index_affix')) . $post_type;
-        }
+            $index_names[$post_type] = $wpdb->prefix . $this->get_prefix() . get_option($this->prefixed('index_affix')) . $post_type;
+        }   
         return $index_names;
     }
 }

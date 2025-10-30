@@ -22,14 +22,15 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
         $client = new Client($meilisearch_url, $meilisearch_admin_key);
         $index_names = $this->get_index_names();
         
-        foreach ($index_names as $index_name) {
+        foreach ($index_names as $post_type => $index_name) {
             try {
                 $index = $client->index($index_name);
                 $index_info = $index->fetchRawInfo();
                 $stats = $index->stats();
                 
                 $indexes_data[] = array(
-                    'name' => $index_name,
+                    'name' => $post_type,
+                    'index_name' => $index_name,
                     'uid' => isset($index_info['uid']) ? $index_info['uid'] : $index_name,
                     'primaryKey' => isset($index_info['primaryKey']) ? $index_info['primaryKey'] : null,
                     'createdAt' => isset($index_info['createdAt']) ? $index_info['createdAt'] : null,
@@ -40,7 +41,8 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
             } catch (ApiException $e) {
                 // Index doesn't exist, add with error state
                 $indexes_data[] = array(
-                    'name' => $index_name,
+                    'name' => $post_type,
+                    'index_name' => $index_name,
                     'error' => $e->getCode() === 404 ? __('Index does not exist', 'scry-wp') : $e->getMessage(),
                     'exists' => false,
                 );
@@ -72,7 +74,10 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
             <?php foreach ($indexes_data as $index): ?>
                 <div class="scrywp-index-card <?php echo isset($index['error']) ? 'scrywp-index-card-error' : ''; ?>">
                     <div class="scrywp-index-card-header">
-                        <h3 class="scrywp-index-card-title"><?php echo esc_html($index['name']); ?></h3>
+                        <div class="scrywp-index-card-title-container">
+                            <h3 class="scrywp-index-card-title"><?php echo esc_html($index['name']); ?></h3>
+                            <code class="scrywp-index-card-subtitle"><?php echo esc_html($index['index_name']); ?></code>
+                        </div>
                         <?php if (isset($index['error'])): ?>
                             <span class="scrywp-index-status scrywp-index-status-error"><?php _e('Error', 'scry-wp'); ?></span>
                         <?php elseif ($index['isIndexing']): ?>
@@ -173,14 +178,23 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
     border-bottom: 1px solid #e5e5e5;
 }
 
+.scrywp-index-card-title-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
 .scrywp-index-card-title {
     margin: 0;
     font-size: 18px;
     font-weight: 600;
     color: #23282d;
     word-break: break-word;
-    flex: 1;
-    margin-right: 10px;
+}
+
+.scrywp-index-card-subtitle {
+    font-size: 12px;
+    color: #646970;
 }
 
 .scrywp-index-status {
