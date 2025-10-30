@@ -176,10 +176,10 @@ class ScryWpIndexesFeature extends PluginFeature {
     public function add_admin_page() {
         add_submenu_page(
             'scrywp-search',
-            'Indexing Settings',
-            'Indexing Settings',
+            'Index Settings',
+            'Index Settings',
             'manage_options',
-            'scrywp-indexes',
+            'scrywp-index-settings',
             function() {
                 ob_start();
                 require_once plugin_dir_path(__FILE__) . 'elements/_inputs.php';

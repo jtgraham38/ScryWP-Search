@@ -26,6 +26,11 @@ $tabs = array(
         'icon' => 'dashicons-admin-generic',
         'url' => admin_url('admin.php?page=scrywp-search-settings')
     ),
+    'scrywp-index-settings' => array(
+        'label' => __('Index Settings', 'scry-wp'),
+        'icon' => 'dashicons-index-card',
+        'url' => admin_url('admin.php?page=scrywp-index-settings')
+    ),
 );
 ?>
 
