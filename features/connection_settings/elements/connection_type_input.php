@@ -70,9 +70,6 @@ $manual_url = $this->get_base_url() . 'assets/images/manual.png';
                 <?php _e('Test Connection', 'scry-wp'); ?>
             </button>
             <div id="scrywp-connection-test-result" class="scrywp-test-result"></div>
-            <small>
-                todo: implement this
-            </small>
         </div>
     </form>
 </div>
@@ -459,6 +456,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: formData
             })
             .then(function(response) {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
                 return response.json();
             })
             .then(function(data) {
@@ -468,12 +468,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (data.success) {
                         result.classList.add('success');
                         result.innerHTML = '<strong><?php _e('Success!', 'scry-wp'); ?></strong> ' + (data.data && data.data.message ? data.data.message : '');
-                        result.style.display = 'block';
                     } else {
                         result.classList.add('error');
-                        result.innerHTML = '<strong><?php _e('Error:', 'scry-wp'); ?></strong> ' + (data.data && data.data.message ? data.data.message : '<?php _e('Connection test failed', 'scry-wp'); ?>');
-                        result.style.display = 'block';
+                        var errorMessage = (data.data && data.data.message) ? data.data.message : '<?php _e('Connection test failed', 'scry-wp'); ?>';
+                        result.innerHTML = '<strong><?php _e('Error:', 'scry-wp'); ?></strong> ' + errorMessage;
                     }
+                    result.style.display = 'block';
                 }
             })
             .catch(function(error) {
