@@ -27,11 +27,105 @@ class ScryWpIndexesFeature extends PluginFeature {
 
         //ensure indexes exist in meilisearch for all selected post types
         add_action('init', array($this, 'ensure_post_indexes_exist'));
+
+        //register hooks to keep indexes in step
+        add_action('save_post', array($this, 'index_post'));
+        add_action('wp_trash_post', array($this, 'trash_post'));
         
         // Register AJAX handlers
         add_action('wp_ajax_' . $this->prefixed('wipe_index'), array($this, 'ajax_wipe_index'));
         add_action('wp_ajax_' . $this->prefixed('index_posts'), array($this, 'ajax_index_posts'));
         add_action('wp_ajax_' . $this->prefixed('search_index'), array($this, 'ajax_search_index'));
+    }
+
+    //function to index a post when it is created or updated
+    public function index_post(int $post_id) {
+
+        //get the post
+        $post = get_post($post_id);
+
+        //ensure this post is of a type that should be indexed
+        $indexes = $this->get_index_names();
+
+        if (!isset($indexes[$post->post_type])) {
+            return;
+        }
+
+        //ensure the post is published
+        if ($post->post_status !== 'publish') {
+            return;
+        }
+
+        //prepare the post for indexing
+        $post_data = $this->format_post_for_meilisearch($post);
+
+        //get the index name for this post type
+        $index_name = $indexes[$post->post_type];
+
+        //provide success and error handling
+        try {
+            //init a meilisearch client
+            $client = new Client(
+                get_option($this->prefixed('meilisearch_url')), 
+                get_option($this->prefixed('meilisearch_admin_key'))
+            );
+
+            //index the post
+            $client->index($index_name)->updateDocuments($post_data);
+        } catch (Exception $e) {
+            //report the exception with an admin notice, including a summary/details dropdown with the full stack trace
+            add_action('admin_notices', function() use ($e) {
+                ?>
+                <div class="notice notice-error">
+                    <p><?php echo $e->getMessage(); ?></p>
+                    <details>
+                        <summary>View Details</summary>
+                        <pre><?php echo esc_html(print_r($e, true)); ?></pre>
+                    </details>
+                </div>
+                <?php
+            });
+        }
+    }
+
+    //function to delete a post from the index when it is trashed
+    public function trash_post(int $post_id) {
+        //get the post
+        $post = get_post($post_id);
+
+        //ensure this post is of a type that should be indexed
+        $indexes = $this->get_index_names();
+        if (!isset($indexes[$post->post_type])) {
+            return;
+        }
+
+        //get the index name for this post type
+        $index_name = $indexes[$post->post_type];
+
+        //provide success and error handling
+        try {
+        //init a meilisearch client
+        $client = new Client(
+            get_option($this->prefixed('meilisearch_url')), 
+            get_option($this->prefixed('meilisearch_admin_key'))
+        );
+
+            //delete the post from the index
+            $client->index($index_name)->deleteDocument($post_id);
+        } catch (Exception $e) {
+            //report the exception with an admin notice, including a summary/details dropdown with the full stack trace
+            add_action('admin_notices', function() use ($e) {
+                ?>
+                <div class="notice notice-error">
+                    <p><?php echo $e->getMessage(); ?></p>
+                    <details>
+                        <summary>View Details</summary>
+                        <pre><?php echo esc_html(print_r($e, true)); ?></pre>
+                    </details>
+                </div>
+                <?php
+            });
+        }
     }
 
     //function to ensure indexes exist in meilisearch for all selected post types
@@ -192,17 +286,6 @@ class ScryWpIndexesFeature extends PluginFeature {
                 $this->get_feature('scrywp_admin_page')->render_admin_page($content);
             }
         );
-    }
-
-    //  \\  //  \\  //  \\  Helpers  //  \\  //  \\  //  \\ 
-    public function get_index_names() {
-        global $wpdb;
-        $index_names = array();
-        $post_types_to_index = get_option($this->prefixed('post_types'));
-        foreach ($post_types_to_index as $post_type) {
-            $index_names[$post_type] = $wpdb->prefix . $this->get_prefix() . get_option($this->prefixed('index_affix')) . $post_type;
-        }   
-        return $index_names;
     }
     
     /**
@@ -595,4 +678,16 @@ class ScryWpIndexesFeature extends PluginFeature {
             ));
         }
     }
+
+    //  \\  //  \\  //  \\  Helpers  //  \\  //  \\  //  \\ 
+    public function get_index_names() {
+        global $wpdb;
+        $index_names = array();
+        $post_types_to_index = get_option($this->prefixed('post_types'));
+        foreach ($post_types_to_index as $post_type) {
+            $index_names[$post_type] = $wpdb->prefix . $this->get_prefix() . get_option($this->prefixed('index_affix')) . $post_type;
+        }   
+        return $index_names;
+    }
+    
 }
