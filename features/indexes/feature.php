@@ -30,6 +30,7 @@ class ScryWpIndexesFeature extends PluginFeature {
         
         // Register AJAX handlers
         add_action('wp_ajax_' . $this->prefixed('wipe_index'), array($this, 'ajax_wipe_index'));
+        add_action('wp_ajax_' . $this->prefixed('index_posts'), array($this, 'ajax_index_posts'));
     }
 
     //function to ensure indexes exist in meilisearch for all selected post types
@@ -279,5 +280,163 @@ class ScryWpIndexesFeature extends PluginFeature {
                 'message' => sprintf(__('Error: %s', 'scry-wp'), $e->getMessage())
             ));
         }
+    }
+    
+    /**
+     * AJAX handler for indexing all posts of a specific post type
+     */
+    public function ajax_index_posts() {
+        // Verify nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], $this->prefixed('index_posts'))) {
+            wp_send_json_error(array('message' => __('Security check failed', 'scry-wp')));
+            return;
+        }
+        
+        // Check user permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('Permission denied', 'scry-wp')));
+            return;
+        }
+        
+        // Get post type from POST data
+        $post_type = isset($_POST['post_type']) ? sanitize_text_field($_POST['post_type']) : '';
+        
+        // Validate post type
+        if (empty($post_type)) {
+            wp_send_json_error(array('message' => __('Please provide a post type', 'scry-wp')));
+            return;
+        }
+        
+        // Verify the post type is one of the configured post types (security check)
+        $index_names = $this->get_index_names();
+        if (!isset($index_names[$post_type])) {
+            wp_send_json_error(array('message' => __('Invalid post type', 'scry-wp')));
+            return;
+        }
+        
+        $index_name = $index_names[$post_type];
+        
+        // Get connection settings
+        $meilisearch_url = get_option($this->prefixed('meilisearch_url'), '');
+        $meilisearch_admin_key = get_option($this->prefixed('meilisearch_admin_key'), '');
+        
+        if (empty($meilisearch_url) || empty($meilisearch_admin_key)) {
+            wp_send_json_error(array('message' => __('Connection settings are not configured', 'scry-wp')));
+            return;
+        }
+        
+        try {
+            // Get all posts of this post type
+            $posts = get_posts(array(
+                'post_type' => $post_type,
+                'posts_per_page' => -1,
+                'post_status' => 'any',
+            ));
+            
+            if (empty($posts)) {
+                wp_send_json_error(array('message' => sprintf(__('No posts found for post type "%s"', 'scry-wp'), $post_type)));
+                return;
+            }
+            
+            // Format posts for Meilisearch
+            $documents = array();
+            foreach ($posts as $post) {
+                $documents[] = $this->format_post_for_meilisearch($post);
+            }
+            
+            // Create Meilisearch client
+            $client = new Client($meilisearch_url, $meilisearch_admin_key);
+            
+            // Get the index and add/update documents
+            $index = $client->index($index_name);
+            $task = $index->updateDocuments($documents);
+            
+            // Success
+            wp_send_json_success(array(
+                'message' => sprintf(
+                    __('Successfully indexed %d post(s) of type "%s".', 'scry-wp'),
+                    count($documents),
+                    $post_type
+                ),
+                'count' => count($documents),
+                'task_uid' => isset($task['taskUid']) ? $task['taskUid'] : null
+            ));
+            
+        } catch (\Meilisearch\Exceptions\CommunicationException $e) {
+            // Network/connection error
+            wp_send_json_error(array(
+                'message' => sprintf(__('Connection failed: %s', 'scry-wp'), $e->getMessage())
+            ));
+        } catch (\Meilisearch\Exceptions\ApiException $e) {
+            // API error
+            wp_send_json_error(array(
+                'message' => sprintf(__('API error: %s', 'scry-wp'), $e->getMessage())
+            ));
+        } catch (\Exception $e) {
+            // General error
+            wp_send_json_error(array(
+                'message' => sprintf(__('Error: %s', 'scry-wp'), $e->getMessage())
+            ));
+        }
+    }
+    
+    /**
+     * Format a WordPress post for Meilisearch indexing
+     */
+    private function format_post_for_meilisearch($post) {
+        // Get post content (strip HTML tags and shortcodes)
+        $content = wp_strip_all_tags($post->post_content);
+        $content = do_shortcode($content);
+        
+        // Get post excerpt
+        $excerpt = !empty($post->post_excerpt) ? wp_strip_all_tags($post->post_excerpt) : wp_trim_words($content, 55);
+        
+        // Format the document
+        $document = array(
+            'ID' => (int) $post->ID,
+            'post_title' => $post->post_title,
+            'post_content' => $content,
+            'post_excerpt' => $excerpt,
+            'post_date' => $post->post_date,
+            'post_date_gmt' => $post->post_date_gmt,
+            'post_modified' => $post->post_modified,
+            'post_modified_gmt' => $post->post_modified_gmt,
+            'post_status' => $post->post_status,
+            'post_type' => $post->post_type,
+            'post_author' => (int) $post->post_author,
+            'post_name' => $post->post_name,
+            'permalink' => get_permalink($post->ID),
+        );
+        
+        // Add author name if available
+        $author = get_userdata($post->post_author);
+        if ($author) {
+            $document['author_name'] = $author->display_name;
+        }
+        
+        // Add categories and tags
+        $categories = wp_get_post_categories($post->ID, array('fields' => 'names'));
+        if (!empty($categories)) {
+            $document['categories'] = $categories;
+        }
+        
+        $tags = wp_get_post_tags($post->ID, array('fields' => 'names'));
+        if (!empty($tags)) {
+            $document['tags'] = $tags;
+        }
+        
+        // Add featured image URL if available
+        $thumbnail_id = get_post_thumbnail_id($post->ID);
+        if ($thumbnail_id) {
+            $document['featured_image'] = wp_get_attachment_image_url($thumbnail_id, 'full');
+        }
+
+        // Add post meta date
+        $post_meta = get_post_meta($post->ID);
+        if (!empty($post_meta)) {
+            $document['post_meta'] = $post_meta;
+        }
+        
+        return $document;
     }
 }
