@@ -327,11 +327,11 @@ class ScryWpIndexesFeature extends PluginFeature {
         }
         
         try {
-            // Get all posts of this post type
+            // Get all posts of this post type that are published
             $posts = get_posts(array(
                 'post_type' => $post_type,
                 'posts_per_page' => -1,
-                'post_status' => 'any',
+                'post_status' => 'publish',
             ));
             
             if (empty($posts)) {
