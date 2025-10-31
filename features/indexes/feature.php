@@ -27,6 +27,9 @@ class ScryWpIndexesFeature extends PluginFeature {
 
         //ensure indexes exist in meilisearch for all selected post types
         add_action('init', array($this, 'ensure_post_indexes_exist'));
+        
+        // Register AJAX handlers
+        add_action('wp_ajax_' . $this->prefixed('wipe_index'), array($this, 'ajax_wipe_index'));
     }
 
     //function to ensure indexes exist in meilisearch for all selected post types
@@ -198,5 +201,83 @@ class ScryWpIndexesFeature extends PluginFeature {
             $index_names[$post_type] = $wpdb->prefix . $this->get_prefix() . get_option($this->prefixed('index_affix')) . $post_type;
         }   
         return $index_names;
+    }
+    
+    /**
+     * AJAX handler for wiping (deleting) a Meilisearch index
+     */
+    public function ajax_wipe_index() {
+        // Verify nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], $this->prefixed('wipe_index'))) {
+            wp_send_json_error(array('message' => __('Security check failed', 'scry-wp')));
+            return;
+        }
+        
+        // Check user permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('Permission denied', 'scry-wp')));
+            return;
+        }
+        
+        // Get index name from POST data
+        $index_name = isset($_POST['index_name']) ? sanitize_text_field($_POST['index_name']) : '';
+        
+        // Validate index name
+        if (empty($index_name)) {
+            wp_send_json_error(array('message' => __('Please provide an index name', 'scry-wp')));
+            return;
+        }
+        
+        // Verify the index name is one of the configured indexes (security check)
+        $index_names = $this->get_index_names();
+        if (!in_array($index_name, $index_names, true)) {
+            wp_send_json_error(array('message' => __('Invalid index name', 'scry-wp')));
+            return;
+        }
+        
+        // Get connection settings
+        $meilisearch_url = get_option($this->prefixed('meilisearch_url'), '');
+        $meilisearch_admin_key = get_option($this->prefixed('meilisearch_admin_key'), '');
+        
+        if (empty($meilisearch_url) || empty($meilisearch_admin_key)) {
+            wp_send_json_error(array('message' => __('Connection settings are not configured', 'scry-wp')));
+            return;
+        }
+        
+        try {
+            // Create Meilisearch client
+            $client = new Client($meilisearch_url, $meilisearch_admin_key);
+            
+            // Get the index and delete it
+            $index = $client->index($index_name);
+            $index->delete();
+            
+            // Success - the index will be recreated automatically by ensure_post_indexes_exist
+            wp_send_json_success(array(
+                'message' => sprintf(__('Index "%s" has been wiped successfully. It will be recreated automatically.', 'scry-wp'), $index_name)
+            ));
+            
+        } catch (\Meilisearch\Exceptions\CommunicationException $e) {
+            // Network/connection error
+            wp_send_json_error(array(
+                'message' => sprintf(__('Connection failed: %s', 'scry-wp'), $e->getMessage())
+            ));
+        } catch (\Meilisearch\Exceptions\ApiException $e) {
+            // API error (404 if index doesn't exist, etc.)
+            if ($e->getCode() === 404) {
+                wp_send_json_error(array(
+                    'message' => __('Index does not exist', 'scry-wp')
+                ));
+            } else {
+                wp_send_json_error(array(
+                    'message' => sprintf(__('API error: %s', 'scry-wp'), $e->getMessage())
+                ));
+            }
+        } catch (\Exception $e) {
+            // General error
+            wp_send_json_error(array(
+                'message' => sprintf(__('Error: %s', 'scry-wp'), $e->getMessage())
+            ));
+        }
     }
 }
