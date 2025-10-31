@@ -482,6 +482,58 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
     margin-bottom: 12px;
 }
 
+.scrywp-index-dialog-result-json {
+    margin: 12px 0;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    background: #f9f9f9;
+}
+
+.scrywp-index-dialog-result-json-toggle {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: #2271b1;
+    user-select: none;
+    list-style: none;
+    transition: background 0.2s ease;
+}
+
+.scrywp-index-dialog-result-json-toggle:hover {
+    background: #f0f0f0;
+}
+
+.scrywp-index-dialog-result-json-toggle::-webkit-details-marker {
+    display: none;
+}
+
+.scrywp-index-dialog-result-json-toggle::before {
+    content: '▶';
+    display: inline-block;
+    margin-right: 6px;
+    font-size: 10px;
+    transition: transform 0.2s ease;
+}
+
+details[open] .scrywp-index-dialog-result-json-toggle::before {
+    transform: rotate(90deg);
+}
+
+.scrywp-index-dialog-result-json-content {
+    padding: 12px;
+    margin: 0;
+    background: #fff;
+    border-top: 1px solid #e5e5e5;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-x: auto;
+    white-space: pre;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
 .scrywp-index-dialog-result-actions {
     display: flex;
     gap: 10px;
@@ -728,6 +780,18 @@ document.addEventListener('DOMContentLoaded', function() {
                         return;
                     }
                     
+                    // Helper function to escape HTML for JSON display
+                    function escapeHtml(text) {
+                        var map = {
+                            '&': '&amp;',
+                            '<': '&lt;',
+                            '>': '&gt;',
+                            '"': '&quot;',
+                            "'": '&#039;'
+                        };
+                        return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+                    }
+                    
                     // Build results HTML
                     var resultsHTML = '';
                     var viewPostLabel = '<?php echo esc_js(__('View Post', 'scry-wp')); ?>';
@@ -750,6 +814,12 @@ document.addEventListener('DOMContentLoaded', function() {
                             resultsHTML += '<span>' + result.post_date + '</span>';
                         }
                         resultsHTML += '</div>';
+                        
+                        // Add raw JSON dropdown
+                        resultsHTML += '<details class="scrywp-index-dialog-result-json">';
+                        resultsHTML += '<summary class="scrywp-index-dialog-result-json-toggle"><?php echo esc_js(__('View Raw JSON', 'scry-wp')); ?></summary>';
+                        resultsHTML += '<pre class="scrywp-index-dialog-result-json-content">' + escapeHtml(JSON.stringify(result, null, 2)) + '</pre>';
+                        resultsHTML += '</details>';
                         
                         resultsHTML += '<div class="scrywp-index-dialog-result-actions">';
                         if (result.permalink) {

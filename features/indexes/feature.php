@@ -547,7 +547,7 @@ class ScryWpIndexesFeature extends PluginFeature {
             $query = new \WP_Query(array(
                 'post__in' => $post_ids,
                 'posts_per_page' => count($post_ids),
-                'post_status' => 'any',
+                'post_status' => 'publish',
                 'post_type' => $post_types, // Use array of all post types
                 'orderby' => 'post__in', // Preserve Meilisearch order
                 'no_found_rows' => true,
