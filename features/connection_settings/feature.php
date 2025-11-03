@@ -47,6 +47,17 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
     * Render the connection settings page
     */
     public function render_connection_settings_page() {
+        // Register this page with the admin page feature
+        $admin_page_feature = $this->get_feature('scrywp_admin_page');
+        if ($admin_page_feature && method_exists($admin_page_feature, 'register_admin_page')) {
+            $admin_page_feature->register_admin_page(
+                'scrywp-search-settings',
+                __('Connection Settings', 'scry-wp'),
+                'dashicons-admin-generic',
+                __('Configure the connection settings for ScryWP Search, including connection type and server credentials.', 'scry-wp')
+            );
+        }
+        
         //create a submenu page at 'scrywp-search-settings'
         add_submenu_page(
             'scrywp-search',   //parent slug

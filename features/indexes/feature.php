@@ -273,6 +273,17 @@ class ScryWpIndexesFeature extends PluginFeature {
 
     //add an admin page for the indexes
     public function add_admin_page() {
+        // Register this page with the admin page feature
+        $admin_page_feature = $this->get_feature('scrywp_admin_page');
+        if ($admin_page_feature && method_exists($admin_page_feature, 'register_admin_page')) {
+            $admin_page_feature->register_admin_page(
+                'scrywp-index-settings',
+                __('Index Settings', 'scry-wp'),
+                'dashicons-index-card',
+                __('Manage post type indexes, configure indexing settings, and view index status.', 'scry-wp')
+            );
+        }
+        
         add_submenu_page(
             'scrywp-search',
             'Index Settings',

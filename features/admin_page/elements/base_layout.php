@@ -11,27 +11,43 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// Get current page
-$current_page = $_GET['page'] ?? '';
+// Security check
+if (!current_user_can('manage_options')) {
+    wp_die(__('You do not have sufficient permissions to access this page.', 'scry-wp'));
+}
 
-// Define available tabs
-$tabs = array(
-    'scrywp-search' => array(
-        'label' => __('Search', 'scry-wp'),
-        'icon' => 'dashicons-search',
-        'url' => admin_url('admin.php?page=scrywp-search')
-    ),
-    'scrywp-search-settings' => array(
-        'label' => __('Connection Settings', 'scry-wp'),
-        'icon' => 'dashicons-admin-generic',
-        'url' => admin_url('admin.php?page=scrywp-search-settings')
-    ),
-    'scrywp-index-settings' => array(
-        'label' => __('Index Settings', 'scry-wp'),
-        'icon' => 'dashicons-index-card',
-        'url' => admin_url('admin.php?page=scrywp-index-settings')
-    ),
-);
+// Get current page
+$current_page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
+
+// Get registered pages from the admin page feature
+// $this refers to ScryWpAdminPageFeature instance in this context
+$tabs = array();
+
+if (method_exists($this, 'get_registered_pages')) {
+    $registered_pages = $this->get_registered_pages();
+    
+    // Sort pages to ensure main page is first
+    $main_page = isset($registered_pages['scrywp-search']) ? $registered_pages['scrywp-search'] : null;
+    unset($registered_pages['scrywp-search']);
+    
+    // Build tabs array
+    if ($main_page) {
+        $tabs['scrywp-search'] = array(
+            'label' => esc_html($main_page['label']),
+            'icon' => esc_attr($main_page['icon']),
+            'url' => esc_url($main_page['url']),
+        );
+    }
+    
+    // Add other pages
+    foreach ($registered_pages as $page_slug => $page_data) {
+        $tabs[$page_slug] = array(
+            'label' => esc_html($page_data['label']),
+            'icon' => esc_attr($page_data['icon']),
+            'url' => esc_url($page_data['url']),
+        );
+    }
+}
 ?>
 
 <div class="wrap">
