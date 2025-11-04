@@ -151,16 +151,19 @@ class ScryWpIndexesFeature extends PluginFeature {
 
             //now, we will check if an index exists, and if not, we will create it
             foreach ($index_names as $post_type => $index_name) {
+                $index = $client->index($index_name);
                 //determine if the index exists by trying to fetch it
                 try {
-                    $client->index($index_name)->fetchRawInfo();
-                    // Index exists, continue to next
-                    continue;
+                    $index->fetchRawInfo();
+                    // Index exists, ensure searchable attributes are configured
+                    $this->configure_index_searchable_attributes($index);
                 } catch (ApiException $e) {
                     // check that the code is 404
                     if ($e->getCode() === 404) {
                         // Index doesn't exist, create it
                         $client->createIndex($index_name, ['primaryKey' => 'ID']);
+                        // Configure searchable attributes for the new index
+                        $this->configure_index_searchable_attributes($index);
                     } else {
                         //rethrow the exception
                         throw $e;
@@ -348,9 +351,13 @@ class ScryWpIndexesFeature extends PluginFeature {
             $index = $client->index($index_name);
             $index->delete();
             
-            // Success - the index will be recreated automatically by ensure_post_indexes_exist
+            // Recreate the index immediately with proper configuration
+            $client->createIndex($index_name, ['primaryKey' => 'ID']);
+            $this->configure_index_searchable_attributes($index);
+            
+            // Success - the index has been recreated with proper configuration
             wp_send_json_success(array(
-                'message' => sprintf(__('Index "%s" has been wiped successfully. It will be recreated automatically.', 'scry-wp'), $index_name)
+                'message' => sprintf(__('Index "%s" has been wiped and recreated successfully with proper configuration.', 'scry-wp'), $index_name)
             ));
             
         } catch (\Meilisearch\Exceptions\CommunicationException $e) {
@@ -699,6 +706,44 @@ class ScryWpIndexesFeature extends PluginFeature {
             $index_names[$post_type] = $wpdb->prefix . $this->get_prefix() . get_option($this->prefixed('index_affix')) . $post_type;
         }   
         return $index_names;
+    }
+    
+    /**
+     * Get the list of searchable attributes for Meilisearch indexes
+     * Excludes: post_status, post_type, author_name, featured_image
+     */
+    private function get_searchable_attributes() {
+        return array(
+            'ID',
+            'post_title',
+            'post_content',
+            'post_excerpt',
+            'post_date',
+            'post_date_gmt',
+            'post_modified',
+            'post_modified_gmt',
+            'post_author',
+            'post_name',
+            'permalink',
+            'categories',
+            'tags',
+            'post_meta',
+        );
+    }
+    
+    /**
+     * Configure searchable attributes for a Meilisearch index
+     * Excludes post_status, post_type, author_name, and featured_image from search
+     */
+    private function configure_index_searchable_attributes($index) {
+        try {
+            $searchable_attributes = $this->get_searchable_attributes();
+            // Update searchable attributes - Meilisearch PHP SDK v1.x uses updateSearchableAttributes
+            $index->updateSearchableAttributes($searchable_attributes);
+        } catch (Exception $e) {
+            // Log error but don't fail the entire operation
+            error_log('ScryWP: Failed to configure searchable attributes: ' . $e->getMessage());
+        }
     }
     
 }
