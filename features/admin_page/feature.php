@@ -104,19 +104,33 @@ class ScryWpAdminPageFeature extends PluginFeature {
         // Only load assets on our admin pages
         // Main page hook: 'toplevel_page_scrywp-search'
         // Submenu page hook format: 'scrywp-search_page_{submenu-slug}'
-        $allowed_hooks = array('toplevel_page_scrywp-search');
+        // WordPress uses the full submenu slug in the hook
         
-        // Add submenu pages dynamically
-        $registered_pages = $this->get_registered_pages();
-        foreach ($registered_pages as $page_slug => $page_data) {
-            if ($page_slug !== 'scrywp-search') {
-                $allowed_hooks[] = 'scrywp-search_page_' . str_replace('scrywp-search-', '', $page_slug);
-            }
-        }
-        
-        if (!in_array($hook, $allowed_hooks, true)) {
+        // Check if this is the main page
+        if ($hook === 'toplevel_page_scrywp-search') {
+            $this->enqueue_assets();
             return;
         }
+        
+        // Check if this is any submenu page under scrywp-search
+        // WordPress formats submenu hooks as: {parent-slug}_page_{submenu-slug}
+        if (strpos($hook, 'scrywp-search_page_') === 0) {
+            // Verify this page is registered using the registration system
+            $registered_pages = $this->get_registered_pages();
+            $page_slug = str_replace('scrywp-search_page_', '', $hook);
+            
+            // Only enqueue if page is registered
+            if (isset($registered_pages[$page_slug])) {
+                $this->enqueue_assets();
+            }
+            return;
+        }
+    }
+    
+    /**
+     * Enqueue the actual CSS and JS assets
+     */
+    private function enqueue_assets() {
         
         wp_enqueue_style(
             $this->prefixed('admin-styles'),
