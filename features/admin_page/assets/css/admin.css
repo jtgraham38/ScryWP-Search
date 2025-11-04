@@ -424,9 +424,24 @@
 
 /* Responsive */
 @media screen and (max-width: 782px) {
+
+    /* Ensure toggle button is always visible on narrow screens */
+    .scrywp-task-drawer-toggle-wrapper {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    /* Drawer should be completely off-screen when closed */
     .scrywp-task-drawer {
         width: 100vw;
         max-width: 100vw;
+        right: -100vw;
+    }
+
+    /* Drawer fully visible when open */
+    .scrywp-task-drawer.open {
+        right: 0;
     }
 
     .scrywp-task-drawer-pagination {
