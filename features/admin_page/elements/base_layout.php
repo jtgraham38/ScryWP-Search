@@ -71,6 +71,10 @@ if (method_exists($this, 'get_registered_pages')) {
             </a>
         <?php endforeach; ?>
     </nav>
+
+    <!-- Task View -->
+    <?php require_once plugin_dir_path(__FILE__) . 'task_view.php'; ?>
+    
 </div>
 
 <div>

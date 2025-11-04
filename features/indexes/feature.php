@@ -155,8 +155,6 @@ class ScryWpIndexesFeature extends PluginFeature {
                 //determine if the index exists by trying to fetch it
                 try {
                     $index->fetchRawInfo();
-                    // Index exists, ensure searchable attributes are configured
-                    $this->configure_index_searchable_attributes($index);
                 } catch (ApiException $e) {
                     // check that the code is 404
                     if ($e->getCode() === 404) {

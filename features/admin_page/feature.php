@@ -8,6 +8,9 @@ if (!defined('ABSPATH')) {
 require_once plugin_dir_path(__FILE__) . '../../vendor/autoload.php';
 
 use jtgraham38\jgwordpresskit\PluginFeature;
+use Meilisearch\Client;
+use Meilisearch\Exceptions\CommunicationException;
+use Meilisearch\Exceptions\ApiException;
 
 class ScryWpAdminPageFeature extends PluginFeature {
     
@@ -28,6 +31,9 @@ class ScryWpAdminPageFeature extends PluginFeature {
         
         // Register admin page scripts and styles
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
+        
+        // Register AJAX handlers
+        add_action('wp_ajax_' . $this->prefixed('get_tasks'), array($this, 'ajax_get_tasks'));
     }
     
     /**
@@ -121,7 +127,7 @@ class ScryWpAdminPageFeature extends PluginFeature {
         wp_enqueue_script(
             $this->prefixed('admin-script'),
             plugin_dir_url(__FILE__) . 'assets/js/admin.js',
-            array('jquery'),
+            array(),
             '1.0.0',
             true
         );
@@ -134,5 +140,132 @@ class ScryWpAdminPageFeature extends PluginFeature {
      */
     public function render_admin_page($content) {
         require_once plugin_dir_path(__FILE__) . 'elements/base_layout.php';
+    }
+    
+    /**
+     * AJAX handler for fetching tasks from Meilisearch
+     */
+    public function ajax_get_tasks() {
+        // Verify nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], $this->prefixed('get_tasks'))) {
+            wp_send_json_error(array('message' => __('Security check failed', 'scry-wp')));
+            return;
+        }
+        
+        // Check user permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('Permission denied', 'scry-wp')));
+            return;
+        }
+        
+        // Get pagination parameters
+        $limit = isset($_POST['limit']) ? absint($_POST['limit']) : 20;
+        $from = isset($_POST['from']) ? absint($_POST['from']) : 0;
+        
+        // Validate limit (max 100 per Meilisearch API)
+        if ($limit > 100) {
+            $limit = 100;
+        }
+        
+        // Get connection settings
+        $meilisearch_url = get_option($this->prefixed('meilisearch_url'), '');
+        $meilisearch_admin_key = get_option($this->prefixed('meilisearch_admin_key'), '');
+        
+        if (empty($meilisearch_url) || empty($meilisearch_admin_key)) {
+            wp_send_json_error(array('message' => __('Connection settings are not configured', 'scry-wp')));
+            return;
+        }
+        
+        try {
+            // Build tasks API URL
+            $tasks_url = rtrim($meilisearch_url, '/') . '/tasks';
+            $query_params = array(
+                'limit' => $limit,
+            );
+            
+            // Add 'from' parameter if provided (Meilisearch uses task UID for 'from')
+            if ($from > 0) {
+                $query_params['from'] = $from;
+            }
+            
+            $tasks_url .= '?' . http_build_query($query_params);
+            
+            // Make HTTP request to Meilisearch tasks endpoint
+            $response = wp_remote_get($tasks_url, array(
+                'headers' => array(
+                    'Authorization' => 'Bearer ' . $meilisearch_admin_key,
+                    'Content-Type' => 'application/json',
+                ),
+                'timeout' => 30,
+            ));
+            
+            // Check for errors
+            if (is_wp_error($response)) {
+                throw new \Exception($response->get_error_message());
+            }
+            
+            $response_code = wp_remote_retrieve_response_code($response);
+            if ($response_code !== 200) {
+                $response_body = wp_remote_retrieve_body($response);
+                $error_data = json_decode($response_body, true);
+                $error_message = isset($error_data['message']) ? $error_data['message'] : __('HTTP error: ', 'scry-wp') . $response_code;
+                throw new \Exception($error_message);
+            }
+            
+            // Parse response
+            $response_body = wp_remote_retrieve_body($response);
+            $tasks_response = json_decode($response_body, true);
+            
+            if (!is_array($tasks_response)) {
+                throw new \Exception(__('Invalid response from Meilisearch server', 'scry-wp'));
+            }
+            
+            // Format response data
+            $tasks = isset($tasks_response['results']) ? $tasks_response['results'] : array();
+            $total = isset($tasks_response['total']) ? (int) $tasks_response['total'] : 0;
+            $from_value = isset($tasks_response['from']) ? (int) $tasks_response['from'] : $from;
+            $limit_value = isset($tasks_response['limit']) ? (int) $tasks_response['limit'] : $limit;
+            
+            // Format tasks for display
+            $formatted_tasks = array();
+            foreach ($tasks as $task) {
+                $formatted_tasks[] = array(
+                    'uid' => isset($task['uid']) ? (int) $task['uid'] : null,
+                    'indexUid' => isset($task['indexUid']) ? esc_html($task['indexUid']) : '',
+                    'status' => isset($task['status']) ? esc_html($task['status']) : '',
+                    'type' => isset($task['type']) ? esc_html($task['type']) : '',
+                    'details' => isset($task['details']) ? $task['details'] : array(),
+                    'error' => isset($task['error']) ? $task['error'] : null,
+                    'duration' => isset($task['duration']) ? esc_html($task['duration']) : null,
+                    'enqueuedAt' => isset($task['enqueuedAt']) ? esc_html($task['enqueuedAt']) : '',
+                    'startedAt' => isset($task['startedAt']) ? esc_html($task['startedAt']) : null,
+                    'finishedAt' => isset($task['finishedAt']) ? esc_html($task['finishedAt']) : null,
+                );
+            }
+            
+            wp_send_json_success(array(
+                'tasks' => $formatted_tasks,
+                'total' => $total,
+                'from' => $from_value,
+                'limit' => $limit_value,
+                'hasMore' => ($from_value + $limit_value) < $total,
+            ));
+            
+        } catch (CommunicationException $e) {
+            // Network/connection error
+            wp_send_json_error(array(
+                'message' => sprintf(__('Connection failed: %s', 'scry-wp'), $e->getMessage())
+            ));
+        } catch (ApiException $e) {
+            // API error
+            wp_send_json_error(array(
+                'message' => sprintf(__('API error: %s', 'scry-wp'), $e->getMessage())
+            ));
+        } catch (\Exception $e) {
+            // General error
+            wp_send_json_error(array(
+                'message' => sprintf(__('Error: %s', 'scry-wp'), $e->getMessage())
+            ));
+        }
     }
 }
