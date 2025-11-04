@@ -9,6 +9,8 @@ require_once plugin_dir_path(__FILE__) . '../../vendor/autoload.php';
 
 use jtgraham38\jgwordpresskit\PluginFeature;
 use Meilisearch\Client;
+use Meilisearch\Contracts\SearchQuery;
+use Meilisearch\Contracts\MultiSearchFederation;
 
 class ScryWpSearchFeature extends PluginFeature {
     
@@ -39,14 +41,19 @@ class ScryWpSearchFeature extends PluginFeature {
             return $posts; // Return null or existing posts to let WordPress handle it normally
         }
 
-        //first, get the index to search
-        $post_type = $query->get('post_type');
+        //get all the post types we are searching, that overlap with
+        //the indexed post types
+        $indexed_post_types = get_option($this->prefixed('post_types'));
+        $post_types_values = $query->get('post_type');
+        if (!is_array($post_types_values)) {
+            $post_types_values = array($post_types_values);
+        }
+        $post_types_to_search = array_intersect($post_types_values, $indexed_post_types);
+        
+        //now, get the index names for the post types we are searching
         $index_feature = $this->get_feature('scrywp_indexes');
         $index_names = $index_feature->get_index_names();
-        if (!isset($index_names[$post_type])) {
-            return $posts; // Return null or existing posts to let WordPress handle it normally
-        }
-        $index_name = $index_names[$post_type];
+        $index_names_to_search = array_intersect_key($index_names, array_flip($post_types_to_search));
 
         //get the search query, and all other query params that should be passed to the meilisearch search
         $query_params = array();
@@ -78,38 +85,59 @@ class ScryWpSearchFeature extends PluginFeature {
                 get_option($this->prefixed('meilisearch_search_key'))
             );
 
-            //search the index for the results
-            $index = $client->index($index_name);
-            $search_results = $index->search(
-                $query_params['q'],
-                $query_params
-            );
+            //create search queries
+            $search_queries = array();
+            foreach ($index_names_to_search as $index_name) {
+                $search_queries[] = (new SearchQuery())
+                    ->setIndexUid($index_name)
+                    ->setQuery($query_params['q']);
+            }
+
+            // Set pagination on MultiSearchFederation (handles federated search pagination)
+            $federation = new MultiSearchFederation();
+            if (isset($query_params['limit'])) {
+                $federation->setLimit($query_params['limit']);
+            }
+            if (isset($query_params['offset'])) {
+                $federation->setOffset($query_params['offset']);
+            }
+            
+            //use federated multi search to search the indexes
+            $search_results = $client->multiSearch($search_queries, $federation);
 
         } catch (Exception $e) {
             //fall back to the wordpress search
             return $posts;
         }
         
-        //get the results from the search
-        $results = $search_results->getHits();
+        //multiSearch returns an array with 'results' key containing array of search results
+        $all_results = array();
+        $total_hits = 0;
+        
+        if (isset($search_results['hits']) && is_array($search_results['hits'])) {
+            $all_results = $search_results['hits'];
+            $total_hits = $search_results['estimatedTotalHits'];
+        }
         
         //get the post ids from the search results
-        $post_ids = array_column($results, 'ID');
-        
+        $post_ids = array_column($all_results, 'ID');
+
         //fetch the actual WP_Post objects
         if (!empty($post_ids)) {
             // Get posts in the order returned by Meilisearch
+            // Use the actual limit from query params, or count if not set
+            $limit = isset($query_params['limit']) ? $query_params['limit'] : count($post_ids);
             $posts_array = get_posts(array(
                 'post__in' => $post_ids,
-                'posts_per_page' => count($post_ids),
+                'posts_per_page' => $limit,
                 'post_status' => 'publish',
-                'post_type' => $post_type,
+                'post_type' => $post_types_to_search,
                 'orderby' => 'post__in',
                 'order' => 'ASC',
             ));
             
             // Set the found posts count for pagination
-            $query->found_posts = $search_results->getEstimatedTotalHits();
+            $query->found_posts = $total_hits ?: count($post_ids);
             $query->max_num_pages = ceil($query->found_posts / ($posts_per_page ?: 10));
         
             
