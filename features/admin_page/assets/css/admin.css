@@ -8,28 +8,55 @@
 /* Task Drawer Toggle Button */
 .scrywp-task-drawer-toggle-wrapper {
     position: fixed;
-    top: 32px;
-    right: 20px;
+    bottom: 40px;
+    right: 0;
     z-index: 100000;
 }
 
 @media screen and (max-width: 782px) {
     .scrywp-task-drawer-toggle-wrapper {
-        top: 46px;
+        bottom: 20px;
+        right: 0;
     }
 }
 
 .scrywp-task-drawer-toggle {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    gap: 8px;
+    padding: 12px 20px 12px 16px;
+    background: #fff;
+    color: #2271b1;
+    border: 1px solid #2271b1;
+    border-radius: 6px 0 0 6px;
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.scrywp-task-drawer-toggle:hover {
+    background: #f0f0f1;
+    border-color: #135e96;
+    color: #135e96;
+    box-shadow: -2px 0 12px rgba(0, 0, 0, 0.25);
+    transform: translateY(-2px);
+}
+
+.scrywp-task-drawer-toggle:active {
+    transform: translateY(0);
+    box-shadow: -2px 0 6px rgba(0, 0, 0, 0.15);
 }
 
 .scrywp-task-drawer-toggle .dashicons {
     font-size: 18px;
     width: 18px;
     height: 18px;
+    color: #2271b1;
+    line-height: 1;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 /* Task Drawer Overlay */
@@ -134,8 +161,24 @@
 }
 
 .scrywp-task-drawer-error {
-    margin-bottom: 20px;
+    text-align: center;
+    padding: 40px 20px;
+    color: #842029;
+    background: #f8d7da;
+    border: 1px solid #f5c2c7;
+    border-radius: 4px;
+    margin: 20px;
 }
+
+.scrywp-task-drawer-error-message {
+    margin-top: 10px;
+    font-size: 13px;
+    font-family: monospace;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: #842029;
+}
+
 
 /* Tasks List */
 .scrywp-task-drawer-list {
@@ -257,7 +300,7 @@
 /* Pagination */
 .scrywp-task-drawer-pagination {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     padding: 16px 20px;
     margin-bottom: 20px;
@@ -267,10 +310,19 @@
     flex-wrap: wrap;
 }
 
+.scrywp-task-drawer-pagination-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+
 .scrywp-task-drawer-pagination button {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     padding: 6px 12px;
     border: 1px solid #2271b1;
     border-radius: 3px;
@@ -306,6 +358,8 @@
     width: 16px;
     height: 16px;
     line-height: 1;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 .scrywp-task-drawer-pagination-info {
@@ -313,8 +367,7 @@
     color: #646970;
     font-weight: 500;
     white-space: nowrap;
-    flex: 1;
-    min-width: 0;
+    text-align: center;
 }
 
 .scrywp-task-drawer-page-input-wrapper {
@@ -382,14 +435,12 @@
         align-items: stretch;
     }
 
-    .scrywp-task-drawer-pagination-info {
-        order: -1;
-        text-align: center;
+    .scrywp-task-drawer-pagination-center {
+        order: 0;
     }
 
-    .scrywp-task-drawer-page-input-wrapper {
-        order: 0;
-        justify-content: center;
+    .scrywp-task-drawer-pagination-info {
+        order: 1;
     }
 
     .scrywp-task-drawer-pagination button {

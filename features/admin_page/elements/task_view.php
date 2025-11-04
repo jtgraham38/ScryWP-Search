@@ -26,7 +26,7 @@ $admin_page_feature = $this;
 <!-- Task Drawer Toggle Button -->
 <div class="scrywp-task-drawer-toggle-wrapper">
     <button type="button" class="button scrywp-task-drawer-toggle" id="scrywp-task-drawer-toggle">
-        <span class="dashicons dashicons-list-view" style="margin-top: 3px;"></span>
+        <span class="dashicons dashicons-arrow-left-alt"></span>
         <?php esc_html_e('View Tasks', 'scry-wp'); ?>
     </button>
 </div>
@@ -55,16 +55,15 @@ $admin_page_feature = $this;
             <p><?php esc_html_e('Loading tasks...', 'scry-wp'); ?></p>
         </div>
 
-        <!-- Error State -->
-        <div class="scrywp-task-drawer-error" id="scrywp-task-drawer-error" style="display: none;">
-            <div class="notice notice-error">
-                <p id="scrywp-task-drawer-error-message"></p>
-            </div>
-        </div>
-
         <!-- Empty State -->
         <div class="scrywp-task-drawer-empty" id="scrywp-task-drawer-empty" style="display: none;">
             <p><?php esc_html_e('No tasks found.', 'scry-wp'); ?></p>
+        </div>
+
+        <!-- Error State -->
+        <div class="scrywp-task-drawer-error" id="scrywp-task-drawer-error" style="display: none;">
+            <p><?php esc_html_e('Error loading tasks.', 'scry-wp'); ?></p>
+            <p class="scrywp-task-drawer-error-message" id="scrywp-task-drawer-error-message"></p>
         </div>
 
         <!-- Pagination -->
@@ -73,18 +72,20 @@ $admin_page_feature = $this;
                 <span class="dashicons dashicons-arrow-left-alt"></span>
                 <?php esc_html_e('Previous', 'scry-wp'); ?>
             </button>
-            <span class="scrywp-task-drawer-pagination-info" id="scrywp-task-drawer-pagination-info"></span>
-            <div class="scrywp-task-drawer-page-input-wrapper">
-                <label for="scrywp-task-drawer-page-input" class="scrywp-task-drawer-page-label">
-                    <?php esc_html_e('Page:', 'scry-wp'); ?>
-                </label>
-                <input type="number" 
-                       id="scrywp-task-drawer-page-input" 
-                       class="scrywp-task-drawer-page-input" 
-                       min="1" 
-                       value="1"
-                       aria-label="<?php esc_attr_e('Page number', 'scry-wp'); ?>">
-                <span class="scrywp-task-drawer-total-pages" id="scrywp-task-drawer-total-pages"></span>
+            <div class="scrywp-task-drawer-pagination-center">
+                <div class="scrywp-task-drawer-page-input-wrapper">
+                    <label for="scrywp-task-drawer-page-input" class="scrywp-task-drawer-page-label">
+                        <?php esc_html_e('Page:', 'scry-wp'); ?>
+                    </label>
+                    <input type="number" 
+                           id="scrywp-task-drawer-page-input" 
+                           class="scrywp-task-drawer-page-input" 
+                           min="1" 
+                           value="1"
+                           aria-label="<?php esc_attr_e('Page number', 'scry-wp'); ?>">
+                    <span class="scrywp-task-drawer-total-pages" id="scrywp-task-drawer-total-pages"></span>
+                </div>
+                <span class="scrywp-task-drawer-pagination-info" id="scrywp-task-drawer-pagination-info"></span>
             </div>
             <button type="button" class="button scrywp-task-drawer-next" id="scrywp-task-drawer-next">
                 <?php esc_html_e('Next', 'scry-wp'); ?>
@@ -94,6 +95,7 @@ $admin_page_feature = $this;
 
         <!-- Tasks List -->
         <div class="scrywp-task-drawer-list" id="scrywp-task-drawer-list"></div>
+
     </div>
 </div>
 
@@ -108,7 +110,6 @@ wp_localize_script(
         'nonce' => wp_create_nonce($admin_page_feature->prefixed('get_tasks')),
         'i18n' => array(
             'loading' => __('Loading tasks...', 'scry-wp'),
-            'error' => __('An error occurred while loading tasks.', 'scry-wp'),
             'noTasks' => __('No tasks found.', 'scry-wp'),
             'tasksInfo' => __('Showing %1$d-%2$d of %3$d tasks', 'scry-wp'),
         ),

@@ -26,9 +26,9 @@
     var drawerOverlay = document.getElementById('scrywp-task-drawer-overlay');
     var drawerClose = document.getElementById('scrywp-task-drawer-close');
     var drawerLoading = document.getElementById('scrywp-task-drawer-loading');
+    var drawerEmpty = document.getElementById('scrywp-task-drawer-empty');
     var drawerError = document.getElementById('scrywp-task-drawer-error');
     var drawerErrorMessage = document.getElementById('scrywp-task-drawer-error-message');
-    var drawerEmpty = document.getElementById('scrywp-task-drawer-empty');
     var drawerList = document.getElementById('scrywp-task-drawer-list');
     var drawerPagination = document.getElementById('scrywp-task-drawer-pagination');
     var drawerPrev = document.getElementById('scrywp-task-drawer-prev');
@@ -193,6 +193,20 @@
     }
 
     /**
+     * Show error message
+     */
+    function showError(message) {
+        if (drawerError && drawerErrorMessage) {
+            drawerErrorMessage.textContent = message || 'An error occurred while loading tasks.';
+            drawerError.style.display = 'block';
+            drawerLoading.style.display = 'none';
+            drawerEmpty.style.display = 'none';
+            drawerList.style.display = 'none';
+            drawerPagination.style.display = 'none';
+        }
+    }
+
+    /**
      * Render tasks list
      */
     function renderTasks(tasks) {
@@ -200,10 +214,12 @@
             drawerList.style.display = 'none';
             drawerEmpty.style.display = 'block';
             drawerPagination.style.display = 'none';
+            drawerError.style.display = 'none';
             return;
         }
 
         drawerEmpty.style.display = 'none';
+        drawerError.style.display = 'none';
         drawerList.style.display = 'block';
 
         var html = '';
@@ -225,23 +241,26 @@
 
         drawerPagination.style.display = 'flex';
 
-        var from = data.from || 0;
         var limit = data.limit || 20;
         var total = data.total || 0;
-        var end = Math.min(from + limit, total);
-        var start = from + 1;
 
-        // Calculate current page (1-based)
-        var currentPage = Math.floor(from / limit) + 1;
-        var totalPages = Math.ceil(total / limit);
+        // Get current page from server response or use tracked state
+        var estimatedPage = data.currentPage || taskDrawerState.currentPage || 1;
+        var totalPages = data.totalPages || Math.ceil(total / limit);
+
+        // Calculate display range
+        var returnedTasks = data.tasks || [];
+        var tasksCount = returnedTasks.length;
+        var start = (estimatedPage - 1) * limit + 1;
+        var end = Math.min(start + tasksCount - 1, total);
 
         // Update pagination info
         var infoText = 'Showing ' + start + '-' + end + ' of ' + total + ' tasks';
         drawerPaginationInfo.textContent = infoText;
 
-        // Update page input
-        if (drawerPageInput) {
-            drawerPageInput.value = currentPage;
+        // Update page input - only update if it's not currently being edited
+        if (drawerPageInput && document.activeElement !== drawerPageInput) {
+            drawerPageInput.value = estimatedPage;
             drawerPageInput.max = totalPages;
         }
 
@@ -250,15 +269,15 @@
             drawerTotalPages.textContent = 'of ' + totalPages;
         }
 
-        // Update prev/next buttons
-        drawerPrev.disabled = from === 0;
-        drawerNext.disabled = !data.hasMore;
+        // Update prev/next buttons based on page numbers
+        drawerPrev.disabled = estimatedPage <= 1;
+        drawerNext.disabled = estimatedPage >= totalPages;
 
         // Update state
-        taskDrawerState.from = from;
+        taskDrawerState.from = data.from || 0;
         taskDrawerState.total = total;
         taskDrawerState.hasMore = data.hasMore;
-        taskDrawerState.currentPage = currentPage;
+        taskDrawerState.currentPage = estimatedPage;
         taskDrawerState.totalPages = totalPages;
     }
 
@@ -275,14 +294,19 @@
             pageNumber = totalPages;
         }
 
+        // Store the page number we're navigating to
+        taskDrawerState.currentPage = pageNumber;
+
+        // Calculate from value (offset for Meilisearch - but Meilisearch uses task UIDs)
+        // For now, we'll use offset-based calculation and let Meilisearch handle it
         var from = (pageNumber - 1) * taskDrawerState.limit;
-        loadTasks(from);
+        loadTasks(from, pageNumber);
     }
 
     /**
      * Load tasks from server
      */
-    function loadTasks(from) {
+    function loadTasks(from, pageNumber) {
         if (taskDrawerState.loading) {
             return;
         }
@@ -290,10 +314,15 @@
         taskDrawerState.loading = true;
         taskDrawerState.from = from;
 
+        // Store the page number we're loading
+        if (pageNumber) {
+            taskDrawerState.currentPage = pageNumber;
+        }
+
         // Show loading state
         drawerLoading.style.display = 'block';
-        drawerError.style.display = 'none';
         drawerEmpty.style.display = 'none';
+        drawerError.style.display = 'none';
         drawerList.style.display = 'none';
         drawerPagination.style.display = 'none';
 
@@ -303,6 +332,7 @@
         formData.append('nonce', scrywpTasks.nonce);
         formData.append('limit', taskDrawerState.limit);
         formData.append('from', from);
+        formData.append('page', pageNumber || taskDrawerState.currentPage || 1);
 
         fetch(scrywpTasks.ajaxUrl, {
             method: 'POST',
@@ -317,31 +347,25 @@
                 drawerLoading.style.display = 'none';
 
                 if (response.success && response.data) {
+                    drawerError.style.display = 'none';
                     renderTasks(response.data.tasks);
                     updatePagination(response.data);
                 } else {
-                    showError(response.data && response.data.message
-                        ? response.data.message
-                        : scrywpTasks.i18n.error);
+                    var errorMessage = 'Unknown error';
+                    if (response.data && response.data.message) {
+                        errorMessage = response.data.message;
+                    }
+                    showError(errorMessage);
+                    console.error('Failed to load tasks:', errorMessage);
                 }
             })
             .catch(function (error) {
                 taskDrawerState.loading = false;
                 drawerLoading.style.display = 'none';
-
-                var errorMessage = scrywpTasks.i18n.error;
+                var errorMessage = error.message || 'Network error occurred while loading tasks.';
                 showError(errorMessage);
+                console.error('Error loading tasks:', error);
             });
-    }
-
-    /**
-     * Show error message
-     */
-    function showError(message) {
-        drawerErrorMessage.textContent = message || scrywpTasks.i18n.error;
-        drawerError.style.display = 'block';
-        drawerList.style.display = 'none';
-        drawerPagination.style.display = 'none';
     }
 
     /**
@@ -405,9 +429,9 @@
         if (drawerPrev) {
             drawerPrev.addEventListener('click', function (e) {
                 e.preventDefault();
-                if (!drawerPrev.disabled && taskDrawerState.from >= taskDrawerState.limit) {
-                    var newFrom = Math.max(0, taskDrawerState.from - taskDrawerState.limit);
-                    loadTasks(newFrom);
+                if (taskDrawerState.currentPage > 1) {
+                    var newPage = taskDrawerState.currentPage - 1;
+                    goToPage(newPage);
                 }
             });
         }
@@ -415,9 +439,9 @@
         if (drawerNext) {
             drawerNext.addEventListener('click', function (e) {
                 e.preventDefault();
-                if (!drawerNext.disabled && taskDrawerState.hasMore) {
-                    var newFrom = taskDrawerState.from + taskDrawerState.limit;
-                    loadTasks(newFrom);
+                if (taskDrawerState.currentPage < taskDrawerState.totalPages) {
+                    var newPage = taskDrawerState.currentPage + 1;
+                    goToPage(newPage);
                 }
             });
         }
@@ -429,18 +453,29 @@
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     var pageNumber = parseInt(drawerPageInput.value, 10);
+                    if (isNaN(pageNumber) || pageNumber < 1) {
+                        drawerPageInput.value = taskDrawerState.currentPage || 1;
+                        return;
+                    }
                     goToPage(pageNumber);
+                    drawerPageInput.blur(); // Remove focus after navigation
                 }
             });
 
             // Navigate on blur (when user clicks away)
             drawerPageInput.addEventListener('blur', function (e) {
                 var pageNumber = parseInt(drawerPageInput.value, 10);
-                if (pageNumber && pageNumber !== taskDrawerState.currentPage) {
+                if (isNaN(pageNumber) || pageNumber < 1) {
+                    drawerPageInput.value = taskDrawerState.currentPage || 1;
+                    return;
+                }
+                var totalPages = taskDrawerState.totalPages || 1;
+                if (pageNumber > totalPages) {
+                    pageNumber = totalPages;
+                    drawerPageInput.value = pageNumber;
+                }
+                if (pageNumber !== taskDrawerState.currentPage) {
                     goToPage(pageNumber);
-                } else {
-                    // Reset to current page if invalid
-                    drawerPageInput.value = taskDrawerState.currentPage;
                 }
             });
         }

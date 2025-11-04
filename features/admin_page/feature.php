@@ -11,6 +11,7 @@ use jtgraham38\jgwordpresskit\PluginFeature;
 use Meilisearch\Client;
 use Meilisearch\Exceptions\CommunicationException;
 use Meilisearch\Exceptions\ApiException;
+use Meilisearch\Contracts\TasksQuery;
 
 class ScryWpAdminPageFeature extends PluginFeature {
     
@@ -160,7 +161,7 @@ class ScryWpAdminPageFeature extends PluginFeature {
         
         // Get pagination parameters
         $limit = isset($_POST['limit']) ? absint($_POST['limit']) : 20;
-        $from = isset($_POST['from']) ? absint($_POST['from']) : 0;
+        $page = isset($_POST['page']) ? absint($_POST['page']) : 1;
         
         // Validate limit (max 100 per Meilisearch API)
         if ($limit > 100) {
@@ -177,54 +178,62 @@ class ScryWpAdminPageFeature extends PluginFeature {
         }
         
         try {
-            // Build tasks API URL
-            $tasks_url = rtrim($meilisearch_url, '/') . '/tasks';
-            $query_params = array(
-                'limit' => $limit,
-            );
+            // Create Meilisearch client
+            $client = new Client($meilisearch_url, $meilisearch_admin_key);
             
-            // Add 'from' parameter if provided (Meilisearch uses task UID for 'from')
-            if ($from > 0) {
-                $query_params['from'] = $from;
+            // First, get total count to calculate reverse pagination
+            $count_query = (new TasksQuery())->setLimit(1);
+            $count_response = $client->getTasks($count_query);
+            
+            // Handle response - could be array or object with getTotal() method
+            if (is_array($count_response)) {
+                $total = isset($count_response['total']) ? (int) $count_response['total'] : 0;
+            } else {
+                $total = method_exists($count_response, 'getTotal') ? $count_response->getTotal() : 0;
             }
             
-            $tasks_url .= '?' . http_build_query($query_params);
+            // Calculate pagination
+            $current_page = $page > 0 ? $page : 1;
+            $total_pages = $total > 0 ? ceil($total / $limit) : 1;
             
-            // Make HTTP request to Meilisearch tasks endpoint
-            $response = wp_remote_get($tasks_url, array(
-                'headers' => array(
-                    'Authorization' => 'Bearer ' . $meilisearch_admin_key,
-                    'Content-Type' => 'application/json',
-                ),
-                'timeout' => 30,
-            ));
+            // Calculate reverse offset for pagination
+            // Meilisearch orders tasks oldest first by default (lowest UID to highest UID)
+            // So: offset 0 = oldest tasks (UID 0), offset (total - limit) = newest tasks (highest UID)
+            // To get newest on page 1 and oldest on last page, we reverse the offset:
+            // - Page 1: offset = (total_pages - 1) * limit = newest tasks (highest UIDs)
+            // - Page N: offset = (total_pages - N) * limit = older tasks
+            // - Last page: offset = 0 = oldest tasks (UID 0)
+            // Example: If total = 1913, limit = 20, total_pages = 96:
+            // - Page 1: offset = (96 - 1) * 20 = 1900 = newest tasks (UIDs 1912-1893)
+            // - Page 96: offset = (96 - 96) * 20 = 0 = oldest tasks (UIDs 0-19)
+            $offset = ($total_pages - $current_page) * $limit;
             
-            // Check for errors
-            if (is_wp_error($response)) {
-                throw new \Exception($response->get_error_message());
+            // Ensure offset doesn't exceed total - limit (maximum valid offset)
+            $max_offset = max(0, $total - $limit);
+            if ($offset > $max_offset) {
+                $offset = $max_offset;
             }
             
-            $response_code = wp_remote_retrieve_response_code($response);
-            if ($response_code !== 200) {
-                $response_body = wp_remote_retrieve_body($response);
-                $error_data = json_decode($response_body, true);
-                $error_message = isset($error_data['message']) ? $error_data['message'] : __('HTTP error: ', 'scry-wp') . $response_code;
-                throw new \Exception($error_message);
+            // Ensure offset is at least 0 (since UIDs start at 0)
+            if ($offset < 0) {
+                $offset = 0;
             }
             
-            // Parse response
-            $response_body = wp_remote_retrieve_body($response);
-            $tasks_response = json_decode($response_body, true);
+            // Get tasks using Meilisearch PHP client with TasksQuery
+            // Meilisearch returns tasks ordered newest first by default
+            // So page 1 will show newest tasks (highest UIDs) and last page will show oldest (lowest UIDs)
+            $tasks_query = (new TasksQuery())
+                ->setLimit($limit)
+                ->setFrom($offset);
             
-            if (!is_array($tasks_response)) {
-                throw new \Exception(__('Invalid response from Meilisearch server', 'scry-wp'));
+            $tasks_response = $client->getTasks($tasks_query);
+            
+            // Format response data - handle both array and object responses
+            if (is_array($tasks_response)) {
+                $tasks = isset($tasks_response['results']) ? $tasks_response['results'] : array();
+            } else {
+                $tasks = method_exists($tasks_response, 'getResults') ? $tasks_response->getResults() : array();
             }
-            
-            // Format response data
-            $tasks = isset($tasks_response['results']) ? $tasks_response['results'] : array();
-            $total = isset($tasks_response['total']) ? (int) $tasks_response['total'] : 0;
-            $from_value = isset($tasks_response['from']) ? (int) $tasks_response['from'] : $from;
-            $limit_value = isset($tasks_response['limit']) ? (int) $tasks_response['limit'] : $limit;
             
             // Format tasks for display
             $formatted_tasks = array();
@@ -246,9 +255,11 @@ class ScryWpAdminPageFeature extends PluginFeature {
             wp_send_json_success(array(
                 'tasks' => $formatted_tasks,
                 'total' => $total,
-                'from' => $from_value,
-                'limit' => $limit_value,
-                'hasMore' => ($from_value + $limit_value) < $total,
+                'from' => $offset,
+                'limit' => $limit,
+                'currentPage' => $current_page,
+                'totalPages' => $total_pages,
+                'hasMore' => $current_page < $total_pages,
             ));
             
         } catch (CommunicationException $e) {
