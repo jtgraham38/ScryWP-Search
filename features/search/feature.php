@@ -45,10 +45,20 @@ class ScryWpSearchFeature extends PluginFeature {
         //the indexed post types
         $indexed_post_types = get_option($this->prefixed('post_types'));
         $post_types_values = $query->get('post_type');
+        if (empty($post_types_values)) {
+            return $posts;
+        }
         if (!is_array($post_types_values)) {
             $post_types_values = array($post_types_values);
         }
         $post_types_to_search = array_intersect($post_types_values, $indexed_post_types);
+        //if there are no post types to search, search all indexed post types
+        if (empty($post_types_to_search)) {
+            if (empty($indexed_post_types)) {
+                return $posts;
+            }
+            $post_types_to_search = $indexed_post_types;
+        }
         
         //now, get the index names for the post types we are searching
         $index_feature = $this->get_feature('scrywp_indexes');
