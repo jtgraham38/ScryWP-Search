@@ -41,13 +41,13 @@ require_once plugin_dir_path(__FILE__) . '/features/search/feature.php';
 $search_feature = new ScryWpSearchFeature();
 $plugin->register_feature("scrywp_search", $search_feature);
 
-require_once plugin_dir_path(__FILE__) . '/features/connection_settings/feature.php';
-$connection_settings_feature = new ScryWpConnectionSettingsFeature();
-$plugin->register_feature("scrywp_connection_settings", $connection_settings_feature);
-
 require_once plugin_dir_path(__FILE__) . '/features/indexes/feature.php';
 $indexes_feature = new ScryWpIndexesFeature();
 $plugin->register_feature("scrywp_indexes", $indexes_feature);
+
+require_once plugin_dir_path(__FILE__) . '/features/connection_settings/feature.php';
+$connection_settings_feature = new ScryWpConnectionSettingsFeature();
+$plugin->register_feature("scrywp_connection_settings", $connection_settings_feature);
 
 //init the plugin
 $plugin->init();

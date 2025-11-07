@@ -127,6 +127,78 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
                                 >
                                     <?php _e('Search Index', 'scry-wp'); ?>
                                 </button>
+                                <button 
+                                    type="button" 
+                                    class="button button-secondary scrywp-configure-index-button" 
+                                    data-index-name="<?php echo esc_attr($index['index_name']); ?>" 
+                                    data-index-display="<?php echo esc_attr($index['name']); ?>"
+                                    onclick="document.getElementById('<?php echo esc_attr($index['index_name']); ?>_settings_dialog').showModal()"
+                                >
+                                    <?php _e('Configure Index', 'scry-wp'); ?>
+                                </button>
+
+                                <dialog id="<?php echo esc_attr($index['index_name']); ?>_settings_dialog" class="scrywp-index-dialog scrywp-index-settings-dialog">
+                                    <div class="scrywp-index-dialog-header">
+                                        <h3><?php printf(__('Configure Index: %s', 'scry-wp'), esc_html($index['name'])); ?></h3>
+                                        <button type="button" class="scrywp-index-dialog-close-button" onclick="document.getElementById('<?php echo esc_attr($index['index_name']); ?>_settings_dialog').close()" aria-label="<?php esc_attr_e('Close', 'scry-wp'); ?>">
+                                            ×
+                                        </button>
+                                    </div>
+                                
+                                    <div class="scrywp-index-settings-content">
+                                        <div class="scrywp-index-settings-loading">
+                                            <p><?php _e('Loading settings...', 'scry-wp'); ?></p>
+                                        </div>
+                                        
+                                        <div class="scrywp-index-settings-loaded" style="display: none;">
+                                            <div class="scrywp-index-settings-section">
+                                                <div class="scrywp-index-settings-section-header">
+                                                    <h4><?php _e('Ranking Rules', 'scry-wp'); ?></h4>
+                                                    <a href="https://www.meilisearch.com/docs/learn/relevancy/ranking_rules" target="_blank" class="scrywp-index-settings-help-link" title="<?php esc_attr_e('Learn more about ranking rules', 'scry-wp'); ?>">
+                                                        <?php _e('Learn more', 'scry-wp'); ?>
+                                                        <span class="dashicons dashicons-external" style="font-size: 14px; width: 14px; height: 14px; vertical-align: middle; margin-left: 4px;"></span>
+                                                    </a>
+                                                </div>
+                                                <p class="description"><?php _e('Drag and drop to reorder the ranking rules. Rules are applied in order from top to bottom.', 'scry-wp'); ?></p>
+                                                <ul class="scrywp-ranking-rules-list" data-index-name="<?php echo esc_attr($index['index_name']); ?>">
+                                                    <!-- Ranking rules will be populated via JavaScript -->
+                                                </ul>
+                                            </div>
+                                            
+                                            <div class="scrywp-index-settings-section">
+                                                <div class="scrywp-index-settings-section-header">
+                                                    <h4><?php _e('Searchable Fields', 'scry-wp'); ?></h4>
+                                                    <a href="https://www.meilisearch.com/docs/learn/relevancy/displayed_searchable_attributes#the-searchableattributes-list" target="_blank" class="scrywp-index-settings-help-link" title="<?php esc_attr_e('Learn more about searchable attributes', 'scry-wp'); ?>">
+                                                        <?php _e('Learn more', 'scry-wp'); ?>
+                                                        <span class="dashicons dashicons-external" style="font-size: 14px; width: 14px; height: 14px; vertical-align: middle; margin-left: 4px;"></span>
+                                                    </a>
+                                                </div>
+                                                <p class="description"><?php _e('Select which fields should be searchable. The order determines relevancy.', 'scry-wp'); ?></p>
+                                                <div class="scrywp-searchable-fields-tree" data-index-name="<?php echo esc_attr($index['index_name']); ?>">
+                                                    <!-- Searchable fields will be populated via JavaScript -->
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="scrywp-index-settings-actions">
+                                                <div class="scrywp-index-settings-save-error" style="display: none;">
+                                                    <p class="scrywp-index-settings-save-error-message"></p>
+                                                </div>
+                                                <div class="scrywp-index-settings-actions-buttons">
+                                                    <button type="button" class="button button-primary scrywp-save-index-settings-button" data-index-name="<?php echo esc_attr($index['index_name']); ?>">
+                                                        <?php _e('Save Settings', 'scry-wp'); ?>
+                                                    </button>
+                                                    <button type="button" class="button button-secondary scrywp-cancel-index-settings-button" onclick="document.getElementById('<?php echo esc_attr($index['index_name']); ?>_settings_dialog').close()">
+                                                        <?php _e('Cancel', 'scry-wp'); ?>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="scrywp-index-settings-error" style="display: none;">
+                                            <p class="scrywp-index-settings-error-message"></p>
+                                        </div>
+                                    </div>
+                                </dialog>
 
                                 <dialog id="<?php echo esc_attr($index['index_name']); ?>_search_dialog" class="scrywp-index-dialog">
                                     <div class="scrywp-index-dialog-header">
@@ -583,6 +655,255 @@ details[open] .scrywp-index-dialog-result-json-toggle::before {
     color: #646970;
     font-style: italic;
 }
+
+/* Index Settings Dialog Styles */
+.scrywp-index-settings-dialog {
+    max-width: 900px;
+}
+
+.scrywp-index-settings-content {
+    padding: 20px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.scrywp-index-settings-loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: #646970;
+}
+
+.scrywp-index-settings-error {
+    padding: 20px;
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    color: #721c24;
+}
+
+.scrywp-index-settings-error-message {
+    margin: 0;
+}
+
+.scrywp-index-settings-section {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.scrywp-index-settings-section:last-of-type {
+    border-bottom: none;
+}
+
+.scrywp-index-settings-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.scrywp-index-settings-section h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #23282d;
+}
+
+.scrywp-index-settings-help-link {
+    font-size: 13px;
+    color: #2271b1;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    transition: color 0.2s ease;
+}
+
+.scrywp-index-settings-help-link:hover {
+    color: #135e96;
+    text-decoration: underline;
+}
+
+.scrywp-index-settings-section .description {
+    margin: 0 0 15px 0;
+    color: #646970;
+    font-size: 13px;
+    font-style: italic;
+}
+
+/* Ranking Rules Styles */
+.scrywp-ranking-rules-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    background: #fff;
+}
+
+.scrywp-ranking-rule-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    border-bottom: 1px solid #e5e5e5;
+    cursor: move;
+    background: #fff;
+    transition: background 0.2s ease;
+}
+
+.scrywp-ranking-rule-item:last-child {
+    border-bottom: none;
+}
+
+.scrywp-ranking-rule-item:hover {
+    background: #f9f9f9;
+}
+
+.scrywp-ranking-rule-item.scrywp-ranking-rule-drag-over {
+    background: #e7f5ff;
+    border-top: 2px solid #2271b1;
+}
+
+.scrywp-ranking-rule-handle {
+    margin-right: 12px;
+    color: #8c8f94;
+    font-size: 18px;
+    cursor: grab;
+    user-select: none;
+}
+
+.scrywp-ranking-rule-handle:active {
+    cursor: grabbing;
+}
+
+.scrywp-ranking-rule-label {
+    flex: 1;
+    font-size: 14px;
+    color: #23282d;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+/* Searchable Fields Styles */
+.scrywp-searchable-fields-tree {
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    background: #fff;
+    padding: 10px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.scrywp-searchable-field-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 10px;
+    margin: 2px 0;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background 0.2s ease;
+}
+
+.scrywp-searchable-field-item:hover {
+    background: #f9f9f9;
+}
+
+.scrywp-searchable-field-checkbox {
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+.scrywp-searchable-field-item span {
+    font-size: 14px;
+    color: #23282d;
+    user-select: none;
+}
+
+.scrywp-searchable-field-group {
+    margin: 5px 0;
+}
+
+.scrywp-searchable-field-group-label {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    font-weight: 600;
+    background: #f9f9f9;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.scrywp-searchable-field-group-label:hover {
+    background: #f0f0f0;
+}
+
+.scrywp-searchable-field-group-label span {
+    flex: 1;
+    font-size: 14px;
+    color: #23282d;
+}
+
+.scrywp-searchable-field-expand {
+    background: none;
+    border: none;
+    color: #646970;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 0 8px;
+    margin-left: 8px;
+    transition: color 0.2s ease;
+}
+
+.scrywp-searchable-field-expand:hover {
+    color: #2271b1;
+}
+
+.scrywp-searchable-field-children {
+    margin-left: 30px;
+    margin-top: 5px;
+    padding-left: 10px;
+    border-left: 2px solid #e5e5e5;
+}
+
+.scrywp-searchable-field-children .scrywp-searchable-field-item {
+    padding-left: 5px;
+}
+
+/* Settings Actions */
+.scrywp-index-settings-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e5e5e5;
+}
+
+.scrywp-index-settings-actions-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.scrywp-save-index-settings-button {
+    min-width: 120px;
+}
+
+.scrywp-cancel-index-settings-button {
+    min-width: 120px;
+}
+
+.scrywp-index-settings-save-error {
+    padding: 10px 12px;
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    color: #721c24;
+}
+
+.scrywp-index-settings-save-error-message {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+}
 </style>
 
 <script>
@@ -864,6 +1185,411 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             performSearch();
         });
+    });
+    
+    // Handle index settings dialog
+    var configureButtons = document.querySelectorAll('.scrywp-configure-index-button');
+    
+    configureButtons.forEach(function(configureButton) {
+        var indexName = configureButton.getAttribute('data-index-name');
+        if (!indexName) return;
+        
+        var dialog = document.getElementById(indexName + '_settings_dialog');
+        if (!dialog) return;
+        
+        var rulesList = dialog.querySelector('.scrywp-ranking-rules-list');
+        var fieldsTree = dialog.querySelector('.scrywp-searchable-fields-tree');
+        var loadingDiv = dialog.querySelector('.scrywp-index-settings-loading');
+        var loadedDiv = dialog.querySelector('.scrywp-index-settings-loaded');
+        var errorDiv = dialog.querySelector('.scrywp-index-settings-error');
+        var saveButton = dialog.querySelector('.scrywp-save-index-settings-button');
+        var saveErrorDiv = dialog.querySelector('.scrywp-index-settings-save-error');
+        var saveErrorMessage = dialog.querySelector('.scrywp-index-settings-save-error-message');
+        
+        var currentRankingRules = [];
+        var currentSearchableAttributes = [];
+        var availableFields = {};
+        
+        // Store original button text
+        var originalSaveButtonText = saveButton ? saveButton.textContent : '';
+        
+        // Reset button state function
+        function resetSaveButton() {
+            if (saveButton) {
+                saveButton.disabled = false;
+                saveButton.textContent = originalSaveButtonText || '<?php echo esc_js(__('Save Settings', 'scry-wp')); ?>';
+            }
+            // Hide save error message
+            if (saveErrorDiv) {
+                saveErrorDiv.style.display = 'none';
+            }
+        }
+        
+        // Show save error function
+        function showSaveError(message) {
+            console.log('showSaveError called with:', message);
+            console.log('saveErrorDiv:', saveErrorDiv);
+            console.log('saveErrorMessage:', saveErrorMessage);
+            if (saveErrorDiv && saveErrorMessage) {
+                saveErrorMessage.textContent = message;
+                saveErrorDiv.style.display = 'block';
+                console.log('Error div should now be visible');
+            } else {
+                console.error('Error: saveErrorDiv or saveErrorMessage not found!');
+            }
+        }
+        
+        // Load settings when dialog opens
+        configureButton.addEventListener('click', function() {
+            // Reset button state when dialog opens
+            resetSaveButton();
+            
+            // Small delay to ensure dialog is open
+            setTimeout(function() {
+                loadIndexSettings(indexName);
+            }, 100);
+        });
+        
+        // Function to load index settings
+        function loadIndexSettings(indexName) {
+            loadingDiv.style.display = 'block';
+            loadedDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+            
+            // Reset button state when loading
+            resetSaveButton();
+            
+            var formData = new FormData();
+            formData.append('action', '<?php echo esc_js($this->prefixed('get_index_settings')); ?>');
+            formData.append('nonce', '<?php echo esc_js(wp_create_nonce($this->prefixed('get_index_settings'))); ?>');
+            formData.append('index_name', indexName);
+            
+            fetch(ajaxurl, {
+                method: 'POST',
+                body: formData
+            })
+            .then(function(response) {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success) {
+                    currentRankingRules = data.data.ranking_rules || [];
+                    currentSearchableAttributes = data.data.searchable_attributes || [];
+                    availableFields = data.data.available_fields || {};
+                    
+                    renderRankingRules();
+                    renderSearchableFields();
+                    
+                    loadingDiv.style.display = 'none';
+                    loadedDiv.style.display = 'block';
+                    
+                    // Reset button state after successful load
+                    resetSaveButton();
+                } else {
+                    showSettingsError(data.data && data.data.message ? data.data.message : '<?php echo esc_js(__('Failed to load settings', 'scry-wp')); ?>');
+                }
+            })
+            .catch(function(error) {
+                showSettingsError('<?php echo esc_js(__('Error: Failed to load settings', 'scry-wp')); ?>');
+            });
+        }
+        
+        // Function to show error
+        function showSettingsError(message) {
+            loadingDiv.style.display = 'none';
+            loadedDiv.style.display = 'none';
+            errorDiv.style.display = 'block';
+            errorDiv.querySelector('.scrywp-index-settings-error-message').textContent = message;
+        }
+        
+        // Function to render ranking rules
+        function renderRankingRules() {
+            if (!rulesList) return;
+            
+            rulesList.innerHTML = '';
+            
+            currentRankingRules.forEach(function(rule, index) {
+                var li = document.createElement('li');
+                li.className = 'scrywp-ranking-rule-item';
+                li.draggable = true;
+                li.dataset.rule = rule;
+                li.dataset.index = index;
+                
+                var handle = document.createElement('span');
+                handle.className = 'scrywp-ranking-rule-handle';
+                handle.textContent = '☰';
+                handle.setAttribute('aria-label', '<?php echo esc_js(__('Drag to reorder', 'scry-wp')); ?>');
+                
+                var label = document.createElement('span');
+                label.className = 'scrywp-ranking-rule-label';
+                label.textContent = rule;
+                
+                li.appendChild(handle);
+                li.appendChild(label);
+                rulesList.appendChild(li);
+            });
+            
+            // Setup drag and drop
+            setupDragAndDrop();
+        }
+        
+        // Function to setup drag and drop
+        function setupDragAndDrop() {
+            var items = rulesList.querySelectorAll('.scrywp-ranking-rule-item');
+            var draggedElement = null;
+            
+            items.forEach(function(item) {
+                item.addEventListener('dragstart', function(e) {
+                    draggedElement = this;
+                    this.style.opacity = '0.5';
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+                
+                item.addEventListener('dragend', function(e) {
+                    this.style.opacity = '1';
+                    items.forEach(function(it) {
+                        it.classList.remove('scrywp-ranking-rule-drag-over');
+                    });
+                });
+                
+                item.addEventListener('dragover', function(e) {
+                    if (e.preventDefault) {
+                        e.preventDefault();
+                    }
+                    e.dataTransfer.dropEffect = 'move';
+                    if (this !== draggedElement) {
+                        this.classList.add('scrywp-ranking-rule-drag-over');
+                    }
+                    return false;
+                });
+                
+                item.addEventListener('dragleave', function(e) {
+                    this.classList.remove('scrywp-ranking-rule-drag-over');
+                });
+                
+                item.addEventListener('drop', function(e) {
+                    if (e.stopPropagation) {
+                        e.stopPropagation();
+                    }
+                    
+                    if (draggedElement !== this) {
+                        var allItems = Array.from(rulesList.querySelectorAll('.scrywp-ranking-rule-item'));
+                        var draggedIndex = allItems.indexOf(draggedElement);
+                        var targetIndex = allItems.indexOf(this);
+                        
+                        // Reorder array
+                        var rule = currentRankingRules[draggedIndex];
+                        currentRankingRules.splice(draggedIndex, 1);
+                        currentRankingRules.splice(targetIndex, 0, rule);
+                        
+                        // Re-render
+                        renderRankingRules();
+                    }
+                    
+                    return false;
+                });
+            });
+        }
+        
+        // Function to render searchable fields
+        function renderSearchableFields() {
+            if (!fieldsTree) return;
+            
+            fieldsTree.innerHTML = '';
+            
+            // Build field tree
+            Object.keys(availableFields).forEach(function(fieldKey) {
+                var field = availableFields[fieldKey];
+                var isChecked = currentSearchableAttributes.indexOf(field.path) !== -1;
+                
+                if (field.type === 'group' && field.children) {
+                    // Render group with children
+                    var groupDiv = document.createElement('div');
+                    groupDiv.className = 'scrywp-searchable-field-group';
+                    
+                    var groupLabel = document.createElement('label');
+                    groupLabel.className = 'scrywp-searchable-field-group-label';
+                    
+                    var groupCheckbox = document.createElement('input');
+                    groupCheckbox.type = 'checkbox';
+                    groupCheckbox.className = 'scrywp-searchable-field-checkbox';
+                    groupCheckbox.dataset.fieldPath = field.path;
+                    groupCheckbox.checked = isChecked;
+                    
+                    var groupSpan = document.createElement('span');
+                    groupSpan.textContent = field.label;
+                    
+                    groupLabel.appendChild(groupCheckbox);
+                    groupLabel.appendChild(groupSpan);
+                    
+                    var expandButton = document.createElement('button');
+                    expandButton.type = 'button';
+                    expandButton.className = 'scrywp-searchable-field-expand';
+                    expandButton.textContent = '▶';
+                    expandButton.setAttribute('aria-label', '<?php echo esc_js(__('Expand', 'scry-wp')); ?>');
+                    
+                    groupLabel.appendChild(expandButton);
+                    groupDiv.appendChild(groupLabel);
+                    
+                    var childrenDiv = document.createElement('div');
+                    childrenDiv.className = 'scrywp-searchable-field-children';
+                    childrenDiv.style.display = 'none';
+                    
+                    Object.keys(field.children).forEach(function(childKey) {
+                        var child = field.children[childKey];
+                        var childIsChecked = currentSearchableAttributes.indexOf(child.path) !== -1;
+                        
+                        var childLabel = document.createElement('label');
+                        childLabel.className = 'scrywp-searchable-field-item';
+                        
+                        var childCheckbox = document.createElement('input');
+                        childCheckbox.type = 'checkbox';
+                        childCheckbox.className = 'scrywp-searchable-field-checkbox';
+                        childCheckbox.dataset.fieldPath = child.path;
+                        childCheckbox.checked = childIsChecked;
+                        
+                        var childSpan = document.createElement('span');
+                        childSpan.textContent = child.label;
+                        
+                        childLabel.appendChild(childCheckbox);
+                        childLabel.appendChild(childSpan);
+                        childrenDiv.appendChild(childLabel);
+                    });
+                    
+                    groupDiv.appendChild(childrenDiv);
+                    fieldsTree.appendChild(groupDiv);
+                    
+                    // Toggle expand/collapse
+                    expandButton.addEventListener('click', function() {
+                        var isExpanded = childrenDiv.style.display !== 'none';
+                        childrenDiv.style.display = isExpanded ? 'none' : 'block';
+                        expandButton.textContent = isExpanded ? '▶' : '▼';
+                    });
+                    
+                    // Group checkbox controls children
+                    groupCheckbox.addEventListener('change', function() {
+                        var children = childrenDiv.querySelectorAll('.scrywp-searchable-field-checkbox');
+                        children.forEach(function(child) {
+                            child.checked = groupCheckbox.checked;
+                        });
+                    });
+                } else {
+                    // Render single field
+                    var label = document.createElement('label');
+                    label.className = 'scrywp-searchable-field-item';
+                    
+                    var checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'scrywp-searchable-field-checkbox';
+                    checkbox.dataset.fieldPath = field.path;
+                    checkbox.checked = isChecked;
+                    
+                    var span = document.createElement('span');
+                    span.textContent = field.label;
+                    
+                    label.appendChild(checkbox);
+                    label.appendChild(span);
+                    fieldsTree.appendChild(label);
+                }
+            });
+        }
+        
+        // Save settings
+        if (saveButton) {
+            saveButton.addEventListener('click', function() {
+                var button = this;
+                var originalText = button.textContent;
+                
+                // Hide any previous error
+                if (saveErrorDiv) {
+                    saveErrorDiv.style.display = 'none';
+                }
+                
+                button.disabled = true;
+                button.textContent = '<?php _e('Saving...', 'scry-wp'); ?>';
+                
+                // Collect searchable attributes from checkboxes
+                var searchableAttributes = [];
+                var checkboxes = dialog.querySelectorAll('.scrywp-searchable-field-checkbox:checked');
+                checkboxes.forEach(function(checkbox) {
+                    searchableAttributes.push(checkbox.dataset.fieldPath);
+                });
+                
+                var formData = new FormData();
+                formData.append('action', '<?php echo esc_js($this->prefixed('update_index_settings')); ?>');
+                formData.append('nonce', '<?php echo esc_js(wp_create_nonce($this->prefixed('update_index_settings'))); ?>');
+                formData.append('index_name', indexName);
+                
+                // Append ranking rules as multi-value form inputs
+                currentRankingRules.forEach(function(rule) {
+                    formData.append('ranking_rules[]', rule);
+                });
+                
+                // Append searchable attributes as multi-value form inputs
+                searchableAttributes.forEach(function(attribute) {
+                    formData.append('searchable_attributes[]', attribute);
+                });
+                
+                // Log FormData contents
+                var logData = {
+                    action: '<?php echo esc_js($this->prefixed('update_index_settings')); ?>',
+                    nonce: '<?php echo esc_js(wp_create_nonce($this->prefixed('update_index_settings'))); ?>',
+                    index_name: indexName,
+                    ranking_rules: currentRankingRules,
+                    searchable_attributes: searchableAttributes
+                };
+                console.log('Sending FormData:', logData);
+                
+                fetch(ajaxurl, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(function(response) {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    console.log('Response data:', data);
+                    if (data.success) {
+                        // Hide any previous error
+                        if (saveErrorDiv) {
+                            saveErrorDiv.style.display = 'none';
+                        }
+                        alert(data.data.message || '<?php echo esc_js(__('Settings saved successfully', 'scry-wp')); ?>');
+                        // Reset button state before closing
+                        resetSaveButton();
+                        dialog.close();
+                    } else {
+                        console.log('Error response received');
+                        var errorMessage = data.data && data.data.message ? data.data.message : '<?php echo esc_js(__('Failed to save settings', 'scry-wp')); ?>';
+                        console.log('Error message:', errorMessage);
+                        // Reset button state but don't hide error
+                        if (saveButton) {
+                            saveButton.disabled = false;
+                            saveButton.textContent = originalSaveButtonText || '<?php echo esc_js(__('Save Settings', 'scry-wp')); ?>';
+                        }
+                        showSaveError('<?php echo esc_js(__('Error:', 'scry-wp')); ?> ' + errorMessage);
+                    }
+                })
+                .catch(function(error) {
+                    var errorMessage = '<?php echo esc_js(__('Error:', 'scry-wp')); ?> <?php echo esc_js(__('Failed to save settings', 'scry-wp')); ?>';
+                    if (error && error.message) {
+                        errorMessage += ' (' + error.message + ')';
+                    }
+                    // Reset button state but don't hide error
+                    if (saveButton) {
+                        saveButton.disabled = false;
+                        saveButton.textContent = originalSaveButtonText || '<?php echo esc_js(__('Save Settings', 'scry-wp')); ?>';
+                    }
+                    showSaveError(errorMessage);
+                });
+            });
+        }
     });
 });
 </script>

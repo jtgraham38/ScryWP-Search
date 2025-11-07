@@ -36,6 +36,8 @@ class ScryWpIndexesFeature extends PluginFeature {
         add_action('wp_ajax_' . $this->prefixed('wipe_index'), array($this, 'ajax_wipe_index'));
         add_action('wp_ajax_' . $this->prefixed('index_posts'), array($this, 'ajax_index_posts'));
         add_action('wp_ajax_' . $this->prefixed('search_index'), array($this, 'ajax_search_index'));
+        add_action('wp_ajax_' . $this->prefixed('get_index_settings'), array($this, 'ajax_get_index_settings'));
+        add_action('wp_ajax_' . $this->prefixed('update_index_settings'), array($this, 'ajax_update_index_settings'));
     }
 
     //function to index a post when it is created or updated
@@ -747,6 +749,392 @@ class ScryWpIndexesFeature extends PluginFeature {
             // Log error but don't fail the entire operation
             error_log('ScryWP: Failed to configure searchable attributes: ' . $e->getMessage());
         }
+    }
+    
+    /**
+     * AJAX handler for getting index settings (ranking rules and searchable attributes)
+     */
+    public function ajax_get_index_settings() {
+        // Verify nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], $this->prefixed('get_index_settings'))) {
+            wp_send_json_error(array('message' => __('Security check failed', 'scry-wp')));
+            return;
+        }
+        
+        // Check user permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('Permission denied', 'scry-wp')));
+            return;
+        }
+        
+        // Get index name from POST data
+        $index_name = isset($_POST['index_name']) ? sanitize_text_field($_POST['index_name']) : '';
+        
+        // Validate index name
+        if (empty($index_name)) {
+            wp_send_json_error(array('message' => __('Please provide an index name', 'scry-wp')));
+            return;
+        }
+        
+        // Verify the index name is one of the configured indexes (security check)
+        $index_names = $this->get_index_names();
+        if (!in_array($index_name, $index_names, true)) {
+            wp_send_json_error(array('message' => __('Invalid index name', 'scry-wp')));
+            return;
+        }
+        
+        // Get post type from index name by inverting the array
+        $index_to_post_type = array_flip($index_names);
+        $post_type = isset($index_to_post_type[$index_name]) ? $index_to_post_type[$index_name] : null;
+        
+        if (!$post_type) {
+            wp_send_json_error(array('message' => __('Could not determine post type for index', 'scry-wp')));
+            return;
+        }
+        
+        // Get connection settings
+        $meilisearch_url = get_option($this->prefixed('meilisearch_url'), '');
+        $meilisearch_admin_key = get_option($this->prefixed('meilisearch_admin_key'), '');
+        
+        if (empty($meilisearch_url) || empty($meilisearch_admin_key)) {
+            wp_send_json_error(array('message' => __('Connection settings are not configured', 'scry-wp')));
+            return;
+        }
+        
+        try {
+            // Create Meilisearch client
+            $client = new Client($meilisearch_url, $meilisearch_admin_key);
+            $index = $client->index($index_name);
+            
+            // Get current ranking rules
+            $ranking_rules = $index->getRankingRules();
+
+            // If empty or null, use defaults
+            if (empty($ranking_rules)) {
+                $ranking_rules = $this->get_default_ranking_rules();
+            }
+            
+            // Get current searchable attributes
+            $searchable_attributes = $index->getSearchableAttributes();
+            // If empty or null, use defaults
+            if (empty($searchable_attributes)) {
+                $searchable_attributes = $this->get_searchable_attributes();
+            }
+            
+            // Get available fields for this post type
+            $available_fields = $this->get_available_fields_for_post_type($post_type);
+            
+            wp_send_json_success(array(
+                'ranking_rules' => $ranking_rules,
+                'searchable_attributes' => $searchable_attributes,
+                'available_fields' => $available_fields,
+            ));
+            
+        } catch (\Meilisearch\Exceptions\CommunicationException $e) {
+            wp_send_json_error(array(
+                'message' => sprintf(__('Connection failed: %s', 'scry-wp'), $e->getMessage())
+            ));
+        } catch (\Meilisearch\Exceptions\ApiException $e) {
+            if ($e->getCode() === 404) {
+                wp_send_json_error(array(
+                    'message' => __('Index does not exist', 'scry-wp')
+                ));
+            } else {
+                wp_send_json_error(array(
+                    'message' => sprintf(__('API error: %s', 'scry-wp'), $e->getMessage())
+                ));
+            }
+        } catch (\Exception $e) {
+            wp_send_json_error(array(
+                'message' => sprintf(__('Error: %s', 'scry-wp'), $e->getMessage())
+            ));
+        }
+    }
+    
+    /**
+     * AJAX handler for updating index settings (ranking rules and searchable attributes)
+     */
+    public function ajax_update_index_settings() {
+        // Verify nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], $this->prefixed('update_index_settings'))) {
+            wp_send_json_error(array('message' => __('Security check failed', 'scry-wp')));
+            return;
+        }
+        
+        // Check user permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('Permission denied', 'scry-wp')));
+            return;
+        }
+        
+        // Get index name from POST data
+        $index_name = isset($_POST['index_name']) ? sanitize_text_field($_POST['index_name']) : '';
+        
+        // Validate index name
+        if (empty($index_name)) {
+            wp_send_json_error(array('message' => __('Please provide an index name', 'scry-wp')));
+            return;
+        }
+        
+        // Verify the index name is one of the configured indexes (security check)
+        $index_names = $this->get_index_names();
+        if (!in_array($index_name, $index_names, true)) {
+            wp_send_json_error(array('message' => __('Invalid index name', 'scry-wp')));
+            return;
+        }
+        
+        // Get ranking rules from POST data (should be array from multi-value form inputs)
+        $ranking_rules = isset($_POST['ranking_rules']) ? $_POST['ranking_rules'] : array();
+        if (!is_array($ranking_rules)) {
+            $ranking_rules = array();
+        }
+        // Sanitize ranking rules
+        $ranking_rules = array_map('sanitize_text_field', $ranking_rules);
+        
+        // Get searchable attributes from POST data (should be array from multi-value form inputs)
+        $searchable_attributes = isset($_POST['searchable_attributes']) ? $_POST['searchable_attributes'] : array();
+        if (!is_array($searchable_attributes)) {
+            $searchable_attributes = array();
+        }
+        // Sanitize searchable attributes
+        $searchable_attributes = array_map('sanitize_text_field', $searchable_attributes);
+        
+        // Get connection settings
+        $meilisearch_url = get_option($this->prefixed('meilisearch_url'), '');
+        $meilisearch_admin_key = get_option($this->prefixed('meilisearch_admin_key'), '');
+        
+        if (empty($meilisearch_url) || empty($meilisearch_admin_key)) {
+            wp_send_json_error(array('message' => __('Connection settings are not configured', 'scry-wp')));
+            return;
+        }
+        
+        try {
+            // Create Meilisearch client
+            $client = new Client($meilisearch_url, $meilisearch_admin_key);
+            $index = $client->index($index_name);
+            
+            // Update ranking rules
+            if (!empty($ranking_rules)) {
+                $index->updateRankingRules($ranking_rules);
+            }
+            
+            // Update searchable attributes
+            if (!empty($searchable_attributes)) {
+                $index->updateSearchableAttributes($searchable_attributes);
+            }
+            
+            wp_send_json_success(array(
+                'message' => sprintf(__('Index settings updated successfully for "%s".', 'scry-wp'), $index_name)
+            ));
+            
+        } catch (\Meilisearch\Exceptions\CommunicationException $e) {
+            wp_send_json_error(array(
+                'message' => sprintf(__('Connection failed: %s', 'scry-wp'), $e->getMessage())
+            ));
+        } catch (\Meilisearch\Exceptions\ApiException $e) {
+            if ($e->getCode() === 404) {
+                wp_send_json_error(array(
+                    'message' => __('Index does not exist', 'scry-wp')
+                ));
+            } else {
+                wp_send_json_error(array(
+                    'message' => sprintf(__('API error: %s', 'scry-wp'), $e->getMessage())
+                ));
+            }
+        } catch (\Exception $e) {
+            wp_send_json_error(array(
+                'message' => sprintf(__('Error: %s', 'scry-wp'), $e->getMessage())
+            ));
+        }
+    }
+    
+    /**
+     * Get default Meilisearch ranking rules
+     */
+    private function get_default_ranking_rules() {
+        return array(
+            'words',
+            'typo',
+            'proximity',
+            'attribute',
+            'sort',
+            'exactness',
+        );
+    }
+    
+    /**
+     * Get available fields for a post type, including meta keys
+     */
+    private function get_available_fields_for_post_type($post_type) {
+        $fields = array();
+        
+        // Core post fields
+        $core_fields = array(
+            'ID' => __('Post ID', 'scry-wp'),
+            'post_title' => __('Title', 'scry-wp'),
+            'post_content' => __('Content', 'scry-wp'),
+            'post_excerpt' => __('Excerpt', 'scry-wp'),
+            'post_date' => __('Post Date', 'scry-wp'),
+            'post_date_gmt' => __('Post Date (GMT)', 'scry-wp'),
+            'post_modified' => __('Modified Date', 'scry-wp'),
+            'post_modified_gmt' => __('Modified Date (GMT)', 'scry-wp'),
+            'post_author' => __('Author ID', 'scry-wp'),
+            'post_name' => __('Post Slug', 'scry-wp'),
+            'permalink' => __('Permalink', 'scry-wp'),
+        );
+        
+        foreach ($core_fields as $field => $label) {
+            $fields[$field] = array(
+                'label' => $label,
+                'type' => 'core',
+                'path' => $field,
+            );
+        }
+        
+        // Categories
+        $fields['categories'] = array(
+            'label' => __('Categories', 'scry-wp'),
+            'type' => 'taxonomy',
+            'path' => 'categories',
+        );
+        
+        // Tags
+        $fields['tags'] = array(
+            'label' => __('Tags', 'scry-wp'),
+            'type' => 'taxonomy',
+            'path' => 'tags',
+        );
+        
+        // Featured Image
+        $fields['featured_image'] = array(
+            'label' => __('Featured Image', 'scry-wp'),
+            'type' => 'media',
+            'path' => 'featured_image',
+        );
+        
+        // Author Name
+        $fields['author_name'] = array(
+            'label' => __('Author Name', 'scry-wp'),
+            'type' => 'meta',
+            'path' => 'author_name',
+        );
+        
+        // Post Meta - get all unique meta keys for this post type
+        $meta_keys = $this->get_post_meta_keys_for_post_type($post_type);
+        
+        // Also try to get meta keys from Meilisearch index if available
+        $index_meta_keys = $this->get_meta_keys_from_index($post_type);
+        if (!empty($index_meta_keys)) {
+            // Merge and deduplicate
+            $meta_keys = array_unique(array_merge($meta_keys, $index_meta_keys));
+        }
+
+        
+        if (!empty($meta_keys)) {
+            $fields['post_meta'] = array(
+                'label' => __('Post Meta', 'scry-wp'),
+                'type' => 'group',
+                'path' => 'post_meta',
+                'children' => array(),
+            );
+            
+            // Sort meta keys alphabetically
+            sort($meta_keys);
+            
+            foreach ($meta_keys as $meta_key) {
+                $fields['post_meta']['children']['post_meta.' . $meta_key] = array(
+                    'label' => $meta_key,
+                    'type' => 'meta',
+                    'path' => 'post_meta.' . $meta_key,
+                );
+            }
+        }
+        
+        return $fields;
+    }
+    
+    /**
+     * Get all unique meta keys for a post type
+     * Uses a single composite query with JOIN to reduce database trips
+     */
+    private function get_post_meta_keys_for_post_type($post_type) {
+        global $wpdb;
+        
+        // Single composite query: JOIN posts and postmeta to get unique meta keys
+        // First try with published posts
+        $meta_keys = $wpdb->get_col(
+            $wpdb->prepare(
+                "SELECT DISTINCT pm.meta_key 
+                FROM {$wpdb->postmeta} pm
+                INNER JOIN {$wpdb->posts} p ON pm.post_id = p.ID
+                WHERE p.post_type = %s
+                AND p.post_status = 'publish'
+                AND pm.meta_key NOT LIKE %s
+                ORDER BY pm.meta_key ASC
+                LIMIT 200",
+                $post_type,
+                $wpdb->esc_like('wp_') . '%'
+            )
+        );
+        
+        return $meta_keys ? $meta_keys : array();
+    }
+    
+    /**
+     * Get meta keys from Meilisearch index documents
+     * This helps discover meta keys that might not be in published posts
+     */
+    private function get_meta_keys_from_index($post_type) {
+        $meta_keys = array();
+        
+        // Get connection settings
+        $meilisearch_url = get_option($this->prefixed('meilisearch_url'), '');
+        $meilisearch_admin_key = get_option($this->prefixed('meilisearch_admin_key'), '');
+        
+        if (empty($meilisearch_url) || empty($meilisearch_admin_key)) {
+            return $meta_keys;
+        }
+        
+        try {
+            // Get index name
+            $index_names = $this->get_index_names();
+            if (!isset($index_names[$post_type])) {
+                return $meta_keys;
+            }
+            
+            $index_name = $index_names[$post_type];
+            
+            // Create Meilisearch client
+            $client = new Client($meilisearch_url, $meilisearch_admin_key);
+            $index = $client->index($index_name);
+            
+            // Get a few documents to extract meta keys
+            // Use search with wildcard to get documents
+            try {
+                $results = $index->search('*', array('limit' => 20));
+                $hits = $results->getHits();
+                
+                foreach ($hits as $hit) {
+                    if (isset($hit['post_meta']) && is_array($hit['post_meta'])) {
+                        foreach (array_keys($hit['post_meta']) as $meta_key) {
+                            // Exclude private meta keys
+                            if (substr($meta_key, 0, 1) !== '_' && substr($meta_key, 0, 3) !== 'wp_') {
+                                $meta_keys[] = $meta_key;
+                            }
+                        }
+                    }
+                }
+            } catch (Exception $e) {
+                // Silently fail - this is just a helper method
+                error_log('ScryWP: Failed to get meta keys from index via search: ' . $e->getMessage());
+            }
+            
+        } catch (Exception $e) {
+            // Silently fail - this is just a helper method
+            error_log('ScryWP: Failed to get meta keys from index: ' . $e->getMessage());
+        }
+        
+        return array_unique($meta_keys);
     }
     
 }
