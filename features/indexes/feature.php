@@ -201,6 +201,11 @@ class ScryWpIndexesFeature extends PluginFeature {
 
     //register settings (select which post types to index)
     public function register_settings() {
+        // Only allow administrators to access these settings
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+
 
         //register the indexes settings section
         add_settings_section(

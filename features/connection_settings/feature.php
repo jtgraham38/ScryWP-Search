@@ -90,7 +90,7 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
             function() {
                 echo '<p>Configure the connection settings for ScryWP Search.</p>';
             },
-            $this->prefixed('search_settings_group')
+            $this->prefixed('connection_settings_group')
         );
 
         //add the connection type field
@@ -100,7 +100,7 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
             function() {
                 require_once plugin_dir_path(__FILE__) . 'elements/connection_type_input.php';
             },
-            $this->prefixed('search_settings_group'),
+            $this->prefixed('connection_settings_group'),
             $this->prefixed('connection_settings_section')
         );
 
@@ -111,7 +111,7 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
             function() {
                 require_once plugin_dir_path(__FILE__) . 'elements/meilisearch_url_input.php';
             },
-            $this->prefixed('search_settings_group'),
+            $this->prefixed('connection_settings_group'),
             $this->prefixed('connection_settings_section')
         );
 
@@ -122,7 +122,7 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
             function() {
                 require_once plugin_dir_path(__FILE__) . 'elements/meilisearch_search_key_input.php';
             },
-            $this->prefixed('search_settings_group'),
+            $this->prefixed('connection_settings_group'),
             $this->prefixed('connection_settings_section')
         );
 
@@ -133,13 +133,13 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
             function() {
                 require_once plugin_dir_path(__FILE__) . 'elements/meilisearch_admin_key_input.php';
             },
-            $this->prefixed('search_settings_group'),
+            $this->prefixed('connection_settings_group'),
             $this->prefixed('connection_settings_section')
         );
 
         // Register connection type setting
         register_setting(
-            $this->prefixed('search_settings_group'),
+            $this->prefixed('connection_settings_group'),
             $this->prefixed('connection_type'),
             array(
                 'type' => 'string',
@@ -160,7 +160,7 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
 
         // Register Meilisearch URL setting
         register_setting(
-            $this->prefixed('search_settings_group'),
+            $this->prefixed('connection_settings_group'),
             $this->prefixed('meilisearch_url'),
             array(
                 'type' => 'string',
@@ -181,7 +181,7 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
 
         // Register Meilisearch search key setting
         register_setting(
-            $this->prefixed('search_settings_group'),
+            $this->prefixed('connection_settings_group'),
             $this->prefixed('meilisearch_search_key'),
             array(
                 'type' => 'string',
@@ -197,7 +197,7 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
 
         // Register Meilisearch admin key setting
         register_setting(
-            $this->prefixed('search_settings_group'),
+            $this->prefixed('connection_settings_group'),
             $this->prefixed('meilisearch_admin_key'),
             array(
                 'type' => 'string',

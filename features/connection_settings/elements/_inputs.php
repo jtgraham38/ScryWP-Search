@@ -13,8 +13,8 @@ if (!defined('ABSPATH')) {
 
     <form method="post" action="options.php">
         <?php
-            settings_fields($this->prefixed('search_settings_group'));
-            do_settings_sections($this->prefixed('search_settings_group'));
+            settings_fields($this->prefixed('connection_settings_group'));
+            do_settings_sections($this->prefixed('connection_settings_group'));
         ?>
         <br>
         <?php submit_button(); ?>

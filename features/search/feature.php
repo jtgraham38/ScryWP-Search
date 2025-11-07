@@ -11,6 +11,7 @@ use jtgraham38\jgwordpresskit\PluginFeature;
 use Meilisearch\Client;
 use Meilisearch\Contracts\SearchQuery;
 use Meilisearch\Contracts\MultiSearchFederation;
+use Meilisearch\Contracts\FederationOptions;
 
 class ScryWpSearchFeature extends PluginFeature {
     
@@ -22,6 +23,7 @@ class ScryWpSearchFeature extends PluginFeature {
     
     public function add_actions() {
         // Add any actions here if needed
+        add_action('admin_init', array($this, 'register_settings'));
         add_action('admin_menu', array($this, 'add_admin_page'));
     }
 
@@ -95,11 +97,20 @@ class ScryWpSearchFeature extends PluginFeature {
                 get_option($this->prefixed('meilisearch_search_key'))
             );
 
+            //get the search weights
+            $search_weights = get_option($this->prefixed('search_weights'));
+
             //create search queries
             $search_queries = array();
-            foreach ($index_names_to_search as $index_name) {
+            foreach ($index_names_to_search as $post_type => $index_name) {
+
+                //get the search weight for the index, or default to 1.0 if not set
+                $search_weight = isset($search_weights[$post_type]) ? $search_weights[$post_type] : 1.0;
+
+                //create a new search query
                 $search_queries[] = (new SearchQuery())
                     ->setIndexUid($index_name)
+                    ->setFederationOptions((new FederationOptions())->setWeight(floatval($search_weight)))
                     ->setQuery($query_params['q']);
             }
 
@@ -160,6 +171,81 @@ class ScryWpSearchFeature extends PluginFeature {
             return array();
         }
         
+    }
+
+    /**
+     * Register WordPress settings
+     */
+    public function register_settings() {
+        // Only allow administrators to access these settings
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+
+        // Register the search weights section
+        add_settings_section(
+            $this->prefixed('search_weights_section'),
+            __('Search Weights', 'scry-wp'),
+            function() {
+                echo '<p>' . esc_html__('Configure search weights for each post type. Higher weights will prioritize results from that post type in federated searches.', 'scry-wp') . '</p>';
+            },
+            $this->prefixed('search_settings_group')
+        );
+
+        // Add the search weights field
+        add_settings_field(
+            $this->prefixed('search_weights'),
+            __('Post Type Weights', 'scry-wp'),
+            function() {
+                require_once plugin_dir_path(__FILE__) . 'elements/settings/search_weights_input.php';
+            },
+            $this->prefixed('search_settings_group'),
+            $this->prefixed('search_weights_section')
+        );
+
+        // Register search weights setting
+        register_setting(
+            $this->prefixed('search_settings_group'),
+            $this->prefixed('search_weights'),
+            array(
+                'type' => 'array',
+                'description' => 'Search weights mapping post types to numeric weight values for ScryWP Search.',
+                'sanitize_callback' => function($input) {
+                    if (!is_array($input)) {
+                        return array();
+                    }
+                    
+                    // Get valid post types
+                    $valid_post_types = get_post_types(array(), 'names');
+                    $sanitized = array();
+                    
+                    foreach ($input as $post_type => $weight) {
+                        // Validate post type key exists
+                        if (!in_array($post_type, $valid_post_types, true)) {
+                            continue;
+                        }
+                        
+                        // Sanitize weight as float
+                        $weight_value = filter_var($weight, FILTER_VALIDATE_FLOAT);
+                        if ($weight_value === false) {
+                            // If invalid, default to 1.0
+                            $weight_value = 1.0;
+                        }
+                        
+                        // Ensure weight is positive
+                        if ($weight_value < 0) {
+                            $weight_value = 0;
+                        }
+                        
+                        $sanitized[sanitize_text_field($post_type)] = floatval($weight_value);
+                    }
+                    
+                    return $sanitized;
+                },
+                'default' => array(),
+                'show_in_rest' => false,
+            )
+        );
     }
 
     //add an admin page for the search settings
