@@ -2,7 +2,7 @@
 /**
  * Plugin Name:	ScryWP Search
  * Plugin URI:	https://scrywp.com
- * Description:	A powerful semantic search plugin with advanced filtering and sorting features.
+ * Description:	A powerful semantic search plugin, powered by Meilisearch.
  * Version:	1.0.0
  * Requires at least: 5.2
  * Requires PHP:      7.2
