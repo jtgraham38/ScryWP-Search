@@ -26,4 +26,4 @@ Thumbs.db
 **/.gitignore
 /vendor/**/tests
 scoper.inc.php
-setup.sh
+**/setup.sh
