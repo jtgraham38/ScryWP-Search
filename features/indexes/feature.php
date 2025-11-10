@@ -701,40 +701,6 @@ class ScryWpIndexesFeature extends PluginFeature {
             ));
         }
     }
-
-    //  \\  //  \\  //  \\  Helpers  //  \\  //  \\  //  \\ 
-    public function get_index_names() {
-        global $wpdb;
-        $index_names = array();
-        $post_types_to_index = get_option($this->prefixed('post_types'));
-        foreach ($post_types_to_index as $post_type) {
-            $index_names[$post_type] = $wpdb->prefix . $this->get_prefix() . get_option($this->prefixed('index_affix')) . $post_type;
-        }   
-        return $index_names;
-    }
-    
-    /**
-     * Get the list of searchable attributes for Meilisearch indexes
-     * Excludes: post_status, post_type, author_name, featured_image
-     */
-    private function get_searchable_attributes() {
-        return array(
-            'ID',
-            'post_title',
-            'post_content',
-            'post_excerpt',
-            'post_date',
-            'post_date_gmt',
-            'post_modified',
-            'post_modified_gmt',
-            'post_author',
-            'post_name',
-            'permalink',
-            'categories',
-            'tags',
-            'post_meta',
-        );
-    }
     
     /**
      * Configure searchable attributes for a Meilisearch index
@@ -1137,4 +1103,37 @@ class ScryWpIndexesFeature extends PluginFeature {
         return array_unique($meta_keys);
     }
     
+    //  \\  //  \\  //  \\  Helpers  //  \\  //  \\  //  \\ 
+    public function get_index_names() {
+        global $wpdb;
+        $index_names = array();
+        $post_types_to_index = get_option($this->prefixed('post_types'));
+        foreach ($post_types_to_index as $post_type) {
+            $index_names[$post_type] = $wpdb->prefix . $this->get_prefix() . get_option($this->prefixed('index_affix')) . $post_type;
+        }   
+        return $index_names;
+    }
+    
+    /**
+     * Get the list of searchable attributes for Meilisearch indexes
+     * Excludes: post_status, post_type, author_name, featured_image
+     */
+    private function get_searchable_attributes() {
+        return array(
+            'ID',
+            'post_title',
+            'post_content',
+            'post_excerpt',
+            'post_date',
+            'post_date_gmt',
+            'post_modified',
+            'post_modified_gmt',
+            'post_author',
+            'post_name',
+            'permalink',
+            'categories',
+            'tags',
+            'post_meta',
+        );
+    }
 }

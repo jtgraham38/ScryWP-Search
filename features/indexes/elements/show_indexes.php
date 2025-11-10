@@ -69,6 +69,11 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
             <p><?php _e('No indexes configured. Please select post types to index in the settings.', 'scry-wp'); ?></p>
         </div>
     <?php else: ?>
+        <div class="scrywp-index-all-actions">
+            <button type="button" class="button button-primary scrywp-index-all-posts-button">
+                <?php _e('Index All Post Types', 'scry-wp'); ?>
+            </button>
+        </div>
         <div class="scrywp-indexes-grid">
             <?php foreach ($indexes_data as $index): ?>
                 <div class="scrywp-index-card <?php echo isset($index['error']) ? 'scrywp-index-card-error' : ''; ?>">
@@ -81,6 +86,8 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
                             <span class="scrywp-index-status scrywp-index-status-error"><?php _e('Error', 'scry-wp'); ?></span>
                         <?php elseif ($index['isIndexing']): ?>
                             <span class="scrywp-index-status scrywp-index-status-indexing"><?php _e('Indexing...', 'scry-wp'); ?></span>
+                        <?php elseif (isset($index['numberOfDocuments']) && $index['numberOfDocuments'] == 0): ?>
+                            <span class="scrywp-index-status scrywp-index-status-empty"><?php _e('Empty', 'scry-wp'); ?></span>
                         <?php else: ?>
                             <span class="scrywp-index-status scrywp-index-status-ready"><?php _e('Ready', 'scry-wp'); ?></span>
                         <?php endif; ?>
@@ -256,6 +263,23 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
     color: #646970;
 }
 
+.scrywp-index-all-actions {
+    margin: 20px 0;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.scrywp-index-all-actions .scrywp-index-all-posts-button {
+    font-size: 14px;
+    padding: 8px 16px;
+    height: auto;
+}
+
+.scrywp-index-all-actions .scrywp-index-all-posts-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .scrywp-indexes-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -333,6 +357,11 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
 .scrywp-index-status-error {
     background: #f8d7da;
     color: #721c24;
+}
+
+.scrywp-index-status-empty {
+    background: #ffeaa7;
+    color: #856404;
 }
 
 @keyframes pulse {
@@ -973,6 +1002,110 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     });
+    
+    // Handle index all posts button click
+    var indexAllButton = document.querySelector('.scrywp-index-all-posts-button');
+    if (indexAllButton) {
+        indexAllButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            var button = this;
+            
+            // Get all index post buttons (excluding ones with errors)
+            var allIndexButtons = Array.from(document.querySelectorAll('.scrywp-index-posts-button'));
+            var validIndexButtons = allIndexButtons.filter(function(btn) {
+                // Check if the button's parent card has an error
+                var card = btn.closest('.scrywp-index-card');
+                return card && !card.classList.contains('scrywp-index-card-error');
+            });
+            
+            if (validIndexButtons.length === 0) {
+                alert('<?php echo esc_js(__('No valid indexes to index.', 'scry-wp')); ?>');
+                return;
+            }
+            
+            // Request confirmation
+            var postTypes = validIndexButtons.map(function(btn) {
+                return btn.getAttribute('data-index-display');
+            }).join(', ');
+            
+            var confirmed = confirm(
+                'Are you sure you want to index all post types? This will index:\n\n' + postTypes + '\n\nThis may take a while.'
+            );
+            
+            if (!confirmed) {
+                return;
+            }
+            
+            // Disable button and show loading state
+            button.disabled = true;
+            var originalText = button.textContent;
+            button.textContent = '<?php _e('Indexing All...', 'scry-wp'); ?>';
+            
+            // Disable all individual index buttons
+            validIndexButtons.forEach(function(btn) {
+                btn.disabled = true;
+            });
+            
+            // Process each index sequentially
+            var processIndex = function(index) {
+                if (index >= validIndexButtons.length) {
+                    // All done, reload page
+                    alert('<?php echo esc_js(__('All post types have been indexed successfully.', 'scry-wp')); ?>');
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 500);
+                    return;
+                }
+                
+                var currentButton = validIndexButtons[index];
+                var postType = currentButton.getAttribute('data-post-type');
+                var indexDisplay = currentButton.getAttribute('data-index-display');
+                
+                // Update button text to show current progress
+                button.textContent = '<?php _e('Indexing', 'scry-wp'); ?>: ' + indexDisplay + ' (' + (index + 1) + '/' + validIndexButtons.length + ')';
+                
+                // Prepare AJAX request
+                var formData = new FormData();
+                formData.append('action', '<?php echo esc_js($this->prefixed('index_posts')); ?>');
+                formData.append('nonce', '<?php echo esc_js(wp_create_nonce($this->prefixed('index_posts'))); ?>');
+                formData.append('post_type', postType);
+                
+                // Send AJAX request
+                fetch(ajaxurl, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(function(response) {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.success) {
+                        // Move to next index
+                        processIndex(index + 1);
+                    } else {
+                        // Show error but continue with next index
+                        var errorMsg = data.data && data.data.message ? data.data.message : '<?php echo esc_js(__('Failed to index', 'scry-wp')); ?>';
+                        console.error('Failed to index ' + indexDisplay + ': ' + errorMsg);
+                        // Continue with next index anyway
+                        processIndex(index + 1);
+                    }
+                })
+                .catch(function(error) {
+                    // Show error but continue with next index
+                    console.error('Error indexing ' + indexDisplay + ':', error);
+                    // Continue with next index anyway
+                    processIndex(index + 1);
+                });
+            };
+            
+            // Start processing
+            processIndex(0);
+        });
+    }
     
     // Handle wipe index button clicks
     var wipeButtons = document.querySelectorAll('.scrywp-wipe-index-button');
