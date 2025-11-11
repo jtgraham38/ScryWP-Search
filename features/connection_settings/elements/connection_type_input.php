@@ -21,7 +21,7 @@ $manual_url = $this->get_base_url() . 'assets/images/manual.png';
         ?>
         
         <div class="scrywp-connection-type-section">
-            <h3><?php _e('Connection Type', 'scry-wp'); ?></h3>
+            <h3><?php _e('Connection Type', "meilisearch_wp"); ?></h3>
             <div class="scrywp-connection-type-cards">
                 
                 <!-- ScryWP Managed Service - Prominent card -->
@@ -47,12 +47,12 @@ $manual_url = $this->get_base_url() . 'assets/images/manual.png';
             </div>
         </div>
         <div class="scrywp-managed-get-connection-info<?php echo ($connection_type === 'scrywp') ? ' scrywp-section-visible' : ''; ?>">
-            <h3><?php _e('Get Connection Info', 'scry-wp'); ?></h3>
+            <h3><?php _e('Get Connection Info', "meilisearch_wp"); ?></h3>
             <p class="description">
-                <?php _e('Get your connection info from ScryWP.', 'scry-wp'); ?>
+                <?php _e('Get your connection info from ScryWP.', "meilisearch_wp"); ?>
             </p>
             <button type="button" id="scrywp-get-connection-info" class="button button-secondary">
-                <?php _e('Get Connection Info', 'scry-wp'); ?>
+                <?php _e('Get Connection Info', "meilisearch_wp"); ?>
             </button>
             <div id="scrywp-connection-info" class="scrywp-connection-info"></div>
             <small>
@@ -62,12 +62,12 @@ $manual_url = $this->get_base_url() . 'assets/images/manual.png';
         
         
         <div class="scrywp-connection-test-section">
-            <h3><?php _e('Test Connection', 'scry-wp'); ?></h3>
+            <h3><?php _e('Test Connection', "meilisearch_wp"); ?></h3>
             <p class="description">
-                <?php _e('Test your connection settings before saving.', 'scry-wp'); ?>
+                <?php _e('Test your connection settings before saving.', "meilisearch_wp"); ?>
             </p>
             <button type="button" id="scrywp-test-connection" class="button button-secondary">
-                <?php _e('Test Connection', 'scry-wp'); ?>
+                <?php _e('Test Connection', "meilisearch_wp"); ?>
             </button>
             <div id="scrywp-connection-test-result" class="scrywp-test-result"></div>
         </div>
@@ -432,7 +432,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var result = $('#scrywp-connection-test-result');
             
             button.disabled = true;
-            button.textContent = '<?php _e('Testing...', 'scry-wp'); ?>';
+            button.textContent = '<?php _e('Testing...', "meilisearch_wp"); ?>';
             if (result) {
                 result.style.display = 'none';
             }
@@ -467,11 +467,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     if (data.success) {
                         result.classList.add('success');
-                        result.innerHTML = '<strong><?php _e('Success!', 'scry-wp'); ?></strong> ' + (data.data && data.data.message ? data.data.message : '');
+                        result.innerHTML = '<strong><?php _e('Success!', "meilisearch_wp"); ?></strong> ' + (data.data && data.data.message ? data.data.message : '');
                     } else {
                         result.classList.add('error');
-                        var errorMessage = (data.data && data.data.message) ? data.data.message : '<?php _e('Connection test failed', 'scry-wp'); ?>';
-                        result.innerHTML = '<strong><?php _e('Error:', 'scry-wp'); ?></strong> ' + errorMessage;
+                        var errorMessage = (data.data && data.data.message) ? data.data.message : '<?php _e('Connection test failed', "meilisearch_wp"); ?>';
+                        result.innerHTML = '<strong><?php _e('Error:', "meilisearch_wp"); ?></strong> ' + errorMessage;
                     }
                     result.style.display = 'block';
                 }
@@ -480,13 +480,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (result) {
                     result.classList.remove('success', 'error');
                     result.classList.add('error');
-                    result.innerHTML = '<strong><?php _e('Error:', 'scry-wp'); ?></strong> <?php _e('Failed to test connection', 'scry-wp'); ?>';
+                    result.innerHTML = '<strong><?php _e('Error:', "meilisearch_wp"); ?></strong> <?php _e('Failed to test connection', "meilisearch_wp"); ?>';
                     result.style.display = 'block';
                 }
             })
             .finally(function() {
                 button.disabled = false;
-                button.textContent = '<?php _e('Test Connection', 'scry-wp'); ?>';
+                button.textContent = '<?php _e('Test Connection', "meilisearch_wp"); ?>';
             });
         });
     }
@@ -499,7 +499,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var connectionType = connectionTypeInput ? connectionTypeInput.value : '';
             
             if (!connectionType) {
-                alert('<?php _e('Please select a connection type', 'scry-wp'); ?>');
+                alert('<?php _e('Please select a connection type', "meilisearch_wp"); ?>');
                 e.preventDefault();
                 return false;
             }
@@ -515,7 +515,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 var adminKey = adminKeyInput ? adminKeyInput.value : '';
                 
                 if (!url || !searchKey || !adminKey) {
-                    alert('<?php _e('Please fill in all required fields', 'scry-wp'); ?>');
+                    alert('<?php _e('Please fill in all required fields', "meilisearch_wp"); ?>');
                     e.preventDefault();
                     return false;
                 }
