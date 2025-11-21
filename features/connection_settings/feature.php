@@ -59,17 +59,23 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
         }
         
         //create a submenu page at 'scry-search-meilisearch-settings'
+        $feature = $this; // Capture for closure
         add_submenu_page(
             'scry-search-meilisearch',   //parent slug
             'Connection Settings',       //page title
             'Connection Settings',       //menu title
             'manage_options',            //capability
             'scry-search-meilisearch-settings', //menu slug
-            function() {
-                ob_start();
-                require_once plugin_dir_path(__FILE__) . 'elements/_inputs.php';
-                $content = ob_get_clean();
-                $this->get_feature('scry_ms_admin_page')->render_admin_page($content);
+            function() use ($feature) {
+                // Bind closure to feature so $this works in included files
+                $closure = function() use ($feature) {
+                    ob_start();
+                    require_once plugin_dir_path(__FILE__) . 'elements/_inputs.php';
+                    $content = ob_get_clean();
+                    $feature->get_feature('scry_ms_admin_page')->render_admin_page($content);
+                };
+                $bound = \Closure::bind($closure, $feature);
+                $bound();
             }
         );
     }
@@ -82,6 +88,9 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
         if (!current_user_can('manage_options')) {
             return;
         }
+
+        // Capture $this for use in closures - we'll make it available as $this in included files
+        $feature = $this;
 
         //register the connection settings group
         add_settings_section(
@@ -97,9 +106,9 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
         add_settings_field(
             $this->prefixed('connection_type'),
             'Connection Type',
-            function() {
+            \Closure::bind(function() {
                 require_once plugin_dir_path(__FILE__) . 'elements/connection_type_input.php';
-            },
+            }, $feature),
             $this->prefixed('connection_settings_group'),
             $this->prefixed('connection_settings_section')
         );
@@ -108,9 +117,9 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
         add_settings_field(
             $this->prefixed('meilisearch_url'),
             'Meilisearch URL',
-            function() {
+            \Closure::bind(function() {
                 require_once plugin_dir_path(__FILE__) . 'elements/meilisearch_url_input.php';
-            },
+            }, $feature),
             $this->prefixed('connection_settings_group'),
             $this->prefixed('connection_settings_section')
         );
@@ -119,9 +128,9 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
         add_settings_field(
             $this->prefixed('meilisearch_search_key'),
             'Search API Key',
-            function() {
+            \Closure::bind(function() {
                 require_once plugin_dir_path(__FILE__) . 'elements/meilisearch_search_key_input.php';
-            },
+            }, $feature),
             $this->prefixed('connection_settings_group'),
             $this->prefixed('connection_settings_section')
         );
@@ -130,9 +139,9 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
         add_settings_field(
             $this->prefixed('meilisearch_admin_key'),
             'Admin API Key',
-            function() {
+            \Closure::bind(function() {
                 require_once plugin_dir_path(__FILE__) . 'elements/meilisearch_admin_key_input.php';
-            },
+            }, $feature),
             $this->prefixed('connection_settings_group'),
             $this->prefixed('connection_settings_section')
         );

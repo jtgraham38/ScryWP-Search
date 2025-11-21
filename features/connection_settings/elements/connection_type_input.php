@@ -11,14 +11,10 @@ $connection_type = get_option($this->prefixed('connection_type'), '');
 //get the urls of images for cards
 $coai_dark_url = $this->get_base_url() . 'assets/images/coai_dark.png';
 $manual_url = $this->get_base_url() . 'assets/images/manual.png';
+
 ?>
 
 <div class="scrywp-connection-settings">
-
-    <form method="post" action="options.php" class="scrywp-connection-form">
-        <?php
-        settings_fields($this->prefixed('search_settings_group'));
-        ?>
         
         <div class="scrywp-connection-type-section">
             <h3><?php _e('Connection Type', "scry_search_meilisearch"); ?></h3>
@@ -72,7 +68,6 @@ $manual_url = $this->get_base_url() . 'assets/images/manual.png';
             </button>
             <div id="scrywp-connection-test-result" class="scrywp-test-result"></div>
         </div>
-    </form>
 </div>
 
 <style>

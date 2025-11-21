@@ -265,8 +265,8 @@ class ScryWpIndexesFeature extends PluginFeature {
                 'type' => 'string',
                 'description' => 'Index affix for the indexes.',
                 'sanitize_callback' => function($input) {
-                    //ensure input ends in an underscore
-                    if (substr($input, -1) !== '_') {
+                    //ensure input ends in an underscore, if it is not 0 length
+                    if (!empty($input) && substr($input, -1) !== '_') {
                         $input .= '_';
                     }
                     return sanitize_text_field($input);
