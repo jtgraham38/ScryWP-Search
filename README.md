@@ -1,10 +1,10 @@
-# ScryWP Search
+# Scry Search for Meilisearch
 
 **Transform your WordPress site's search experience with lightning-fast, typo-tolerant search powered by Meilisearch.**
 
 ## Overview
 
-ScryWP Search replaces WordPress's default search functionality with [Meilisearch](https://www.meilisearch.com/), a powerful open-source search engine that delivers instant, relevant results. Say goodbye to slow, inaccurate searches and hello to a professional search experience that your users will love.
+Scry Search for Meilisearch replaces WordPress's default search functionality with [Meilisearch](https://www.meilisearch.com/), a powerful open-source search engine that delivers instant, relevant results. Say goodbye to slow, inaccurate searches and hello to a professional search experience that your users will love.
 
 ## Key Features
 
@@ -42,16 +42,16 @@ ScryWP Search replaces WordPress's default search functionality with [Meilisearc
    - Run Meilisearch locally for development
 
 2. **Install the Plugin**:
-   - Upload the plugin files to `/wp-content/plugins/scrywp-search/`
+   - Upload the plugin files to `/wp-content/plugins/scry-search-meilisearch/`
    - Activate the plugin through the WordPress 'Plugins' screen
 
 3. **Configure Connection**:
-   - Navigate to **ScryWP Search > Connection Settings**
+   - Navigate to **Scry Search > Connection Settings**
    - Enter your Meilisearch URL and API keys
    - Save settings
 
 4. **Set Up Indexes**:
-   - Go to **ScryWP Search > Indexes**
+   - Go to **Scry Search > Indexes**
    - Select which post types you want to index
    - Click "Index Posts" for each post type
 
@@ -79,7 +79,7 @@ For each post type index, you can:
 - PHP 7.2 or higher
 - Meilisearch instance (self-hosted or cloud)
 
-## Why Choose ScryWP Search?
+## Why Choose Scry Search for Meilisearch?
 
 ### For Site Managers
 - **Better User Experience**: Users find what they're looking for faster, leading to increased engagement
@@ -94,7 +94,7 @@ For each post type index, you can:
 
 ## Support
 
-For support, feature requests, or bug reports, please visit the [plugin repository](https://github.com/your-repo/scrywp-search) or contact [JG Web Development](https://jacob-t-graham.com).
+For support, feature requests, or bug reports, please visit the [plugin repository](https://github.com/jtgraham38/ScryWP-Search) or contact [JG Web Development](https://jacob-t-graham.com).
 
 ## License
 
@@ -102,4 +102,4 @@ This plugin is licensed under the GPLv3 or later.
 
 ---
 
-**Transform your WordPress search today. Install ScryWP Search and give your users the search experience they deserve.**
+**Transform your WordPress search today. Install Scry Search for Meilisearch and give your users the search experience they deserve.**

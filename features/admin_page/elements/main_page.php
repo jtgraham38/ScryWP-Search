@@ -24,13 +24,13 @@ if (method_exists($this, 'get_registered_pages')) {
 }
 
 // Separate main page from other pages
-$main_page = isset($registered_pages['scrywp-search']) ? $registered_pages['scrywp-search'] : null;
-unset($registered_pages['scrywp-search']);
+$main_page = isset($registered_pages['scry-search-meilisearch']) ? $registered_pages['scry-search-meilisearch'] : null;
+unset($registered_pages['scry-search-meilisearch']);
 ?>
 
 <div class="scrywp-admin-overview">
     <div class="scrywp-admin-overview-header">
-        <h2><?php esc_html_e('Welcome to ScryWP Search', "scry_search_meilisearch"); ?></h2>
+        <h2><?php esc_html_e('Welcome to Scry Search for Meilisearch', "scry_search_meilisearch"); ?></h2>
         <p class="description">
             <?php esc_html_e('Configure your search settings, manage connections, and set up indexes for powerful semantic search capabilities.', "scry_search_meilisearch"); ?>
         </p>

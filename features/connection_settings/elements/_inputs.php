@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
 
 <div class="wrap p-1">
 
-    <h1>ScryWP Search Settings</h1>
+    <h1>Scry Search for Meilisearch Settings</h1>
 
     <form method="post" action="options.php">
         <?php

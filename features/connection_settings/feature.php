@@ -35,7 +35,7 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
      */
     public function enqueue_admin_assets($hook) {
         // Only load assets on our admin page
-        if ($hook !== 'toplevel_page_scrywp-search') {
+        if ($hook !== 'toplevel_page_scry-search-meilisearch') {
             return;
         }
         
@@ -51,20 +51,20 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
         $admin_page_feature = $this->get_feature('scry_ms_admin_page');
         if ($admin_page_feature && method_exists($admin_page_feature, 'register_admin_page')) {
             $admin_page_feature->register_admin_page(
-                'scrywp-search-settings',
+                'scry-search-meilisearch-settings',
                 __('Connection Settings', "scry_search_meilisearch"),
                 'dashicons-admin-generic',
-                __('Configure the connection settings for ScryWP Search, including connection type and server credentials.', "scry_search_meilisearch")
+                __('Configure the connection settings for Scry Search for Meilisearch, including connection type and server credentials.', "scry_search_meilisearch")
             );
         }
         
-        //create a submenu page at 'scrywp-search-settings'
+        //create a submenu page at 'scry-search-meilisearch-settings'
         add_submenu_page(
-            'scrywp-search',   //parent slug
+            'scry-search-meilisearch',   //parent slug
             'Connection Settings',       //page title
             'Connection Settings',       //menu title
             'manage_options',            //capability
-            'scrywp-search-settings', //menu slug
+            'scry-search-meilisearch-settings', //menu slug
             function() {
                 ob_start();
                 require_once plugin_dir_path(__FILE__) . 'elements/_inputs.php';
@@ -88,7 +88,7 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
             $this->prefixed('connection_settings_section'),
             'Connection Settings',
             function() {
-                echo '<p>Configure the connection settings for ScryWP Search.</p>';
+                echo '<p>Configure the connection settings for Scry Search for Meilisearch.</p>';
             },
             $this->prefixed('connection_settings_group')
         );
@@ -143,7 +143,7 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
             $this->prefixed('connection_type'),
             array(
                 'type' => 'string',
-                'description' => 'Connection type for ScryWP Search (manual or scrywp).',
+                'description' => 'Connection type for Scry Search for Meilisearch (manual or scry).',
                 'sanitize_callback' => function($input) {
                     // Ensure the connection type is either manual or scrywp
                     $allowed_values = array('manual', 'scrywp');
@@ -164,7 +164,7 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
             $this->prefixed('meilisearch_url'),
             array(
                 'type' => 'string',
-                'description' => 'Meilisearch instance URL for ScryWP Search.',
+                'description' => 'Meilisearch instance URL for Scry Search for Meilisearch.',
                 'sanitize_callback' => function($input) {
                     // Sanitize URL
                     $sanitized = esc_url_raw(trim($input));
@@ -185,7 +185,7 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
             $this->prefixed('meilisearch_search_key'),
             array(
                 'type' => 'string',
-                'description' => 'Meilisearch search API key for ScryWP Search.',
+                'description' => 'Meilisearch search API key for Scry Search for Meilisearch.',
                 'sanitize_callback' => function($input) {
                     // Sanitize as text field but preserve the key
                     return sanitize_text_field(trim($input));
@@ -201,7 +201,7 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
             $this->prefixed('meilisearch_admin_key'),
             array(
                 'type' => 'string',
-                'description' => 'Meilisearch admin API key for ScryWP Search.',
+                'description' => 'Meilisearch admin API key for Scry Search for Meilisearch.',
                 'sanitize_callback' => function($input) {
                     // Sanitize as text field but preserve the key
                     return sanitize_text_field(trim($input));

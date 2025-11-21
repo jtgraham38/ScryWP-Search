@@ -1,6 +1,6 @@
 <?php
 /**
- * Base Layout for ScryWP Search Settings Page
+ * Base Layout for Scry Search for Meilisearch Settings Page
  * 
  * @package scry_ms_Search
  * @since 1.0.0
@@ -27,12 +27,12 @@ if (method_exists($this, 'get_registered_pages')) {
     $registered_pages = $this->get_registered_pages();
     
     // Sort pages to ensure main page is first
-    $main_page = isset($registered_pages['scrywp-search']) ? $registered_pages['scrywp-search'] : null;
-    unset($registered_pages['scrywp-search']);
+    $main_page = isset($registered_pages['scry-search-meilisearch']) ? $registered_pages['scry-search-meilisearch'] : null;
+    unset($registered_pages['scry-search-meilisearch']);
     
     // Build tabs array
     if ($main_page) {
-        $tabs['scrywp-search'] = array(
+        $tabs['scry-search-meilisearch'] = array(
             'label' => esc_html($main_page['label']),
             'icon' => esc_attr($main_page['icon']),
             'url' => esc_url($main_page['url']),
@@ -53,7 +53,7 @@ if (method_exists($this, 'get_registered_pages')) {
 <div class="wrap">
     <h1 class="wp-heading-inline">
         <span class="dashicons dashicons-search" style="font-size: 30px; width: 30px; height: 30px; margin-right: 10px;"></span>
-        <?php _e('ScryWP Search', "scry_search_meilisearch"); ?>
+        <?php _e('Scry Search for Meilisearch', "scry_search_meilisearch"); ?>
     </h1>
     
     <hr class="wp-header-end">

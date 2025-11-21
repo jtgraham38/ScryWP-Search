@@ -214,7 +214,7 @@ class ScryWpIndexesFeature extends PluginFeature {
             $this->prefixed('indexes_settings_section'),
             'Indexes',
             function() {
-                echo '<p>Configure the indexes for ScryWP Search.</p>';
+                echo '<p>Configure the indexes for Scry Search for Meilisearch.</p>';
             },
             $this->prefixed('indexes_settings_group')
         );
@@ -246,7 +246,7 @@ class ScryWpIndexesFeature extends PluginFeature {
             $this->prefixed('post_types'),
             array(
                 'type' => 'array',
-                'description' => 'Post types to index for ScryWP Search.',
+                'description' => 'Post types to index for Scry Search for Meilisearch.',
                 'sanitize_callback' => function($input) {
                     if (!is_array($input)) {
                         return array();
@@ -285,7 +285,7 @@ class ScryWpIndexesFeature extends PluginFeature {
         $admin_page_feature = $this->get_feature('scry_ms_admin_page');
         if ($admin_page_feature && method_exists($admin_page_feature, 'register_admin_page')) {
             $admin_page_feature->register_admin_page(
-                'scrywp-index-settings',
+                'scry-search-meilisearch-index-settings',
                 __('Index Settings', "scry_search_meilisearch"),
                 'dashicons-index-card',
                 __('Manage post type indexes, configure indexing settings, and view index status.', "scry_search_meilisearch")
@@ -293,11 +293,11 @@ class ScryWpIndexesFeature extends PluginFeature {
         }
         
         add_submenu_page(
-            'scrywp-search',
+            'scry-search-meilisearch',
             'Index Settings',
             'Index Settings',
             'manage_options',
-            'scrywp-index-settings',
+            'scry-search-meilisearch-index-settings',
             function() {
                 ob_start();
                 require_once plugin_dir_path(__FILE__) . 'elements/_inputs.php';
@@ -713,7 +713,7 @@ class ScryWpIndexesFeature extends PluginFeature {
             $index->updateSearchableAttributes($searchable_attributes);
         } catch (Exception $e) {
             // Log error but don't fail the entire operation
-            error_log('ScryWP: Failed to configure searchable attributes: ' . $e->getMessage());
+            error_log('Scry Search for Meilisearch: Failed to configure searchable attributes: ' . $e->getMessage());
         }
     }
     
@@ -1092,12 +1092,12 @@ class ScryWpIndexesFeature extends PluginFeature {
                 }
             } catch (Exception $e) {
                 // Silently fail - this is just a helper method
-                error_log('ScryWP: Failed to get meta keys from index via search: ' . $e->getMessage());
+                error_log('Scry Search for Meilisearch: Failed to get meta keys from index via search: ' . $e->getMessage());
             }
             
         } catch (Exception $e) {
             // Silently fail - this is just a helper method
-            error_log('ScryWP: Failed to get meta keys from index: ' . $e->getMessage());
+            error_log('Scry Search for Meilisearch: Failed to get meta keys from index: ' . $e->getMessage());
         }
         
         return array_unique($meta_keys);

@@ -40,7 +40,7 @@ class ScryWpAdminPageFeature extends PluginFeature {
     /**
      * Register an admin page for the tabbed interface
      * 
-     * @param string $page_slug The page slug (e.g., 'scrywp-search-settings')
+     * @param string $page_slug The page slug (e.g., 'scry-search-meilisearch-settings')
      * @param string $label The display label
      * @param string $icon Dashicon class (e.g., 'dashicons-admin-generic')
      * @param string $description Optional description for the intro page
@@ -75,17 +75,17 @@ class ScryWpAdminPageFeature extends PluginFeature {
     public function register_admin_menu() {
         // Register the main page
         $this->register_admin_page(
-            'scrywp-search',
+            'scry-search-meilisearch',
             __('Overview', "scry_search_meilisearch"),
             'dashicons-search',
-            __('Welcome to ScryWP Search. Configure your search settings and manage indexes.', "scry_search_meilisearch")
+            __('Welcome to Scry Search for Meilisearch. Configure your search settings and manage indexes.', "scry_search_meilisearch")
         );
         
         add_menu_page(
-            'ScryWP Search', // Page title
-            'ScryWP Search', // Menu title
+            'Scry Search', // Page title
+            'Scry Search', // Menu title
             'manage_options', // Capability required
-            'scrywp-search', // Menu slug
+            'scry-search-meilisearch', // Menu slug
             function() {
                 ob_start();
                 require_once plugin_dir_path(__FILE__) . 'elements/main_page.php';
@@ -102,22 +102,24 @@ class ScryWpAdminPageFeature extends PluginFeature {
      */
     public function enqueue_admin_assets($hook) {
         // Only load assets on our admin pages
-        // Main page hook: 'toplevel_page_scrywp-search'
-        // Submenu page hook format: 'scrywp-search_page_{submenu-slug}'
+        // Main page hook: 'toplevel_page_scry-search-meilisearch'
+        // Submenu page hook format: 'scry-search-meilisearch_page_{submenu-slug}'
         // WordPress uses the full submenu slug in the hook
         
         // Check if this is the main page
-        if ($hook === 'toplevel_page_scrywp-search') {
+        if ($hook === 'toplevel_page_scry-search-meilisearch') {
             $this->enqueue_assets();
             return;
         }
+
+
         
-        // Check if this is any submenu page under scrywp-search
+        // Check if this is any submenu page under scry-search-meilisearch
         // WordPress formats submenu hooks as: {parent-slug}_page_{submenu-slug}
-        if (strpos($hook, 'scrywp-search_page_') === 0) {
+        if (strpos($hook, 'scry-search_page_') === 0) {
             // Verify this page is registered using the registration system
             $registered_pages = $this->get_registered_pages();
-            $page_slug = str_replace('scrywp-search_page_', '', $hook);
+            $page_slug = str_replace('scry-search_page_', '', $hook);
             
             // Only enqueue if page is registered
             if (isset($registered_pages[$page_slug])) {
@@ -131,7 +133,6 @@ class ScryWpAdminPageFeature extends PluginFeature {
      * Enqueue the actual CSS and JS assets
      */
     private function enqueue_assets() {
-        
         wp_enqueue_style(
             $this->prefixed('admin-styles'),
             plugin_dir_url(__FILE__) . 'assets/css/admin.css',

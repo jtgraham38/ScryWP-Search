@@ -98,7 +98,6 @@ $admin_page_feature = $this;
 
     </div>
 </div>
-
 <?php
 // Localize script with AJAX URL and nonce
 wp_localize_script(
@@ -116,3 +115,4 @@ wp_localize_script(
     )
 );
 ?>
+

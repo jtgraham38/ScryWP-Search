@@ -209,7 +209,7 @@ class ScryWpSearchFeature extends PluginFeature {
             $this->prefixed('search_weights'),
             array(
                 'type' => 'array',
-                'description' => 'Search weights mapping post types to numeric weight values for ScryWP Search.',
+                'description' => 'Search weights mapping post types to numeric weight values for Scry Search for Meilisearch.',
                 'sanitize_callback' => function($input) {
                     if (!is_array($input)) {
                         return array();
@@ -254,19 +254,19 @@ class ScryWpSearchFeature extends PluginFeature {
         $admin_page_feature = $this->get_feature('scry_ms_admin_page');
         if ($admin_page_feature && method_exists($admin_page_feature, 'register_admin_page')) {
             $admin_page_feature->register_admin_page(
-                'scrywp-search-config',
+                'scry-search-meilisearch-search-config',
                 __('Search Settings', "scry_search_meilisearch"),
                 'dashicons-search',
-                __('Configure the search settings for ScryWP Search.', "scry_search_meilisearch")
+                __('Configure the search settings for Scry Search for Meilisearch.', "scry_search_meilisearch")
             );
         }
 
         add_submenu_page(
-            'scrywp-search',
+            'scry-search-meilisearch',
             'Search Settings',
             'Search Settings',
             'manage_options',
-            'scrywp-search-config',
+            'scry-search-meilisearch-search-config',
             function() {
                 ob_start();
                 require_once plugin_dir_path(__FILE__) . 'elements/_inputs.php';

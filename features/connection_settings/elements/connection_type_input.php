@@ -24,13 +24,14 @@ $manual_url = $this->get_base_url() . 'assets/images/manual.png';
             <h3><?php _e('Connection Type', "scry_search_meilisearch"); ?></h3>
             <div class="scrywp-connection-type-cards">
                 
-                <!-- ScryWP Managed Service - Prominent card -->
+                <!-- Scry Search Managed Service - Prominent card -->
                 <label class="scrywp-connection-card scrywp-connection-card-prominent">
                     <input type="radio" name="<?php echo $this->prefixed('connection_type'); ?>" value="scrywp" <?php checked($connection_type, 'scrywp'); ?>>
                     <div class="scrywp-card-content">
-                        <div class="scrywp-card-title">ScryWP Managed Service</div>
-                        <img src="<?php echo $coai_dark_url; ?>" alt="ScryWP Managed Service" class="scrywp-connection-card-image">
-                        <div class="scrywp-card-description">Recommended: Let ScryWP manage your Meilisearch instance</div>
+                        <div class="scrywp-card-title">Scry Search Managed Service</div>
+                        <img src="<?php echo $coai_dark_url; ?>" alt="Scry Search for Meilisearch Managed Service" class="scrywp-connection-card-image">
+                        <div class="scrywp-card-description">Recommended: Let Scry Search for Meilisearch manage your Meilisearch instance</div>
+                        <div class="scrywp-card-description">Coming soon...</div>
                     </div>
                 </label>
                 
@@ -49,7 +50,7 @@ $manual_url = $this->get_base_url() . 'assets/images/manual.png';
         <div class="scrywp-managed-get-connection-info<?php echo ($connection_type === 'scrywp') ? ' scrywp-section-visible' : ''; ?>">
             <h3><?php _e('Get Connection Info', "scry_search_meilisearch"); ?></h3>
             <p class="description">
-                <?php _e('Get your connection info from ScryWP.', "scry_search_meilisearch"); ?>
+                <?php _e('Get your connection info from Scry Search for Meilisearch.', "scry_search_meilisearch"); ?>
             </p>
             <button type="button" id="scrywp-get-connection-info" class="button button-secondary">
                 <?php _e('Get Connection Info', "scry_search_meilisearch"); ?>

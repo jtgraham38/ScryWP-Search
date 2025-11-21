@@ -1,11 +1,11 @@
 /**
- * ScryWP Search Admin JavaScript
+ * Scry Search for Meilisearch Admin JavaScript
  */
 
 (function () {
     'use strict';
 
-    // Check if scrywpTasks is available (localized script)
+    // Check if scry_ms_Tasks is available (localized script)
     if (typeof scrywpTasks === 'undefined') {
         return;
     }

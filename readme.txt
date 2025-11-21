@@ -1,4 +1,4 @@
-=== ScryWP Search ===
+=== Scry Search for Meilisearch ===
 Contributors: JG Web Development
 Tags: search, meilisearch, fast-search, typo-tolerant, search-engine, relevancy, indexing, multi-post-type
 Requires at least: 5.2
@@ -11,7 +11,7 @@ Transform your WordPress site's search experience with lightning-fast, typo-tole
 
 == Description ==
 
-ScryWP Search replaces WordPress's default search functionality with Meilisearch, a powerful open-source search engine that delivers instant, relevant results. Say goodbye to slow, inaccurate searches and hello to a professional search experience that your users will love.
+Scry Search replaces WordPress's default search functionality with Meilisearch, a powerful open-source search engine that delivers instant, relevant results. Say goodbye to slow, inaccurate searches and hello to a professional search experience that your users will love.
 
 = Key Features =
 
@@ -32,7 +32,7 @@ ScryWP Search replaces WordPress's default search functionality with Meilisearch
 
 * **Seamless Integration**: Drop-in replacement for WordPress search - no theme changes required. Works with existing WordPress search forms and queries.
 
-= Why Choose ScryWP Search? =
+= Why Choose Scry Search for Meilisearch? =
 
 **For Site Managers:**
 * Better user experience - users find what they're looking for faster
@@ -49,18 +49,18 @@ ScryWP Search replaces WordPress's default search functionality with Meilisearch
 
 1. **Install Meilisearch**: You'll need a Meilisearch instance running. You can use Meilisearch Cloud (recommended for production), self-host Meilisearch on your server, or run Meilisearch locally for development.
 
-2. **Install the Plugin**: Upload the plugin files to `/wp-content/plugins/scrywp-search/` directory, or install the plugin through the WordPress plugins screen directly.
+2. **Install the Plugin**: Upload the plugin files to `/wp-content/plugins/scry-search-ms/` directory, or install the plugin through the WordPress plugins screen directly.
 
 3. **Activate the Plugin**: Activate the plugin through the 'Plugins' screen in WordPress.
 
-4. **Configure Connection**: Navigate to ScryWP Search > Connection Settings and enter your Meilisearch URL and API keys.
+4. **Configure Connection**: Navigate to Scry Search for Meilisearch > Connection Settings and enter your Meilisearch URL and API keys.
 
-5. **Set Up Indexes**: Go to ScryWP Search > Indexes, select which post types you want to index, and click "Index Posts" for each post type.
+5. **Set Up Indexes**: Go to Scry Search > Indexes, select which post types you want to index, and click "Index Posts" for each post type.
 
 == Frequently Asked Questions ==
 
 = Do I need to modify my theme? =
-No! ScryWP Search is a drop-in replacement for WordPress search. It works with your existing search forms and queries without any theme modifications.
+No! Scry Search for Meilisearch is a drop-in replacement for WordPress search. It works with your existing search forms and queries without any theme modifications.
 
 = What is Meilisearch? =
 Meilisearch is an open-source, fast, and typo-tolerant search engine. You can host it yourself or use Meilisearch Cloud. Visit https://www.meilisearch.com/ to learn more.
@@ -72,10 +72,10 @@ Yes! For each post type index, you can configure exactly which fields are search
 Absolutely! You can reorder the built-in ranking rules (words, typo, proximity, attribute, sort, exactness) using a drag-and-drop interface. You can also assign search weights to different post types.
 
 = Will this work with WooCommerce/other plugins? =
-Yes! ScryWP Search works with any post type, including WooCommerce products and custom post types created by other plugins. Simply select the post types you want to index.
+Yes! Scry Search for Meilisearch works with any post type, including WooCommerce products and custom post types created by other plugins. Simply select the post types you want to index.
 
 = How do I re-index my content? =
-Go to ScryWP Search > Indexes, find the post type you want to re-index, and click the "Index Posts" button. You can also wipe and rebuild an index if needed.
+Go to Scry Search > Indexes, find the post type you want to re-index, and click the "Index Posts" button. You can also wipe and rebuild an index if needed.
 
 = Is this plugin secure? =
 Yes. The plugin follows WordPress security best practices, uses nonces for all AJAX requests, checks user capabilities, and sanitizes all user input.
