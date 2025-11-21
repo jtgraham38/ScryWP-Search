@@ -25,6 +25,9 @@ class ScryWpIndexesFeature extends PluginFeature {
         //add an admin page for the indexes
         add_action('admin_menu', array($this, 'add_admin_page'));
 
+        // Enqueue admin assets
+        add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
+
         //ensure indexes exist in meilisearch for all selected post types
         add_action('init', array($this, 'ensure_post_indexes_exist'));
 
@@ -304,6 +307,87 @@ class ScryWpIndexesFeature extends PluginFeature {
                 $content = ob_get_clean();
                 $this->get_feature('scry_ms_admin_page')->render_admin_page($content);
             }
+        );
+    }
+
+    /**
+     * Enqueue admin assets for the indexes page
+     */
+    public function enqueue_admin_assets($hook) {
+        // Only load assets on the indexes settings page
+        // Hook format: {parent-slug}_page_{submenu-slug}
+        if ($hook !== 'scry-search_page_scry-search-meilisearch-index-settings') {
+            return;
+        }
+
+        // Enqueue CSS
+        wp_enqueue_style(
+            $this->prefixed('show-indexes-styles'),
+            plugin_dir_url(__FILE__) . 'assets/css/show_indexes.css',
+            array(),
+            '1.0.0'
+        );
+
+        // Enqueue JavaScript
+        wp_enqueue_script(
+            $this->prefixed('show-indexes-script'),
+            plugin_dir_url(__FILE__) . 'assets/js/show_indexes.js',
+            array('jquery'),
+            '1.0.0',
+            true
+        );
+
+        // Localize script with AJAX URL, actions, nonces, and i18n strings
+        wp_localize_script(
+            $this->prefixed('show-indexes-script'),
+            'scrywpIndexes',
+            array(
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'actions' => array(
+                    'indexPosts' => $this->prefixed('index_posts'),
+                    'wipeIndex' => $this->prefixed('wipe_index'),
+                    'searchIndex' => $this->prefixed('search_index'),
+                    'getIndexSettings' => $this->prefixed('get_index_settings'),
+                    'updateIndexSettings' => $this->prefixed('update_index_settings'),
+                ),
+                'nonces' => array(
+                    'indexPosts' => wp_create_nonce($this->prefixed('index_posts')),
+                    'wipeIndex' => wp_create_nonce($this->prefixed('wipe_index')),
+                    'searchIndex' => wp_create_nonce($this->prefixed('search_index')),
+                    'getIndexSettings' => wp_create_nonce($this->prefixed('get_index_settings')),
+                    'updateIndexSettings' => wp_create_nonce($this->prefixed('update_index_settings')),
+                ),
+                'i18n' => array(
+                    'indexing' => __('Indexing...', "scry_search_meilisearch"),
+                    'indexingAll' => __('Indexing All...', "scry_search_meilisearch"),
+                    'wiping' => __('Wiping...', "scry_search_meilisearch"),
+                    'saving' => __('Saving...', "scry_search_meilisearch"),
+                    'error' => __('Error:', "scry_search_meilisearch"),
+                    'postsIndexedSuccessfully' => __('Posts indexed successfully', "scry_search_meilisearch"),
+                    'failedToIndexPosts' => __('Failed to index posts', "scry_search_meilisearch"),
+                    'failedToIndex' => __('Failed to index', "scry_search_meilisearch"),
+                    'noValidIndexesToIndex' => __('No valid indexes to index.', "scry_search_meilisearch"),
+                    'allPostTypesIndexedSuccessfully' => __('All post types have been indexed successfully.', "scry_search_meilisearch"),
+                    'indexWipedSuccessfully' => __('Index wiped successfully', "scry_search_meilisearch"),
+                    'failedToWipeIndex' => __('Failed to wipe index', "scry_search_meilisearch"),
+                    'enterSearchQuery' => __('Enter a search query above to search the index.', "scry_search_meilisearch"),
+                    'searching' => __('Searching...', "scry_search_meilisearch"),
+                    'noResultsFound' => __('No results found.', "scry_search_meilisearch"),
+                    'viewPost' => __('View Post', "scry_search_meilisearch"),
+                    'editPost' => __('Edit Post', "scry_search_meilisearch"),
+                    'untitled' => __('Untitled', "scry_search_meilisearch"),
+                    'viewRawJson' => __('View Raw JSON', "scry_search_meilisearch"),
+                    'searchFailed' => __('Search failed', "scry_search_meilisearch"),
+                    'errorFailedToSearchIndex' => __('Error: Failed to search index', "scry_search_meilisearch"),
+                    'saveSettings' => __('Save Settings', "scry_search_meilisearch"),
+                    'failedToLoadSettings' => __('Failed to load settings', "scry_search_meilisearch"),
+                    'errorFailedToLoadSettings' => __('Error: Failed to load settings', "scry_search_meilisearch"),
+                    'dragToReorder' => __('Drag to reorder', "scry_search_meilisearch"),
+                    'expand' => __('Expand', "scry_search_meilisearch"),
+                    'settingsSavedSuccessfully' => __('Settings saved successfully', "scry_search_meilisearch"),
+                    'failedToSaveSettings' => __('Failed to save settings', "scry_search_meilisearch"),
+                ),
+            )
         );
     }
     

@@ -1,0 +1,107 @@
+/**
+ * Main Page Specific Styles
+ * 
+ * @package scry_ms_Search
+ * @since 1.0.0
+ */
+
+.scrywp-admin-overview {
+    max-width: 1200px;
+    margin-top: 20px;
+}
+
+.scrywp-admin-overview-header {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #ddd;
+}
+
+.scrywp-admin-overview-header h2 {
+    margin: 0 0 10px 0;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.scrywp-admin-overview-header .description {
+    margin: 0;
+    font-size: 14px;
+    color: #666;
+}
+
+.scrywp-admin-pages-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.scrywp-admin-page-card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.scrywp-admin-page-card:hover {
+    border-color: #2271b1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.scrywp-admin-page-card-icon {
+    margin-bottom: 15px;
+}
+
+.scrywp-admin-page-card-icon .dashicons {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    color: #2271b1;
+}
+
+.scrywp-admin-page-card-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.scrywp-admin-page-card-title {
+    margin: 0 0 10px 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.scrywp-admin-page-card-title a {
+    text-decoration: none;
+    color: #1d2327;
+}
+
+.scrywp-admin-page-card-title a:hover {
+    color: #2271b1;
+}
+
+.scrywp-admin-page-card-description {
+    margin: 0 0 15px 0;
+    color: #646970;
+    font-size: 14px;
+    line-height: 1.6;
+    flex: 1;
+}
+
+.scrywp-admin-page-card-action {
+    margin-top: auto;
+}
+
+.scrywp-admin-page-card-action .button {
+    display: inline-flex;
+    align-items: center;
+}
+
+@media (max-width: 782px) {
+    .scrywp-admin-pages-grid {
+        grid-template-columns: 1fr;
+    }
+}

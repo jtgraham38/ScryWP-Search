@@ -1,0 +1,703 @@
+/**
+ * Scry Search for Meilisearch Show Indexes Styles
+ * 
+ * @package scry_ms_Search
+ * @since 1.0.0
+ */
+
+.scrywp-indexes-display {
+    max-width: 1200px;
+    margin: 20px 0;
+}
+
+.scrywp-indexes-error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.scrywp-indexes-empty {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 30px;
+    text-align: center;
+    color: #646970;
+}
+
+.scrywp-index-all-actions {
+    margin: 20px 0;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.scrywp-index-all-actions .scrywp-index-all-posts-button {
+    font-size: 14px;
+    padding: 8px 16px;
+    height: auto;
+}
+
+.scrywp-index-all-actions .scrywp-index-all-posts-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.scrywp-indexes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.scrywp-index-card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 8px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.scrywp-index-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.scrywp-index-card-error {
+    border-color: #dc3232;
+    background: #fef7f7;
+}
+
+.scrywp-index-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.scrywp-index-card-title-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.scrywp-index-card-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #23282d;
+    word-break: break-word;
+}
+
+.scrywp-index-card-subtitle {
+    font-size: 12px;
+    color: #646970;
+}
+
+.scrywp-index-status {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.scrywp-index-status-ready {
+    background: #d4edda;
+    color: #155724;
+}
+
+.scrywp-index-status-indexing {
+    background: #fff3cd;
+    color: #856404;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.scrywp-index-status-error {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.scrywp-index-status-empty {
+    background: #ffeaa7;
+    color: #856404;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.scrywp-index-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.scrywp-index-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+}
+
+.scrywp-index-stat-label {
+    color: #646970;
+    font-size: 14px;
+}
+
+.scrywp-index-stat-value {
+    color: #23282d;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.scrywp-index-error-message {
+    color: #721c24;
+    margin: 0;
+    padding: 10px;
+    background: #f8d7da;
+    border-radius: 4px;
+    border-left: 3px solid #dc3232;
+}
+
+@media (max-width: 782px) {
+    .scrywp-indexes-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .scrywp-index-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .scrywp-index-card-title {
+        margin-right: 0;
+    }
+}
+
+@media (min-width: 783px) and (max-width: 1024px) {
+    .scrywp-indexes-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.scrywp-index-actions {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e5e5e5;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.scrywp-wipe-index-button {
+    width: 100%;
+    background-color: #dc3232;
+    border-color: #dc3232;
+    color: #fff;
+}
+
+.scrywp-wipe-index-button:hover,
+.scrywp-wipe-index-button:focus {
+    background-color: #a00;
+    border-color: #a00;
+    color: #fff;
+}
+
+.scrywp-wipe-index-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Search Dialog Styles */
+.scrywp-index-dialog {
+    width: 90%;
+    max-width: 800px;
+    border: 1px solid #ccd0d4;
+    border-radius: 8px;
+    padding: 0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.scrywp-index-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.scrywp-index-dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #e5e5e5;
+    background: #f9f9f9;
+}
+
+.scrywp-index-dialog-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #23282d;
+}
+
+.scrywp-index-dialog-close-button {
+    background: none;
+    border: none;
+    font-size: 32px;
+    line-height: 1;
+    color: #646970;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+}
+
+.scrywp-index-dialog-close-button:hover {
+    color: #dc3232;
+}
+
+.scrywp-index-dialog-search-form {
+    padding: 20px;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.scrywp-index-dialog-search-input-wrapper {
+    display: flex;
+    gap: 10px;
+}
+
+.scrywp-index-dialog-search-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #8c8f94;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.scrywp-index-dialog-search-input:focus {
+    outline: none;
+    border-color: #2271b1;
+    box-shadow: 0 0 0 1px #2271b1;
+}
+
+.scrywp-index-dialog-results {
+    padding: 20px;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.scrywp-index-dialog-results-message {
+    color: #646970;
+    text-align: center;
+    padding: 40px 20px;
+    font-style: italic;
+}
+
+.scrywp-index-dialog-result {
+    padding: 15px;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    background: #fff;
+    transition: all 0.2s ease;
+}
+
+.scrywp-index-dialog-result:hover {
+    border-color: #2271b1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.scrywp-index-dialog-result:last-child {
+    margin-bottom: 0;
+}
+
+.scrywp-index-dialog-result-title {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #23282d;
+}
+
+.scrywp-index-dialog-result-excerpt {
+    margin: 0 0 12px 0;
+    color: #646970;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.scrywp-index-dialog-result-meta {
+    display: flex;
+    gap: 15px;
+    font-size: 12px;
+    color: #8c8f94;
+    margin-bottom: 12px;
+}
+
+.scrywp-index-dialog-result-json {
+    margin: 12px 0;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    background: #f9f9f9;
+}
+
+.scrywp-index-dialog-result-json-toggle {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: #2271b1;
+    user-select: none;
+    list-style: none;
+    transition: background 0.2s ease;
+}
+
+.scrywp-index-dialog-result-json-toggle:hover {
+    background: #f0f0f0;
+}
+
+.scrywp-index-dialog-result-json-toggle::-webkit-details-marker {
+    display: none;
+}
+
+.scrywp-index-dialog-result-json-toggle::before {
+    content: '▶';
+    display: inline-block;
+    margin-right: 6px;
+    font-size: 10px;
+    transition: transform 0.2s ease;
+}
+
+details[open] .scrywp-index-dialog-result-json-toggle::before {
+    transform: rotate(90deg);
+}
+
+.scrywp-index-dialog-result-json-content {
+    padding: 12px;
+    margin: 0;
+    background: #fff;
+    border-top: 1px solid #e5e5e5;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-x: auto;
+    white-space: pre;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.scrywp-index-dialog-result-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.scrywp-index-dialog-result-link {
+    display: inline-block;
+    padding: 6px 12px;
+    background: #2271b1;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 13px;
+    transition: background 0.2s ease;
+}
+
+.scrywp-index-dialog-result-link:hover {
+    background: #135e96;
+    color: #fff;
+}
+
+.scrywp-index-dialog-result-edit-link {
+    display: inline-block;
+    padding: 6px 12px;
+    background: #646970;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 13px;
+    transition: background 0.2s ease;
+}
+
+.scrywp-index-dialog-result-edit-link:hover {
+    background: #50575e;
+    color: #fff;
+}
+
+.scrywp-index-dialog-loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: #646970;
+}
+
+.scrywp-index-dialog-no-results {
+    text-align: center;
+    padding: 40px 20px;
+    color: #646970;
+    font-style: italic;
+}
+
+/* Index Settings Dialog Styles */
+.scrywp-index-settings-dialog {
+    max-width: 900px;
+}
+
+.scrywp-index-settings-content {
+    padding: 20px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.scrywp-index-settings-loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: #646970;
+}
+
+.scrywp-index-settings-error {
+    padding: 20px;
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    color: #721c24;
+}
+
+.scrywp-index-settings-error-message {
+    margin: 0;
+}
+
+.scrywp-index-settings-section {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.scrywp-index-settings-section:last-of-type {
+    border-bottom: none;
+}
+
+.scrywp-index-settings-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.scrywp-index-settings-section h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #23282d;
+}
+
+.scrywp-index-settings-help-link {
+    font-size: 13px;
+    color: #2271b1;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    transition: color 0.2s ease;
+}
+
+.scrywp-index-settings-help-link:hover {
+    color: #135e96;
+    text-decoration: underline;
+}
+
+.scrywp-index-settings-section .description {
+    margin: 0 0 15px 0;
+    color: #646970;
+    font-size: 13px;
+    font-style: italic;
+}
+
+/* Ranking Rules Styles */
+.scrywp-ranking-rules-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    background: #fff;
+}
+
+.scrywp-ranking-rule-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    border-bottom: 1px solid #e5e5e5;
+    cursor: move;
+    background: #fff;
+    transition: background 0.2s ease;
+}
+
+.scrywp-ranking-rule-item:last-child {
+    border-bottom: none;
+}
+
+.scrywp-ranking-rule-item:hover {
+    background: #f9f9f9;
+}
+
+.scrywp-ranking-rule-item.scrywp-ranking-rule-drag-over {
+    background: #e7f5ff;
+    border-top: 2px solid #2271b1;
+}
+
+.scrywp-ranking-rule-handle {
+    margin-right: 12px;
+    color: #8c8f94;
+    font-size: 18px;
+    cursor: grab;
+    user-select: none;
+}
+
+.scrywp-ranking-rule-handle:active {
+    cursor: grabbing;
+}
+
+.scrywp-ranking-rule-label {
+    flex: 1;
+    font-size: 14px;
+    color: #23282d;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+/* Searchable Fields Styles */
+.scrywp-searchable-fields-tree {
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    background: #fff;
+    padding: 10px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.scrywp-searchable-field-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 10px;
+    margin: 2px 0;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background 0.2s ease;
+}
+
+.scrywp-searchable-field-item:hover {
+    background: #f9f9f9;
+}
+
+.scrywp-searchable-field-checkbox {
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+.scrywp-searchable-field-item span {
+    font-size: 14px;
+    color: #23282d;
+    user-select: none;
+}
+
+.scrywp-searchable-field-group {
+    margin: 5px 0;
+}
+
+.scrywp-searchable-field-group-label {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    font-weight: 600;
+    background: #f9f9f9;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.scrywp-searchable-field-group-label:hover {
+    background: #f0f0f0;
+}
+
+.scrywp-searchable-field-group-label span {
+    flex: 1;
+    font-size: 14px;
+    color: #23282d;
+}
+
+.scrywp-searchable-field-expand {
+    background: none;
+    border: none;
+    color: #646970;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 0 8px;
+    margin-left: 8px;
+    transition: color 0.2s ease;
+}
+
+.scrywp-searchable-field-expand:hover {
+    color: #2271b1;
+}
+
+.scrywp-searchable-field-children {
+    margin-left: 30px;
+    margin-top: 5px;
+    padding-left: 10px;
+    border-left: 2px solid #e5e5e5;
+}
+
+.scrywp-searchable-field-children .scrywp-searchable-field-item {
+    padding-left: 5px;
+}
+
+/* Settings Actions */
+.scrywp-index-settings-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e5e5e5;
+}
+
+.scrywp-index-settings-actions-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.scrywp-save-index-settings-button {
+    min-width: 120px;
+}
+
+.scrywp-cancel-index-settings-button {
+    min-width: 120px;
+}
+
+.scrywp-index-settings-save-error {
+    padding: 10px 12px;
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    color: #721c24;
+}
+
+.scrywp-index-settings-save-error-message {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+}

@@ -109,6 +109,13 @@ class ScryWpAdminPageFeature extends PluginFeature {
         // Check if this is the main page
         if ($hook === 'toplevel_page_scry-search-meilisearch') {
             $this->enqueue_assets();
+            // Enqueue main page specific styles
+            wp_enqueue_style(
+                $this->prefixed('admin-page-styles'),
+                plugin_dir_url(__FILE__) . 'assets/css/page.css',
+                array(),
+                '1.0.0'
+            );
             return;
         }
 
@@ -130,7 +137,7 @@ class ScryWpAdminPageFeature extends PluginFeature {
     }
     
     /**
-     * Enqueue the actual CSS and JS assets
+     * Enqueue the actual CSS and JS assets for all admin pages
      */
     private function enqueue_assets() {
         wp_enqueue_style(

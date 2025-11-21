@@ -31,15 +31,56 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
     }
     
     /**
-     * Enqueue admin assets for search settings
+     * Enqueue admin assets for connection settings page
      */
     public function enqueue_admin_assets($hook) {
-        // Only load assets on our admin page
-        if ($hook !== 'toplevel_page_scry-search-meilisearch') {
+        // Only load assets on the connection settings page
+        // Hook format: {parent-slug}_page_{submenu-slug}
+        if ($hook !== 'scry-search_page_scry-search-meilisearch-settings') {
             return;
         }
         
-        //TODO: enqueue as needed
+        // Enqueue connection type input CSS
+        wp_enqueue_style(
+            $this->prefixed('connection-type-input-styles'),
+            plugin_dir_url(__FILE__) . 'assets/css/connection_type_input.css',
+            array(),
+            '1.0.0'
+        );
+        
+        // Enqueue connection type input JS
+        wp_enqueue_script(
+            $this->prefixed('connection-type-input-script'),
+            plugin_dir_url(__FILE__) . 'assets/js/connection_type_input.js',
+            array(),
+            '1.0.0',
+            true
+        );
+        
+        // Localize script with field names and translations
+        wp_localize_script(
+            $this->prefixed('connection-type-input-script'),
+            'scrywpConnectionSettings',
+            array(
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'testAction' => 'scry_ms_test_connection',
+                'testNonce' => wp_create_nonce('scry_ms_test_connection'),
+                'connectionTypeField' => $this->prefixed('connection_type'),
+                'urlField' => $this->prefixed('meilisearch_url'),
+                'searchKeyField' => $this->prefixed('meilisearch_search_key'),
+                'adminKeyField' => $this->prefixed('meilisearch_admin_key'),
+                'i18n' => array(
+                    'testing' => __('Testing...', "scry_search_meilisearch"),
+                    'testConnection' => __('Test Connection', "scry_search_meilisearch"),
+                    'success' => __('Success!', "scry_search_meilisearch"),
+                    'error' => __('Error:', "scry_search_meilisearch"),
+                    'testFailed' => __('Connection test failed', "scry_search_meilisearch"),
+                    'failedToTest' => __('Failed to test connection', "scry_search_meilisearch"),
+                    'selectConnectionType' => __('Please select a connection type', "scry_search_meilisearch"),
+                    'fillRequiredFields' => __('Please fill in all required fields', "scry_search_meilisearch"),
+                ),
+            )
+        );
     }
 
 
