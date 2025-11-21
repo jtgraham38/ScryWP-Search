@@ -17,9 +17,9 @@ jQuery(document).ready(function($) {
             url: ajaxurl,
             type: 'POST',
             data: {
-                action: scrywp_weights_ajax.add_factor_action,
+                action: scry_ms_weights_ajax.add_factor_action,
                 factor_name: factorKey,
-                nonce: scrywp_weights_ajax.nonce
+                nonce: scry_ms_weights_ajax.nonce
             },
             success: function(response) {
                 if (response.success) {
@@ -49,9 +49,9 @@ jQuery(document).ready(function($) {
             url: ajaxurl,
             type: 'POST',
             data: {
-                action: scrywp_weights_ajax.remove_factor_action,
+                action: scry_ms_weights_ajax.remove_factor_action,
                 factor_name: factorKey,
-                nonce: scrywp_weights_ajax.nonce
+                nonce: scry_ms_weights_ajax.nonce
             },
             success: function(response) {
                 if (response.success) {
@@ -98,9 +98,9 @@ jQuery(document).ready(function($) {
             url: ajaxurl,
             type: 'POST',
             data: {
-                action: scrywp_weights_ajax.update_weights_action,
+                action: scry_ms_weights_ajax.update_weights_action,
                 weights: weights,
-                nonce: scrywp_weights_ajax.nonce
+                nonce: scry_ms_weights_ajax.nonce
             },
             success: function(response) {
                 if (response.success) {

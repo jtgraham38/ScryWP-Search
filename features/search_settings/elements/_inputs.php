@@ -13,8 +13,8 @@ if (!defined('ABSPATH')) {
 
     <form method="post" action="options.php">
         <?php
-            settings_fields('scrywp_search_plugin_settings');
-            do_settings_fields('scrywp-search-settings', 'scrywp_search_plugin_settings');
+            settings_fields('scry_ms_search_plugin_settings');
+            do_settings_fields('scrywp-search-settings', 'scry_ms_search_plugin_settings');
         ?>
         <br>
         <?php submit_button(); ?>

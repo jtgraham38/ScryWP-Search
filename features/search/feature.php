@@ -63,7 +63,7 @@ class ScryWpSearchFeature extends PluginFeature {
         }
         
         //now, get the index names for the post types we are searching
-        $index_feature = $this->get_feature('scrywp_indexes');
+        $index_feature = $this->get_feature('scry_ms_indexes');
         $index_names = $index_feature->get_index_names();
         $index_names_to_search = array_intersect_key($index_names, array_flip($post_types_to_search));
 
@@ -185,9 +185,9 @@ class ScryWpSearchFeature extends PluginFeature {
         // Register the search weights section
         add_settings_section(
             $this->prefixed('search_weights_section'),
-            __('Search Weights', "meilisearch_wp"),
+            __('Search Weights', "scry_search_meilisearch"),
             function() {
-                echo '<p>' . esc_html__('Configure search weights for each post type. Higher weights will prioritize results from that post type in federated searches.', "meilisearch_wp") . '</p>';
+                echo '<p>' . esc_html__('Configure search weights for each post type. Higher weights will prioritize results from that post type in federated searches.', "scry_search_meilisearch") . '</p>';
             },
             $this->prefixed('search_settings_group')
         );
@@ -195,7 +195,7 @@ class ScryWpSearchFeature extends PluginFeature {
         // Add the search weights field
         add_settings_field(
             $this->prefixed('search_weights'),
-            __('Post Type Weights', "meilisearch_wp"),
+            __('Post Type Weights', "scry_search_meilisearch"),
             function() {
                 require_once plugin_dir_path(__FILE__) . 'elements/settings/search_weights_input.php';
             },
@@ -251,13 +251,13 @@ class ScryWpSearchFeature extends PluginFeature {
     //add an admin page for the search settings
     public function add_admin_page() {
         // Register this page with the admin page feature
-        $admin_page_feature = $this->get_feature('scrywp_admin_page');
+        $admin_page_feature = $this->get_feature('scry_ms_admin_page');
         if ($admin_page_feature && method_exists($admin_page_feature, 'register_admin_page')) {
             $admin_page_feature->register_admin_page(
                 'scrywp-search-config',
-                __('Search Settings', "meilisearch_wp"),
+                __('Search Settings', "scry_search_meilisearch"),
                 'dashicons-search',
-                __('Configure the search settings for ScryWP Search.', "meilisearch_wp")
+                __('Configure the search settings for ScryWP Search.', "scry_search_meilisearch")
             );
         }
 
@@ -271,7 +271,7 @@ class ScryWpSearchFeature extends PluginFeature {
                 ob_start();
                 require_once plugin_dir_path(__FILE__) . 'elements/_inputs.php';
                 $content = ob_get_clean();
-                $this->get_feature('scrywp_admin_page')->render_admin_page($content);
+                $this->get_feature('scry_ms_admin_page')->render_admin_page($content);
             }
         );
     }

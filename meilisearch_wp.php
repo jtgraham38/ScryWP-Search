@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name:	ScryWP Search
+ * Plugin Name:	Scry Search for Meilisearch
  * Plugin URI:	https://scrywp.com
  * Description:	A powerful semantic search plugin, powered by Meilisearch.
  * Version:	1.0.0
@@ -10,7 +10,7 @@
  * Author URI:	https://jacob-t-graham.com
  * License:	GPLv3 or later
  * License URI:	https://www.gnu.org/licenses/gpl-3.0.html
- * Text Domain:	meilisearch-wp
+ * Text Domain:	scry-search-meilisearch
  */
 
 //exit if accessed directly
@@ -26,28 +26,28 @@ use jtgraham38\jgwordpresskit\Plugin;
 use jtgraham38\jgwordpresskit\PluginFeature;
 
 //create a new plugin manager
-$plugin = new Plugin("scrywp_", plugin_dir_path( __FILE__ ), plugin_dir_url( __FILE__ ));
+$plugin = new Plugin("scry_ms_", plugin_dir_path( __FILE__ ), plugin_dir_url( __FILE__ ));
 
 //register features with the plugin manager here...
 require_once plugin_dir_path(__FILE__) . '/features/admin_page/feature.php';
 $feature = new ScryWpAdminPageFeature();
-$plugin->register_feature("scrywp_admin_page", $feature);
+$plugin->register_feature("scry_ms_admin_page", $feature);
 
 require_once plugin_dir_path(__FILE__) . '/features/search_settings/feature.php';
 $search_settings_feature = new ScryWpSearchSettingsFeature();
-$plugin->register_feature("scrywp_search_settings", $search_settings_feature);
+$plugin->register_feature("scry_ms_search_settings", $search_settings_feature);
 
 require_once plugin_dir_path(__FILE__) . '/features/search/feature.php';
 $search_feature = new ScryWpSearchFeature();
-$plugin->register_feature("scrywp_search", $search_feature);
+$plugin->register_feature("scry_ms_search", $search_feature);
 
 require_once plugin_dir_path(__FILE__) . '/features/indexes/feature.php';
 $indexes_feature = new ScryWpIndexesFeature();
-$plugin->register_feature("scrywp_indexes", $indexes_feature);
+$plugin->register_feature("scry_ms_indexes", $indexes_feature);
 
 require_once plugin_dir_path(__FILE__) . '/features/connection_settings/feature.php';
 $connection_settings_feature = new ScryWpConnectionSettingsFeature();
-$plugin->register_feature("scrywp_connection_settings", $connection_settings_feature);
+$plugin->register_feature("scry_ms_connection_settings", $connection_settings_feature);
 
 //init the plugin
 $plugin->init();

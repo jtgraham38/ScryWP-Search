@@ -2,7 +2,7 @@
 /**
  * Base Layout for ScryWP Search Settings Page
  * 
- * @package ScryWP_Search
+ * @package scry_ms_Search
  * @since 1.0.0
  */
 
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 // Security check
 if (!current_user_can('manage_options')) {
-    wp_die(__('You do not have sufficient permissions to access this page.', "meilisearch_wp"));
+    wp_die(__('You do not have sufficient permissions to access this page.', "scry_search_meilisearch"));
 }
 
 // Get current page
@@ -53,7 +53,7 @@ if (method_exists($this, 'get_registered_pages')) {
 <div class="wrap">
     <h1 class="wp-heading-inline">
         <span class="dashicons dashicons-search" style="font-size: 30px; width: 30px; height: 30px; margin-right: 10px;"></span>
-        <?php _e('ScryWP Search', "meilisearch_wp"); ?>
+        <?php _e('ScryWP Search', "scry_search_meilisearch"); ?>
     </h1>
     
     <hr class="wp-header-end">

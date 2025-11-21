@@ -43,7 +43,7 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
                 $indexes_data[] = array(
                     'name' => $post_type,
                     'index_name' => $index_name,
-                    'error' => $e->getCode() === 404 ? __('Index does not exist', "meilisearch_wp") : $e->getMessage(),
+                    'error' => $e->getCode() === 404 ? __('Index does not exist', "scry_search_meilisearch") : $e->getMessage(),
                     'exists' => false,
                 );
             }
@@ -54,24 +54,24 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
         $error_message = $e->getMessage();
     }
 } else {
-    $error_message = __('Connection settings are not configured.', "meilisearch_wp");
+    $error_message = __('Connection settings are not configured.', "scry_search_meilisearch");
 }
 ?>
 <div class="scrywp-indexes-display">
     <?php if (!empty($error_message)): ?>
         <div class="scrywp-indexes-error">
-            <p><strong><?php _e('Error:', "meilisearch_wp"); ?></strong> <?php echo esc_html($error_message); ?></p>
+            <p><strong><?php _e('Error:', "scry_search_meilisearch"); ?></strong> <?php echo esc_html($error_message); ?></p>
         </div>
     <?php endif; ?>
     
     <?php if (empty($indexes_data)): ?>
         <div class="scrywp-indexes-empty">
-            <p><?php _e('No indexes configured. Please select post types to index in the settings.', "meilisearch_wp"); ?></p>
+            <p><?php _e('No indexes configured. Please select post types to index in the settings.', "scry_search_meilisearch"); ?></p>
         </div>
     <?php else: ?>
         <div class="scrywp-index-all-actions">
             <button type="button" class="button button-primary scrywp-index-all-posts-button">
-                <?php _e('Index All Post Types', "meilisearch_wp"); ?>
+                <?php _e('Index All Post Types', "scry_search_meilisearch"); ?>
             </button>
         </div>
         <div class="scrywp-indexes-grid">
@@ -83,13 +83,13 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
                             <code class="scrywp-index-card-subtitle"><?php echo esc_html($index['index_name']); ?></code>
                         </div>
                         <?php if (isset($index['error'])): ?>
-                            <span class="scrywp-index-status scrywp-index-status-error"><?php _e('Error', "meilisearch_wp"); ?></span>
+                            <span class="scrywp-index-status scrywp-index-status-error"><?php _e('Error', "scry_search_meilisearch"); ?></span>
                         <?php elseif ($index['isIndexing']): ?>
-                            <span class="scrywp-index-status scrywp-index-status-indexing"><?php _e('Indexing...', "meilisearch_wp"); ?></span>
+                            <span class="scrywp-index-status scrywp-index-status-indexing"><?php _e('Indexing...', "scry_search_meilisearch"); ?></span>
                         <?php elseif (isset($index['numberOfDocuments']) && $index['numberOfDocuments'] == 0): ?>
-                            <span class="scrywp-index-status scrywp-index-status-empty"><?php _e('Empty', "meilisearch_wp"); ?></span>
+                            <span class="scrywp-index-status scrywp-index-status-empty"><?php _e('Empty', "scry_search_meilisearch"); ?></span>
                         <?php else: ?>
-                            <span class="scrywp-index-status scrywp-index-status-ready"><?php _e('Ready', "meilisearch_wp"); ?></span>
+                            <span class="scrywp-index-status scrywp-index-status-ready"><?php _e('Ready', "scry_search_meilisearch"); ?></span>
                         <?php endif; ?>
                     </div>
                     
@@ -100,30 +100,30 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
                     <?php else: ?>
                         <div class="scrywp-index-card-content">
                             <div class="scrywp-index-stat">
-                                <span class="scrywp-index-stat-label"><?php _e('Documents:', "meilisearch_wp"); ?></span>
+                                <span class="scrywp-index-stat-label"><?php _e('Documents:', "scry_search_meilisearch"); ?></span>
                                 <span class="scrywp-index-stat-value"><?php echo number_format($index['numberOfDocuments']); ?></span>
                             </div>
                             
                             <?php if (!empty($index['primaryKey'])): ?>
                                 <div class="scrywp-index-stat">
-                                    <span class="scrywp-index-stat-label"><?php _e('Primary Key:', "meilisearch_wp"); ?></span>
+                                    <span class="scrywp-index-stat-label"><?php _e('Primary Key:', "scry_search_meilisearch"); ?></span>
                                     <span class="scrywp-index-stat-value"><?php echo esc_html($index['primaryKey']); ?></span>
                                 </div>
                             <?php endif; ?>
                             
                             <?php if (!empty($index['createdAt'])): ?>
                                 <div class="scrywp-index-stat">
-                                    <span class="scrywp-index-stat-label"><?php _e('Created:', "meilisearch_wp"); ?></span>
+                                    <span class="scrywp-index-stat-label"><?php _e('Created:', "scry_search_meilisearch"); ?></span>
                                     <span class="scrywp-index-stat-value"><?php echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($index['createdAt']))); ?></span>
                                 </div>
                             <?php endif; ?>
                             
                             <div class="scrywp-index-actions">
                                 <button type="button" class="button button-primary scrywp-index-posts-button" data-post-type="<?php echo esc_attr($index['name']); ?>" data-index-display="<?php echo esc_attr($index['name']); ?>">
-                                    <?php _e('Index All Posts', "meilisearch_wp"); ?>
+                                    <?php _e('Index All Posts', "scry_search_meilisearch"); ?>
                                 </button>
                                 <button type="button" class="button button-secondary scrywp-wipe-index-button" data-index-name="<?php echo esc_attr($index['index_name']); ?>" data-index-display="<?php echo esc_attr($index['name']); ?>">
-                                    <?php _e('Wipe Index', "meilisearch_wp"); ?>
+                                    <?php _e('Wipe Index', "scry_search_meilisearch"); ?>
                                 </button>
                                 <button 
                                     type="button" 
@@ -132,7 +132,7 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
                                     data-index-display="<?php echo esc_attr($index['name']); ?>"
                                     onclick="document.getElementById('<?php echo esc_attr($index['index_name']); ?>_search_dialog').showModal()"
                                 >
-                                    <?php _e('Search Index', "meilisearch_wp"); ?>
+                                    <?php _e('Search Index', "scry_search_meilisearch"); ?>
                                 </button>
                                 <button 
                                     type="button" 
@@ -141,32 +141,32 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
                                     data-index-display="<?php echo esc_attr($index['name']); ?>"
                                     onclick="document.getElementById('<?php echo esc_attr($index['index_name']); ?>_settings_dialog').showModal()"
                                 >
-                                    <?php _e('Configure Index', "meilisearch_wp"); ?>
+                                    <?php _e('Configure Index', "scry_search_meilisearch"); ?>
                                 </button>
 
                                 <dialog id="<?php echo esc_attr($index['index_name']); ?>_settings_dialog" class="scrywp-index-dialog scrywp-index-settings-dialog">
                                     <div class="scrywp-index-dialog-header">
-                                        <h3><?php printf(__('Configure Index: %s', "meilisearch_wp"), esc_html($index['name'])); ?></h3>
-                                        <button type="button" class="scrywp-index-dialog-close-button" onclick="document.getElementById('<?php echo esc_attr($index['index_name']); ?>_settings_dialog').close()" aria-label="<?php esc_attr_e('Close', "meilisearch_wp"); ?>">
+                                        <h3><?php printf(__('Configure Index: %s', "scry_search_meilisearch"), esc_html($index['name'])); ?></h3>
+                                        <button type="button" class="scrywp-index-dialog-close-button" onclick="document.getElementById('<?php echo esc_attr($index['index_name']); ?>_settings_dialog').close()" aria-label="<?php esc_attr_e('Close', "scry_search_meilisearch"); ?>">
                                             ×
                                         </button>
                                     </div>
                                 
                                     <div class="scrywp-index-settings-content">
                                         <div class="scrywp-index-settings-loading">
-                                            <p><?php _e('Loading settings...', "meilisearch_wp"); ?></p>
+                                            <p><?php _e('Loading settings...', "scry_search_meilisearch"); ?></p>
                                         </div>
                                         
                                         <div class="scrywp-index-settings-loaded" style="display: none;">
                                             <div class="scrywp-index-settings-section">
                                                 <div class="scrywp-index-settings-section-header">
-                                                    <h4><?php _e('Ranking Rules', "meilisearch_wp"); ?></h4>
-                                                    <a href="https://www.meilisearch.com/docs/learn/relevancy/ranking_rules" target="_blank" class="scrywp-index-settings-help-link" title="<?php esc_attr_e('Learn more about ranking rules', "meilisearch_wp"); ?>">
-                                                        <?php _e('Learn more', "meilisearch_wp"); ?>
+                                                    <h4><?php _e('Ranking Rules', "scry_search_meilisearch"); ?></h4>
+                                                    <a href="https://www.meilisearch.com/docs/learn/relevancy/ranking_rules" target="_blank" class="scrywp-index-settings-help-link" title="<?php esc_attr_e('Learn more about ranking rules', "scry_search_meilisearch"); ?>">
+                                                        <?php _e('Learn more', "scry_search_meilisearch"); ?>
                                                         <span class="dashicons dashicons-external" style="font-size: 14px; width: 14px; height: 14px; vertical-align: middle; margin-left: 4px;"></span>
                                                     </a>
                                                 </div>
-                                                <p class="description"><?php _e('Drag and drop to reorder the ranking rules. Rules are applied in order from top to bottom.', "meilisearch_wp"); ?></p>
+                                                <p class="description"><?php _e('Drag and drop to reorder the ranking rules. Rules are applied in order from top to bottom.', "scry_search_meilisearch"); ?></p>
                                                 <ul class="scrywp-ranking-rules-list" data-index-name="<?php echo esc_attr($index['index_name']); ?>">
                                                     <!-- Ranking rules will be populated via JavaScript -->
                                                 </ul>
@@ -174,13 +174,13 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
                                             
                                             <div class="scrywp-index-settings-section">
                                                 <div class="scrywp-index-settings-section-header">
-                                                    <h4><?php _e('Searchable Fields', "meilisearch_wp"); ?></h4>
-                                                    <a href="https://www.meilisearch.com/docs/learn/relevancy/displayed_searchable_attributes#the-searchableattributes-list" target="_blank" class="scrywp-index-settings-help-link" title="<?php esc_attr_e('Learn more about searchable attributes', "meilisearch_wp"); ?>">
-                                                        <?php _e('Learn more', "meilisearch_wp"); ?>
+                                                    <h4><?php _e('Searchable Fields', "scry_search_meilisearch"); ?></h4>
+                                                    <a href="https://www.meilisearch.com/docs/learn/relevancy/displayed_searchable_attributes#the-searchableattributes-list" target="_blank" class="scrywp-index-settings-help-link" title="<?php esc_attr_e('Learn more about searchable attributes', "scry_search_meilisearch"); ?>">
+                                                        <?php _e('Learn more', "scry_search_meilisearch"); ?>
                                                         <span class="dashicons dashicons-external" style="font-size: 14px; width: 14px; height: 14px; vertical-align: middle; margin-left: 4px;"></span>
                                                     </a>
                                                 </div>
-                                                <p class="description"><?php _e('Select which fields should be searchable. The order determines relevancy.', "meilisearch_wp"); ?></p>
+                                                <p class="description"><?php _e('Select which fields should be searchable. The order determines relevancy.', "scry_search_meilisearch"); ?></p>
                                                 <div class="scrywp-searchable-fields-tree" data-index-name="<?php echo esc_attr($index['index_name']); ?>">
                                                     <!-- Searchable fields will be populated via JavaScript -->
                                                 </div>
@@ -192,10 +192,10 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
                                                 </div>
                                                 <div class="scrywp-index-settings-actions-buttons">
                                                     <button type="button" class="button button-primary scrywp-save-index-settings-button" data-index-name="<?php echo esc_attr($index['index_name']); ?>">
-                                                        <?php _e('Save Settings', "meilisearch_wp"); ?>
+                                                        <?php _e('Save Settings', "scry_search_meilisearch"); ?>
                                                     </button>
                                                     <button type="button" class="button button-secondary scrywp-cancel-index-settings-button" onclick="document.getElementById('<?php echo esc_attr($index['index_name']); ?>_settings_dialog').close()">
-                                                        <?php _e('Cancel', "meilisearch_wp"); ?>
+                                                        <?php _e('Cancel', "scry_search_meilisearch"); ?>
                                                     </button>
                                                 </div>
                                             </div>
@@ -209,8 +209,8 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
 
                                 <dialog id="<?php echo esc_attr($index['index_name']); ?>_search_dialog" class="scrywp-index-dialog">
                                     <div class="scrywp-index-dialog-header">
-                                        <h3><?php printf(__('Search Index: %s', "meilisearch_wp"), esc_html($index['name'])); ?></h3>
-                                        <button type="button" class="scrywp-index-dialog-close-button" onclick="document.getElementById('<?php echo esc_attr($index['index_name']); ?>_search_dialog').close()" aria-label="<?php esc_attr_e('Close', "meilisearch_wp"); ?>">
+                                        <h3><?php printf(__('Search Index: %s', "scry_search_meilisearch"), esc_html($index['name'])); ?></h3>
+                                        <button type="button" class="scrywp-index-dialog-close-button" onclick="document.getElementById('<?php echo esc_attr($index['index_name']); ?>_search_dialog').close()" aria-label="<?php esc_attr_e('Close', "scry_search_meilisearch"); ?>">
                                             ×
                                         </button>
                                     </div>
@@ -221,13 +221,13 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
                                                 type="text" 
                                                 name="search_query" 
                                                 class="scrywp-index-dialog-search-input" 
-                                                placeholder="<?php esc_attr_e('Search the index...', "meilisearch_wp"); ?>"
+                                                placeholder="<?php esc_attr_e('Search the index...', "scry_search_meilisearch"); ?>"
                                                 autocomplete="off"
                                             >
                                         </div>
                                     </form>
                                     <div class="scrywp-index-dialog-results">
-                                        <div class="scrywp-index-dialog-results-message"><?php _e('Enter a search query above to search the index.', "meilisearch_wp"); ?></div>
+                                        <div class="scrywp-index-dialog-results-message"><?php _e('Enter a search query above to search the index.', "scry_search_meilisearch"); ?></div>
                                     </div>
                                 </dialog>
                             </div>
@@ -960,7 +960,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Disable button and show loading state
             button.disabled = true;
             var originalText = button.textContent;
-            button.textContent = '<?php _e('Indexing...', "meilisearch_wp"); ?>';
+            button.textContent = '<?php _e('Indexing...', "scry_search_meilisearch"); ?>';
             
             // Prepare AJAX request
             var formData = new FormData();
@@ -982,21 +982,21 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(function(data) {
                 if (data.success) {
                     // Show success message
-                    alert(data.data.message || '<?php echo esc_js(__('Posts indexed successfully', "meilisearch_wp")); ?>');
+                    alert(data.data.message || '<?php echo esc_js(__('Posts indexed successfully', "scry_search_meilisearch")); ?>');
                     // Reload page to refresh the index list
                     setTimeout(function() {
                         window.location.reload();
                     }, 500);
                 } else {
                     // Show error message
-                    alert('<?php echo esc_js(__('Error:', "meilisearch_wp")); ?> ' + (data.data && data.data.message ? data.data.message : '<?php echo esc_js(__('Failed to index posts', "meilisearch_wp")); ?>'));
+                    alert('<?php echo esc_js(__('Error:', "scry_search_meilisearch")); ?> ' + (data.data && data.data.message ? data.data.message : '<?php echo esc_js(__('Failed to index posts', "scry_search_meilisearch")); ?>'));
                     button.disabled = false;
                     button.textContent = originalText;
                 }
             })
             .catch(function(error) {
                 // Show error message
-                alert('<?php echo esc_js(__('Error:', "meilisearch_wp")); ?> <?php echo esc_js(__('Failed to index posts', "meilisearch_wp")); ?>');
+                alert('<?php echo esc_js(__('Error:', "scry_search_meilisearch")); ?> <?php echo esc_js(__('Failed to index posts', "scry_search_meilisearch")); ?>');
                 button.disabled = false;
                 button.textContent = originalText;
             });
@@ -1020,7 +1020,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             if (validIndexButtons.length === 0) {
-                alert('<?php echo esc_js(__('No valid indexes to index.', "meilisearch_wp")); ?>');
+                alert('<?php echo esc_js(__('No valid indexes to index.', "scry_search_meilisearch")); ?>');
                 return;
             }
             
@@ -1040,7 +1040,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Disable button and show loading state
             button.disabled = true;
             var originalText = button.textContent;
-            button.textContent = '<?php _e('Indexing All...', "meilisearch_wp"); ?>';
+            button.textContent = '<?php _e('Indexing All...', "scry_search_meilisearch"); ?>';
             
             // Disable all individual index buttons
             validIndexButtons.forEach(function(btn) {
@@ -1051,7 +1051,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var processIndex = function(index) {
                 if (index >= validIndexButtons.length) {
                     // All done, reload page
-                    alert('<?php echo esc_js(__('All post types have been indexed successfully.', "meilisearch_wp")); ?>');
+                    alert('<?php echo esc_js(__('All post types have been indexed successfully.', "scry_search_meilisearch")); ?>');
                     setTimeout(function() {
                         window.location.reload();
                     }, 500);
@@ -1063,7 +1063,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 var indexDisplay = currentButton.getAttribute('data-index-display');
                 
                 // Update button text to show current progress
-                button.textContent = '<?php _e('Indexing', "meilisearch_wp"); ?>: ' + indexDisplay + ' (' + (index + 1) + '/' + validIndexButtons.length + ')';
+                button.textContent = '<?php _e('Indexing', "scry_search_meilisearch"); ?>: ' + indexDisplay + ' (' + (index + 1) + '/' + validIndexButtons.length + ')';
                 
                 // Prepare AJAX request
                 var formData = new FormData();
@@ -1088,7 +1088,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         processIndex(index + 1);
                     } else {
                         // Show error but continue with next index
-                        var errorMsg = data.data && data.data.message ? data.data.message : '<?php echo esc_js(__('Failed to index', "meilisearch_wp")); ?>';
+                        var errorMsg = data.data && data.data.message ? data.data.message : '<?php echo esc_js(__('Failed to index', "scry_search_meilisearch")); ?>';
                         console.error('Failed to index ' + indexDisplay + ': ' + errorMsg);
                         // Continue with next index anyway
                         processIndex(index + 1);
@@ -1130,7 +1130,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Disable button and show loading state
             button.disabled = true;
             var originalText = button.textContent;
-            button.textContent = '<?php _e('Wiping...', "meilisearch_wp"); ?>';
+            button.textContent = '<?php _e('Wiping...', "scry_search_meilisearch"); ?>';
             
             // Prepare AJAX request
             var formData = new FormData();
@@ -1152,7 +1152,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(function(data) {
                 if (data.success) {
                     // Show success message and reload page after a short delay
-                    alert(data.data.message || '<?php echo esc_js(__('Index wiped successfully', "meilisearch_wp")); ?>');
+                    alert(data.data.message || '<?php echo esc_js(__('Index wiped successfully', "scry_search_meilisearch")); ?>');
                     
                     // Reload page to refresh the index list
                     setTimeout(function() {
@@ -1160,14 +1160,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     }, 500);
                 } else {
                     // Show error message
-                    alert('<?php echo esc_js(__('Error:', "meilisearch_wp")); ?> ' + (data.data && data.data.message ? data.data.message : '<?php echo esc_js(__('Failed to wipe index', "meilisearch_wp")); ?>'));
+                    alert('<?php echo esc_js(__('Error:', "scry_search_meilisearch")); ?> ' + (data.data && data.data.message ? data.data.message : '<?php echo esc_js(__('Failed to wipe index', "scry_search_meilisearch")); ?>'));
                     button.disabled = false;
                     button.textContent = originalText;
                 }
             })
             .catch(function(error) {
                 // Show error message
-                alert('<?php echo esc_js(__('Error:', "meilisearch_wp")); ?> <?php echo esc_js(__('Failed to wipe index', "meilisearch_wp")); ?>');
+                alert('<?php echo esc_js(__('Error:', "scry_search_meilisearch")); ?> <?php echo esc_js(__('Failed to wipe index', "scry_search_meilisearch")); ?>');
                 button.disabled = false;
                 button.textContent = originalText;
             });
@@ -1200,12 +1200,12 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // If query is empty, show initial message
             if (!searchQuery) {
-                resultsContainer.innerHTML = '<div class="scrywp-index-dialog-results-message"><?php _e('Enter a search query above to search the index.', "meilisearch_wp"); ?></div>';
+                resultsContainer.innerHTML = '<div class="scrywp-index-dialog-results-message"><?php _e('Enter a search query above to search the index.', "scry_search_meilisearch"); ?></div>';
                 return;
             }
             
             // Show loading state
-            resultsContainer.innerHTML = '<div class="scrywp-index-dialog-loading"><?php _e('Searching...', "meilisearch_wp"); ?></div>';
+            resultsContainer.innerHTML = '<div class="scrywp-index-dialog-loading"><?php _e('Searching...', "scry_search_meilisearch"); ?></div>';
             
             // Prepare AJAX request
             var formData = new FormData();
@@ -1230,7 +1230,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     var results = data.data.results || [];
                     
                     if (results.length === 0) {
-                        resultsContainer.innerHTML = '<div class="scrywp-index-dialog-no-results"><?php echo esc_js(__('No results found.', "meilisearch_wp")); ?></div>';
+                        resultsContainer.innerHTML = '<div class="scrywp-index-dialog-no-results"><?php echo esc_js(__('No results found.', "scry_search_meilisearch")); ?></div>';
                         return;
                     }
                     
@@ -1248,9 +1248,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Build results HTML
                     var resultsHTML = '';
-                    var viewPostLabel = '<?php echo esc_js(__('View Post', "meilisearch_wp")); ?>';
-                    var editPostLabel = '<?php echo esc_js(__('Edit Post', "meilisearch_wp")); ?>';
-                    var untitledLabel = '<?php echo esc_js(__('Untitled', "meilisearch_wp")); ?>';
+                    var viewPostLabel = '<?php echo esc_js(__('View Post', "scry_search_meilisearch")); ?>';
+                    var editPostLabel = '<?php echo esc_js(__('Edit Post', "scry_search_meilisearch")); ?>';
+                    var untitledLabel = '<?php echo esc_js(__('Untitled', "scry_search_meilisearch")); ?>';
                     
                     results.forEach(function(result) {
                         resultsHTML += '<div class="scrywp-index-dialog-result">';
@@ -1271,7 +1271,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // Add raw JSON dropdown
                         resultsHTML += '<details class="scrywp-index-dialog-result-json">';
-                        resultsHTML += '<summary class="scrywp-index-dialog-result-json-toggle"><?php echo esc_js(__('View Raw JSON', "meilisearch_wp")); ?></summary>';
+                        resultsHTML += '<summary class="scrywp-index-dialog-result-json-toggle"><?php echo esc_js(__('View Raw JSON', "scry_search_meilisearch")); ?></summary>';
                         resultsHTML += '<pre class="scrywp-index-dialog-result-json-content">' + escapeHtml(JSON.stringify(result, null, 2)) + '</pre>';
                         resultsHTML += '</details>';
                         
@@ -1289,12 +1289,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     resultsContainer.innerHTML = resultsHTML;
                 } else {
-                    var errorMessage = data.data && data.data.message ? data.data.message : '<?php echo esc_js(__('Search failed', "meilisearch_wp")); ?>';
-                    resultsContainer.innerHTML = '<div class="scrywp-index-dialog-no-results"><?php echo esc_js(__('Error:', "meilisearch_wp")); ?> ' + errorMessage + '</div>';
+                    var errorMessage = data.data && data.data.message ? data.data.message : '<?php echo esc_js(__('Search failed', "scry_search_meilisearch")); ?>';
+                    resultsContainer.innerHTML = '<div class="scrywp-index-dialog-no-results"><?php echo esc_js(__('Error:', "scry_search_meilisearch")); ?> ' + errorMessage + '</div>';
                 }
             })
             .catch(function(error) {
-                resultsContainer.innerHTML = '<div class="scrywp-index-dialog-no-results"><?php echo esc_js(__('Error: Failed to search index', "meilisearch_wp")); ?></div>';
+                resultsContainer.innerHTML = '<div class="scrywp-index-dialog-no-results"><?php echo esc_js(__('Error: Failed to search index', "scry_search_meilisearch")); ?></div>';
             });
         };
         
@@ -1350,7 +1350,7 @@ document.addEventListener('DOMContentLoaded', function() {
         function resetSaveButton() {
             if (saveButton) {
                 saveButton.disabled = false;
-                saveButton.textContent = originalSaveButtonText || '<?php echo esc_js(__('Save Settings', "meilisearch_wp")); ?>';
+                saveButton.textContent = originalSaveButtonText || '<?php echo esc_js(__('Save Settings', "scry_search_meilisearch")); ?>';
             }
             // Hide save error message
             if (saveErrorDiv) {
@@ -1422,11 +1422,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Reset button state after successful load
                     resetSaveButton();
                 } else {
-                    showSettingsError(data.data && data.data.message ? data.data.message : '<?php echo esc_js(__('Failed to load settings', "meilisearch_wp")); ?>');
+                    showSettingsError(data.data && data.data.message ? data.data.message : '<?php echo esc_js(__('Failed to load settings', "scry_search_meilisearch")); ?>');
                 }
             })
             .catch(function(error) {
-                showSettingsError('<?php echo esc_js(__('Error: Failed to load settings', "meilisearch_wp")); ?>');
+                showSettingsError('<?php echo esc_js(__('Error: Failed to load settings', "scry_search_meilisearch")); ?>');
             });
         }
         
@@ -1454,7 +1454,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 var handle = document.createElement('span');
                 handle.className = 'scrywp-ranking-rule-handle';
                 handle.textContent = '☰';
-                handle.setAttribute('aria-label', '<?php echo esc_js(__('Drag to reorder', "meilisearch_wp")); ?>');
+                handle.setAttribute('aria-label', '<?php echo esc_js(__('Drag to reorder', "scry_search_meilisearch")); ?>');
                 
                 var label = document.createElement('span');
                 label.className = 'scrywp-ranking-rule-label';
@@ -1562,7 +1562,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     expandButton.type = 'button';
                     expandButton.className = 'scrywp-searchable-field-expand';
                     expandButton.textContent = '▶';
-                    expandButton.setAttribute('aria-label', '<?php echo esc_js(__('Expand', "meilisearch_wp")); ?>');
+                    expandButton.setAttribute('aria-label', '<?php echo esc_js(__('Expand', "scry_search_meilisearch")); ?>');
                     
                     groupLabel.appendChild(expandButton);
                     groupDiv.appendChild(groupLabel);
@@ -1642,7 +1642,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 button.disabled = true;
-                button.textContent = '<?php _e('Saving...', "meilisearch_wp"); ?>';
+                button.textContent = '<?php _e('Saving...', "scry_search_meilisearch"); ?>';
                 
                 // Collect searchable attributes from checkboxes
                 var searchableAttributes = [];
@@ -1693,31 +1693,31 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (saveErrorDiv) {
                             saveErrorDiv.style.display = 'none';
                         }
-                        alert(data.data.message || '<?php echo esc_js(__('Settings saved successfully', "meilisearch_wp")); ?>');
+                        alert(data.data.message || '<?php echo esc_js(__('Settings saved successfully', "scry_search_meilisearch")); ?>');
                         // Reset button state before closing
                         resetSaveButton();
                         dialog.close();
                     } else {
                         console.log('Error response received');
-                        var errorMessage = data.data && data.data.message ? data.data.message : '<?php echo esc_js(__('Failed to save settings', "meilisearch_wp")); ?>';
+                        var errorMessage = data.data && data.data.message ? data.data.message : '<?php echo esc_js(__('Failed to save settings', "scry_search_meilisearch")); ?>';
                         console.log('Error message:', errorMessage);
                         // Reset button state but don't hide error
                         if (saveButton) {
                             saveButton.disabled = false;
-                            saveButton.textContent = originalSaveButtonText || '<?php echo esc_js(__('Save Settings', "meilisearch_wp")); ?>';
+                            saveButton.textContent = originalSaveButtonText || '<?php echo esc_js(__('Save Settings', "scry_search_meilisearch")); ?>';
                         }
-                        showSaveError('<?php echo esc_js(__('Error:', "meilisearch_wp")); ?> ' + errorMessage);
+                        showSaveError('<?php echo esc_js(__('Error:', "scry_search_meilisearch")); ?> ' + errorMessage);
                     }
                 })
                 .catch(function(error) {
-                    var errorMessage = '<?php echo esc_js(__('Error:', "meilisearch_wp")); ?> <?php echo esc_js(__('Failed to save settings', "meilisearch_wp")); ?>';
+                    var errorMessage = '<?php echo esc_js(__('Error:', "scry_search_meilisearch")); ?> <?php echo esc_js(__('Failed to save settings', "scry_search_meilisearch")); ?>';
                     if (error && error.message) {
                         errorMessage += ' (' + error.message + ')';
                     }
                     // Reset button state but don't hide error
                     if (saveButton) {
                         saveButton.disabled = false;
-                        saveButton.textContent = originalSaveButtonText || '<?php echo esc_js(__('Save Settings', "meilisearch_wp")); ?>';
+                        saveButton.textContent = originalSaveButtonText || '<?php echo esc_js(__('Save Settings', "scry_search_meilisearch")); ?>';
                     }
                     showSaveError(errorMessage);
                 });

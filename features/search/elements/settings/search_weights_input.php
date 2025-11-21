@@ -6,7 +6,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Get the indexes feature to access indexed post types
-$indexes_feature = $this->get_feature('scrywp_indexes');
+$indexes_feature = $this->get_feature('scry_ms_indexes');
 $indexed_post_types = array();
 
 if ($indexes_feature) {
@@ -34,7 +34,7 @@ if (!empty($indexed_post_types) && is_array($indexed_post_types)) {
 <div class="scrywp-search-weights">
     <?php if (empty($post_types_to_display)): ?>
         <p class="description">
-            <?php esc_html_e('No post types are currently indexed. Please configure indexed post types in the Index Settings page first.', "meilisearch_wp"); ?>
+            <?php esc_html_e('No post types are currently indexed. Please configure indexed post types in the Index Settings page first.', "scry_search_meilisearch"); ?>
         </p>
     <?php else: ?>
         <table class="form-table" role="presentation">
@@ -64,7 +64,7 @@ if (!empty($indexed_post_types) && is_array($indexed_post_types)) {
                                 class="regular-text"
                             />
                             <p class="description">
-                                <?php esc_html_e('Weight for this post type in federated searches. Higher values prioritize results from this post type. Default: 1.0', "meilisearch_wp"); ?>
+                                <?php esc_html_e('Weight for this post type in federated searches. Higher values prioritize results from this post type. Default: 1.0', "scry_search_meilisearch"); ?>
                             </p>
                         </td>
                     </tr>
