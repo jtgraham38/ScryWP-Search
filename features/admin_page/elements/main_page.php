@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 // Security check
 if (!current_user_can('manage_options')) {
-    wp_die(__('You do not have sufficient permissions to access this page.', 'scry-wp'));
+    wp_die(__('You do not have sufficient permissions to access this page.', "meilisearch_wp"));
 }
 
 // Get registered pages from the admin page feature
@@ -30,9 +30,9 @@ unset($registered_pages['scrywp-search']);
 
 <div class="scrywp-admin-overview">
     <div class="scrywp-admin-overview-header">
-        <h2><?php esc_html_e('Welcome to ScryWP Search', 'scry-wp'); ?></h2>
+        <h2><?php esc_html_e('Welcome to ScryWP Search', "meilisearch_wp"); ?></h2>
         <p class="description">
-            <?php esc_html_e('Configure your search settings, manage connections, and set up indexes for powerful semantic search capabilities.', 'scry-wp'); ?>
+            <?php esc_html_e('Configure your search settings, manage connections, and set up indexes for powerful semantic search capabilities.', "meilisearch_wp"); ?>
         </p>
     </div>
 
@@ -58,7 +58,7 @@ unset($registered_pages['scrywp-search']);
                             <a href="<?php echo esc_url($page_data['url']); ?>" class="button button-primary">
                                 <?php 
                                 /* translators: %s: Page title */
-                                printf(esc_html__('Configure %s', 'scry-wp'), esc_html($page_data['label'])); 
+                                printf(esc_html__('Configure %s', "meilisearch_wp"), esc_html($page_data['label'])); 
                                 ?>
                                 <span class="dashicons dashicons-arrow-right-alt" style="margin-left: 5px;"></span>
                             </a>
@@ -69,7 +69,7 @@ unset($registered_pages['scrywp-search']);
         </div>
     <?php else : ?>
         <div class="notice notice-info">
-            <p><?php esc_html_e('No additional settings pages are available.', 'scry-wp'); ?></p>
+            <p><?php esc_html_e('No additional settings pages are available.', "meilisearch_wp"); ?></p>
         </div>
     <?php endif; ?>
 </div>

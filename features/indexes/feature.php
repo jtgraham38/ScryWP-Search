@@ -286,9 +286,9 @@ class ScryWpIndexesFeature extends PluginFeature {
         if ($admin_page_feature && method_exists($admin_page_feature, 'register_admin_page')) {
             $admin_page_feature->register_admin_page(
                 'scrywp-index-settings',
-                __('Index Settings', 'scry-wp'),
+                __('Index Settings', "meilisearch_wp"),
                 'dashicons-index-card',
-                __('Manage post type indexes, configure indexing settings, and view index status.', 'scry-wp')
+                __('Manage post type indexes, configure indexing settings, and view index status.', "meilisearch_wp")
             );
         }
         
@@ -313,13 +313,13 @@ class ScryWpIndexesFeature extends PluginFeature {
     public function ajax_wipe_index() {
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], $this->prefixed('wipe_index'))) {
-            wp_send_json_error(array('message' => __('Security check failed', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Security check failed', "meilisearch_wp")));
             return;
         }
         
         // Check user permissions
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => __('Permission denied', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Permission denied', "meilisearch_wp")));
             return;
         }
         
@@ -328,14 +328,14 @@ class ScryWpIndexesFeature extends PluginFeature {
         
         // Validate index name
         if (empty($index_name)) {
-            wp_send_json_error(array('message' => __('Please provide an index name', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Please provide an index name', "meilisearch_wp")));
             return;
         }
         
         // Verify the index name is one of the configured indexes (security check)
         $index_names = $this->get_index_names();
         if (!in_array($index_name, $index_names, true)) {
-            wp_send_json_error(array('message' => __('Invalid index name', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Invalid index name', "meilisearch_wp")));
             return;
         }
         
@@ -344,7 +344,7 @@ class ScryWpIndexesFeature extends PluginFeature {
         $meilisearch_admin_key = get_option($this->prefixed('meilisearch_admin_key'), '');
         
         if (empty($meilisearch_url) || empty($meilisearch_admin_key)) {
-            wp_send_json_error(array('message' => __('Connection settings are not configured', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Connection settings are not configured', "meilisearch_wp")));
             return;
         }
         
@@ -362,29 +362,29 @@ class ScryWpIndexesFeature extends PluginFeature {
             
             // Success - the index has been recreated with proper configuration
             wp_send_json_success(array(
-                'message' => sprintf(__('Index "%s" has been wiped and recreated successfully with proper configuration.', 'scry-wp'), $index_name)
+                'message' => sprintf(__('Index "%s" has been wiped and recreated successfully with proper configuration.', "meilisearch_wp"), $index_name)
             ));
             
         } catch (\Meilisearch\Exceptions\CommunicationException $e) {
             // Network/connection error
             wp_send_json_error(array(
-                'message' => sprintf(__('Connection failed: %s', 'scry-wp'), $e->getMessage())
+                'message' => sprintf(__('Connection failed: %s', "meilisearch_wp"), $e->getMessage())
             ));
         } catch (\Meilisearch\Exceptions\ApiException $e) {
             // API error (404 if index doesn't exist, etc.)
             if ($e->getCode() === 404) {
                 wp_send_json_error(array(
-                    'message' => __('Index does not exist', 'scry-wp')
+                    'message' => __('Index does not exist', "meilisearch_wp")
                 ));
             } else {
                 wp_send_json_error(array(
-                    'message' => sprintf(__('API error: %s', 'scry-wp'), $e->getMessage())
+                    'message' => sprintf(__('API error: %s', "meilisearch_wp"), $e->getMessage())
                 ));
             }
         } catch (\Exception $e) {
             // General error
             wp_send_json_error(array(
-                'message' => sprintf(__('Error: %s', 'scry-wp'), $e->getMessage())
+                'message' => sprintf(__('Error: %s', "meilisearch_wp"), $e->getMessage())
             ));
         }
     }
@@ -395,13 +395,13 @@ class ScryWpIndexesFeature extends PluginFeature {
     public function ajax_index_posts() {
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], $this->prefixed('index_posts'))) {
-            wp_send_json_error(array('message' => __('Security check failed', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Security check failed', "meilisearch_wp")));
             return;
         }
         
         // Check user permissions
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => __('Permission denied', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Permission denied', "meilisearch_wp")));
             return;
         }
         
@@ -410,14 +410,14 @@ class ScryWpIndexesFeature extends PluginFeature {
         
         // Validate post type
         if (empty($post_type)) {
-            wp_send_json_error(array('message' => __('Please provide a post type', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Please provide a post type', "meilisearch_wp")));
             return;
         }
         
         // Verify the post type is one of the configured post types (security check)
         $index_names = $this->get_index_names();
         if (!isset($index_names[$post_type])) {
-            wp_send_json_error(array('message' => __('Invalid post type', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Invalid post type', "meilisearch_wp")));
             return;
         }
         
@@ -428,7 +428,7 @@ class ScryWpIndexesFeature extends PluginFeature {
         $meilisearch_admin_key = get_option($this->prefixed('meilisearch_admin_key'), '');
         
         if (empty($meilisearch_url) || empty($meilisearch_admin_key)) {
-            wp_send_json_error(array('message' => __('Connection settings are not configured', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Connection settings are not configured', "meilisearch_wp")));
             return;
         }
         
@@ -441,7 +441,7 @@ class ScryWpIndexesFeature extends PluginFeature {
             ));
             
             if (empty($posts)) {
-                wp_send_json_error(array('message' => sprintf(__('No posts found for post type "%s"', 'scry-wp'), $post_type)));
+                wp_send_json_error(array('message' => sprintf(__('No posts found for post type "%s"', "meilisearch_wp"), $post_type)));
                 return;
             }
             
@@ -461,7 +461,7 @@ class ScryWpIndexesFeature extends PluginFeature {
             // Success
             wp_send_json_success(array(
                 'message' => sprintf(
-                    __('Successfully indexed %d post(s) of type "%s".', 'scry-wp'),
+                    __('Successfully indexed %d post(s) of type "%s".', "meilisearch_wp"),
                     count($documents),
                     $post_type
                 ),
@@ -472,17 +472,17 @@ class ScryWpIndexesFeature extends PluginFeature {
         } catch (\Meilisearch\Exceptions\CommunicationException $e) {
             // Network/connection error
             wp_send_json_error(array(
-                'message' => sprintf(__('Connection failed: %s', 'scry-wp'), $e->getMessage())
+                'message' => sprintf(__('Connection failed: %s', "meilisearch_wp"), $e->getMessage())
             ));
         } catch (\Meilisearch\Exceptions\ApiException $e) {
             // API error
             wp_send_json_error(array(
-                'message' => sprintf(__('API error: %s', 'scry-wp'), $e->getMessage())
+                'message' => sprintf(__('API error: %s', "meilisearch_wp"), $e->getMessage())
             ));
         } catch (\Exception $e) {
             // General error
             wp_send_json_error(array(
-                'message' => sprintf(__('Error: %s', 'scry-wp'), $e->getMessage())
+                'message' => sprintf(__('Error: %s', "meilisearch_wp"), $e->getMessage())
             ));
         }
     }
@@ -553,13 +553,13 @@ class ScryWpIndexesFeature extends PluginFeature {
     public function ajax_search_index() {
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], $this->prefixed('search_index'))) {
-            wp_send_json_error(array('message' => __('Security check failed', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Security check failed', "meilisearch_wp")));
             return;
         }
         
         // Check user permissions
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => __('Permission denied', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Permission denied', "meilisearch_wp")));
             return;
         }
         
@@ -569,19 +569,19 @@ class ScryWpIndexesFeature extends PluginFeature {
         
         // Validate inputs
         if (empty($search_query)) {
-            wp_send_json_error(array('message' => __('Please provide a search query', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Please provide a search query', "meilisearch_wp")));
             return;
         }
         
         if (empty($index_name)) {
-            wp_send_json_error(array('message' => __('Please provide an index name', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Please provide an index name', "meilisearch_wp")));
             return;
         }
         
         // Verify the index name is one of the configured indexes (security check)
         $index_names = $this->get_index_names();
         if (!in_array($index_name, $index_names, true)) {
-            wp_send_json_error(array('message' => __('Invalid index name', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Invalid index name', "meilisearch_wp")));
             return;
         }
         
@@ -591,7 +591,7 @@ class ScryWpIndexesFeature extends PluginFeature {
         $meilisearch_admin_key = get_option($this->prefixed('meilisearch_admin_key'), '');
         
         if (empty($meilisearch_url)) {
-            wp_send_json_error(array('message' => __('Connection settings are not configured', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Connection settings are not configured', "meilisearch_wp")));
             return;
         }
         
@@ -599,7 +599,7 @@ class ScryWpIndexesFeature extends PluginFeature {
         $api_key = !empty($meilisearch_search_key) ? $meilisearch_search_key : $meilisearch_admin_key;
         
         if (empty($api_key)) {
-            wp_send_json_error(array('message' => __('API key not configured', 'scry-wp')));
+            wp_send_json_error(array('message' => __('API key not configured', "meilisearch_wp")));
             return;
         }
         
@@ -619,7 +619,7 @@ class ScryWpIndexesFeature extends PluginFeature {
             if (empty($hits)) {
                 wp_send_json_success(array(
                     'results' => array(),
-                    'message' => __('No results found', 'scry-wp')
+                    'message' => __('No results found', "meilisearch_wp")
                 ));
                 return;
             }
@@ -639,7 +639,7 @@ class ScryWpIndexesFeature extends PluginFeature {
             if (empty($post_ids)) {
                 wp_send_json_success(array(
                     'results' => array(),
-                    'message' => __('No valid post IDs found in results', 'scry-wp')
+                    'message' => __('No valid post IDs found in results', "meilisearch_wp")
                 ));
                 return;
             }
@@ -687,53 +687,19 @@ class ScryWpIndexesFeature extends PluginFeature {
         } catch (\Meilisearch\Exceptions\CommunicationException $e) {
             // Network/connection error
             wp_send_json_error(array(
-                'message' => sprintf(__('Connection failed: %s', 'scry-wp'), $e->getMessage())
+                'message' => sprintf(__('Connection failed: %s', "meilisearch_wp"), $e->getMessage())
             ));
         } catch (\Meilisearch\Exceptions\ApiException $e) {
             // API error
             wp_send_json_error(array(
-                'message' => sprintf(__('API error: %s', 'scry-wp'), $e->getMessage())
+                'message' => sprintf(__('API error: %s', "meilisearch_wp"), $e->getMessage())
             ));
         } catch (\Exception $e) {
             // General error
             wp_send_json_error(array(
-                'message' => sprintf(__('Error: %s', 'scry-wp'), $e->getMessage())
+                'message' => sprintf(__('Error: %s', "meilisearch_wp"), $e->getMessage())
             ));
         }
-    }
-
-    //  \\  //  \\  //  \\  Helpers  //  \\  //  \\  //  \\ 
-    public function get_index_names() {
-        global $wpdb;
-        $index_names = array();
-        $post_types_to_index = get_option($this->prefixed('post_types'));
-        foreach ($post_types_to_index as $post_type) {
-            $index_names[$post_type] = $wpdb->prefix . $this->get_prefix() . get_option($this->prefixed('index_affix')) . $post_type;
-        }   
-        return $index_names;
-    }
-    
-    /**
-     * Get the list of searchable attributes for Meilisearch indexes
-     * Excludes: post_status, post_type, author_name, featured_image
-     */
-    private function get_searchable_attributes() {
-        return array(
-            'ID',
-            'post_title',
-            'post_content',
-            'post_excerpt',
-            'post_date',
-            'post_date_gmt',
-            'post_modified',
-            'post_modified_gmt',
-            'post_author',
-            'post_name',
-            'permalink',
-            'categories',
-            'tags',
-            'post_meta',
-        );
     }
     
     /**
@@ -757,13 +723,13 @@ class ScryWpIndexesFeature extends PluginFeature {
     public function ajax_get_index_settings() {
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], $this->prefixed('get_index_settings'))) {
-            wp_send_json_error(array('message' => __('Security check failed', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Security check failed', "meilisearch_wp")));
             return;
         }
         
         // Check user permissions
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => __('Permission denied', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Permission denied', "meilisearch_wp")));
             return;
         }
         
@@ -772,14 +738,14 @@ class ScryWpIndexesFeature extends PluginFeature {
         
         // Validate index name
         if (empty($index_name)) {
-            wp_send_json_error(array('message' => __('Please provide an index name', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Please provide an index name', "meilisearch_wp")));
             return;
         }
         
         // Verify the index name is one of the configured indexes (security check)
         $index_names = $this->get_index_names();
         if (!in_array($index_name, $index_names, true)) {
-            wp_send_json_error(array('message' => __('Invalid index name', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Invalid index name', "meilisearch_wp")));
             return;
         }
         
@@ -788,7 +754,7 @@ class ScryWpIndexesFeature extends PluginFeature {
         $post_type = isset($index_to_post_type[$index_name]) ? $index_to_post_type[$index_name] : null;
         
         if (!$post_type) {
-            wp_send_json_error(array('message' => __('Could not determine post type for index', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Could not determine post type for index', "meilisearch_wp")));
             return;
         }
         
@@ -797,7 +763,7 @@ class ScryWpIndexesFeature extends PluginFeature {
         $meilisearch_admin_key = get_option($this->prefixed('meilisearch_admin_key'), '');
         
         if (empty($meilisearch_url) || empty($meilisearch_admin_key)) {
-            wp_send_json_error(array('message' => __('Connection settings are not configured', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Connection settings are not configured', "meilisearch_wp")));
             return;
         }
         
@@ -832,21 +798,21 @@ class ScryWpIndexesFeature extends PluginFeature {
             
         } catch (\Meilisearch\Exceptions\CommunicationException $e) {
             wp_send_json_error(array(
-                'message' => sprintf(__('Connection failed: %s', 'scry-wp'), $e->getMessage())
+                'message' => sprintf(__('Connection failed: %s', "meilisearch_wp"), $e->getMessage())
             ));
         } catch (\Meilisearch\Exceptions\ApiException $e) {
             if ($e->getCode() === 404) {
                 wp_send_json_error(array(
-                    'message' => __('Index does not exist', 'scry-wp')
+                    'message' => __('Index does not exist', "meilisearch_wp")
                 ));
             } else {
                 wp_send_json_error(array(
-                    'message' => sprintf(__('API error: %s', 'scry-wp'), $e->getMessage())
+                    'message' => sprintf(__('API error: %s', "meilisearch_wp"), $e->getMessage())
                 ));
             }
         } catch (\Exception $e) {
             wp_send_json_error(array(
-                'message' => sprintf(__('Error: %s', 'scry-wp'), $e->getMessage())
+                'message' => sprintf(__('Error: %s', "meilisearch_wp"), $e->getMessage())
             ));
         }
     }
@@ -857,13 +823,13 @@ class ScryWpIndexesFeature extends PluginFeature {
     public function ajax_update_index_settings() {
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], $this->prefixed('update_index_settings'))) {
-            wp_send_json_error(array('message' => __('Security check failed', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Security check failed', "meilisearch_wp")));
             return;
         }
         
         // Check user permissions
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => __('Permission denied', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Permission denied', "meilisearch_wp")));
             return;
         }
         
@@ -872,14 +838,14 @@ class ScryWpIndexesFeature extends PluginFeature {
         
         // Validate index name
         if (empty($index_name)) {
-            wp_send_json_error(array('message' => __('Please provide an index name', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Please provide an index name', "meilisearch_wp")));
             return;
         }
         
         // Verify the index name is one of the configured indexes (security check)
         $index_names = $this->get_index_names();
         if (!in_array($index_name, $index_names, true)) {
-            wp_send_json_error(array('message' => __('Invalid index name', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Invalid index name', "meilisearch_wp")));
             return;
         }
         
@@ -904,7 +870,7 @@ class ScryWpIndexesFeature extends PluginFeature {
         $meilisearch_admin_key = get_option($this->prefixed('meilisearch_admin_key'), '');
         
         if (empty($meilisearch_url) || empty($meilisearch_admin_key)) {
-            wp_send_json_error(array('message' => __('Connection settings are not configured', 'scry-wp')));
+            wp_send_json_error(array('message' => __('Connection settings are not configured', "meilisearch_wp")));
             return;
         }
         
@@ -924,26 +890,26 @@ class ScryWpIndexesFeature extends PluginFeature {
             }
             
             wp_send_json_success(array(
-                'message' => sprintf(__('Index settings updated successfully for "%s".', 'scry-wp'), $index_name)
+                'message' => sprintf(__('Index settings updated successfully for "%s".', "meilisearch_wp"), $index_name)
             ));
             
         } catch (\Meilisearch\Exceptions\CommunicationException $e) {
             wp_send_json_error(array(
-                'message' => sprintf(__('Connection failed: %s', 'scry-wp'), $e->getMessage())
+                'message' => sprintf(__('Connection failed: %s', "meilisearch_wp"), $e->getMessage())
             ));
         } catch (\Meilisearch\Exceptions\ApiException $e) {
             if ($e->getCode() === 404) {
                 wp_send_json_error(array(
-                    'message' => __('Index does not exist', 'scry-wp')
+                    'message' => __('Index does not exist', "meilisearch_wp")
                 ));
             } else {
                 wp_send_json_error(array(
-                    'message' => sprintf(__('API error: %s', 'scry-wp'), $e->getMessage())
+                    'message' => sprintf(__('API error: %s', "meilisearch_wp"), $e->getMessage())
                 ));
             }
         } catch (\Exception $e) {
             wp_send_json_error(array(
-                'message' => sprintf(__('Error: %s', 'scry-wp'), $e->getMessage())
+                'message' => sprintf(__('Error: %s', "meilisearch_wp"), $e->getMessage())
             ));
         }
     }
@@ -970,17 +936,17 @@ class ScryWpIndexesFeature extends PluginFeature {
         
         // Core post fields
         $core_fields = array(
-            'ID' => __('Post ID', 'scry-wp'),
-            'post_title' => __('Title', 'scry-wp'),
-            'post_content' => __('Content', 'scry-wp'),
-            'post_excerpt' => __('Excerpt', 'scry-wp'),
-            'post_date' => __('Post Date', 'scry-wp'),
-            'post_date_gmt' => __('Post Date (GMT)', 'scry-wp'),
-            'post_modified' => __('Modified Date', 'scry-wp'),
-            'post_modified_gmt' => __('Modified Date (GMT)', 'scry-wp'),
-            'post_author' => __('Author ID', 'scry-wp'),
-            'post_name' => __('Post Slug', 'scry-wp'),
-            'permalink' => __('Permalink', 'scry-wp'),
+            'ID' => __('Post ID', "meilisearch_wp"),
+            'post_title' => __('Title', "meilisearch_wp"),
+            'post_content' => __('Content', "meilisearch_wp"),
+            'post_excerpt' => __('Excerpt', "meilisearch_wp"),
+            'post_date' => __('Post Date', "meilisearch_wp"),
+            'post_date_gmt' => __('Post Date (GMT)', "meilisearch_wp"),
+            'post_modified' => __('Modified Date', "meilisearch_wp"),
+            'post_modified_gmt' => __('Modified Date (GMT)', "meilisearch_wp"),
+            'post_author' => __('Author ID', "meilisearch_wp"),
+            'post_name' => __('Post Slug', "meilisearch_wp"),
+            'permalink' => __('Permalink', "meilisearch_wp"),
         );
         
         foreach ($core_fields as $field => $label) {
@@ -993,28 +959,28 @@ class ScryWpIndexesFeature extends PluginFeature {
         
         // Categories
         $fields['categories'] = array(
-            'label' => __('Categories', 'scry-wp'),
+            'label' => __('Categories', "meilisearch_wp"),
             'type' => 'taxonomy',
             'path' => 'categories',
         );
         
         // Tags
         $fields['tags'] = array(
-            'label' => __('Tags', 'scry-wp'),
+            'label' => __('Tags', "meilisearch_wp"),
             'type' => 'taxonomy',
             'path' => 'tags',
         );
         
         // Featured Image
         $fields['featured_image'] = array(
-            'label' => __('Featured Image', 'scry-wp'),
+            'label' => __('Featured Image', "meilisearch_wp"),
             'type' => 'media',
             'path' => 'featured_image',
         );
         
         // Author Name
         $fields['author_name'] = array(
-            'label' => __('Author Name', 'scry-wp'),
+            'label' => __('Author Name', "meilisearch_wp"),
             'type' => 'meta',
             'path' => 'author_name',
         );
@@ -1032,7 +998,7 @@ class ScryWpIndexesFeature extends PluginFeature {
         
         if (!empty($meta_keys)) {
             $fields['post_meta'] = array(
-                'label' => __('Post Meta', 'scry-wp'),
+                'label' => __('Post Meta', "meilisearch_wp"),
                 'type' => 'group',
                 'path' => 'post_meta',
                 'children' => array(),
@@ -1137,4 +1103,37 @@ class ScryWpIndexesFeature extends PluginFeature {
         return array_unique($meta_keys);
     }
     
+    //  \\  //  \\  //  \\  Helpers  //  \\  //  \\  //  \\ 
+    public function get_index_names() {
+        global $wpdb;
+        $index_names = array();
+        $post_types_to_index = get_option($this->prefixed('post_types'));
+        foreach ($post_types_to_index as $post_type) {
+            $index_names[$post_type] = $wpdb->prefix . $this->get_prefix() . get_option($this->prefixed('index_affix')) . $post_type;
+        }   
+        return $index_names;
+    }
+    
+    /**
+     * Get the list of searchable attributes for Meilisearch indexes
+     * Excludes: post_status, post_type, author_name, featured_image
+     */
+    private function get_searchable_attributes() {
+        return array(
+            'ID',
+            'post_title',
+            'post_content',
+            'post_excerpt',
+            'post_date',
+            'post_date_gmt',
+            'post_modified',
+            'post_modified_gmt',
+            'post_author',
+            'post_name',
+            'permalink',
+            'categories',
+            'tags',
+            'post_meta',
+        );
+    }
 }
