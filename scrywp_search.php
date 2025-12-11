@@ -5,7 +5,7 @@
  * Description:	A powerful semantic search plugin, powered by Meilisearch.
  * Version:	1.0.0
  * Requires at least: 5.2
- * Requires PHP:      7.2
+ * Requires PHP:      8.1
  * Author:	JG Web Development
  * Author URI:	https://jacob-t-graham.com
  * License:	GPLv3 or later
