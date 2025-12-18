@@ -30,23 +30,23 @@ $plugin = new Plugin("scrywp_", plugin_dir_path( __FILE__ ), plugin_dir_url( __F
 
 //register features with the plugin manager here...
 require_once plugin_dir_path(__FILE__) . '/features/admin_page/feature.php';
-$feature = new ScryWpAdminPageFeature();
+$feature = new ScrySearch_AdminPageFeature();
 $plugin->register_feature("scrywp_admin_page", $feature);
 
 require_once plugin_dir_path(__FILE__) . '/features/search_settings/feature.php';
-$search_settings_feature = new ScryWpSearchSettingsFeature();
+$search_settings_feature = new ScrySearch_SearchSettingsFeature();
 $plugin->register_feature("scrywp_search_settings", $search_settings_feature);
 
 require_once plugin_dir_path(__FILE__) . '/features/search/feature.php';
-$search_feature = new ScryWpSearchFeature();
+$search_feature = new ScrySearch_SearchFeature();
 $plugin->register_feature("scrywp_search", $search_feature);
 
 require_once plugin_dir_path(__FILE__) . '/features/indexes/feature.php';
-$indexes_feature = new ScryWpIndexesFeature();
+$indexes_feature = new ScrySearch_IndexesFeature();
 $plugin->register_feature("scrywp_indexes", $indexes_feature);
 
 require_once plugin_dir_path(__FILE__) . '/features/connection_settings/feature.php';
-$connection_settings_feature = new ScryWpConnectionSettingsFeature();
+$connection_settings_feature = new ScrySearch_ConnectionSettingsFeature();
 $plugin->register_feature("scrywp_connection_settings", $connection_settings_feature);
 
 //init the plugin
