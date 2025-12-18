@@ -10,7 +10,7 @@ require_once plugin_dir_path(__FILE__) . '../../vendor/autoload.php';
 use jtgraham38\jgwordpresskit\PluginFeature;
 use Meilisearch\Client as MeilisearchClient;
 
-class ScryWpConnectionSettingsFeature extends PluginFeature {
+class ScrySearch_ConnectionSettingsFeature extends PluginFeature {
     
     public function add_filters() {
         // Individual settings are sanitized via register_setting sanitize_callback
@@ -92,10 +92,10 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
         $admin_page_feature = $this->get_feature('scry_ms_admin_page');
         if ($admin_page_feature && method_exists($admin_page_feature, 'register_admin_page')) {
             $admin_page_feature->register_admin_page(
-                'scry-search-meilisearch-settings',
-                __('Connection Settings', "scry_search_meilisearch"),
+                'scrywp-search-settings',
+                __('Connection Settings', "scry-search"),
                 'dashicons-admin-generic',
-                __('Configure the connection settings for Scry Search for Meilisearch, including connection type and server credentials.', "scry_search_meilisearch")
+                __('Configure the connection settings for ScryWP Search, including connection type and server credentials.', "scry-search")
             );
         }
         
@@ -138,7 +138,7 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
             $this->prefixed('connection_settings_section'),
             'Connection Settings',
             function() {
-                echo '<p>Configure the connection settings for Scry Search for Meilisearch.</p>';
+                echo esc_html__('<p>Configure the connection settings for Scry Search for Meilisearch.</p>', "scry-search");
             },
             $this->prefixed('connection_settings_group')
         );
@@ -268,21 +268,21 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
     public function ajax_test_connection() {
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'scry_ms_test_connection')) {
-            wp_send_json_error(array('message' => __('Security check failed', "scry_search_meilisearch")));
+            wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
         
         // Check user permissions
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => __('Permission denied', "scry_search_meilisearch")));
+            wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
             return;
         }
         
         // Get connection settings from POST data
-        $url = isset($_POST['meilisearch_url']) ? sanitize_text_field($_POST['meilisearch_url']) : '';
-        $admin_key = isset($_POST['meilisearch_admin_key']) ? sanitize_text_field($_POST['meilisearch_admin_key']) : '';
-        $search_key = isset($_POST['meilisearch_search_key']) ? sanitize_text_field($_POST['meilisearch_search_key']) : '';
-        $connection_type = isset($_POST['connection_type']) ? sanitize_text_field($_POST['connection_type']) : '';
+        $url = isset($_POST['meilisearch_url']) ? sanitize_text_field(wp_unslash($_POST['meilisearch_url'])) : '';
+        $admin_key = isset($_POST['meilisearch_admin_key']) ? sanitize_text_field(wp_unslash($_POST['meilisearch_admin_key'])) : '';
+        $search_key = isset($_POST['meilisearch_search_key']) ? sanitize_text_field(wp_unslash($_POST['meilisearch_search_key'])) : '';
+        $connection_type = isset($_POST['connection_type']) ? sanitize_text_field(wp_unslash($_POST['connection_type'])) : '';
         
         // If no URL provided, try to get from saved settings
         if (empty($url)) {
@@ -291,7 +291,7 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
         
         // Validate URL
         if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
-            wp_send_json_error(array('message' => __('Please provide a valid Meilisearch URL', "scry_search_meilisearch")));
+            wp_send_json_error(array('message' => __('Please provide a valid Meilisearch URL', "scry-search")));
             return;
         }
         
@@ -314,24 +314,24 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
             $health = $client->health();
             
             // If we get here, the connection is successful
-            $message = __('Connection successful!', "scry_search_meilisearch");
+            $message = __('Connection successful!', "scry-search");
             
             wp_send_json_success(array('message' => $message));
             
         } catch (\Meilisearch\Exceptions\CommunicationException $e) {
             // Network/connection error
             wp_send_json_error(array(
-                'message' => sprintf(__('Connection failed: %s', "scry_search_meilisearch"), $e->getMessage())
+                'message' => sprintf(__('Connection failed: %s', "scry-search"), $e->getMessage())
             ));
         } catch (\Meilisearch\Exceptions\ApiException $e) {
             // API error (auth, etc.)
             wp_send_json_error(array(
-                'message' => sprintf(__('Authentication failed: %s', "scry_search_meilisearch"), $e->getMessage())
+                'message' => sprintf(__('Authentication failed: %s', "scry-search"), $e->getMessage())
             ));
         } catch (\Exception $e) {
             // General error
             wp_send_json_error(array(
-                'message' => sprintf(__('Error: %s', "scry_search_meilisearch"), $e->getMessage())
+                'message' => sprintf(__('Error: %s', "scry-search"), $e->getMessage())
             ));
         }
     }

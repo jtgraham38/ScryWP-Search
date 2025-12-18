@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 // Security check
 if (!current_user_can('manage_options')) {
-    wp_die(__('You do not have sufficient permissions to access this page.', "scry_search_meilisearch"));
+    wp_die(__('You do not have sufficient permissions to access this page.', "scry-search"));
 }
 
 // Get current page
@@ -53,7 +53,7 @@ if (method_exists($this, 'get_registered_pages')) {
 <div class="wrap">
     <h1 class="wp-heading-inline">
         <span class="dashicons dashicons-search" style="font-size: 30px; width: 30px; height: 30px; margin-right: 10px;"></span>
-        <?php _e('Scry Search for Meilisearch', "scry_search_meilisearch"); ?>
+        <?php esc_html_e('ScryWP Search', "scry-search"); ?>
     </h1>
     
     <hr class="wp-header-end">

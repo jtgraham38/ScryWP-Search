@@ -13,7 +13,7 @@ use Meilisearch\Exceptions\CommunicationException;
 use Meilisearch\Exceptions\ApiException;
 use Meilisearch\Contracts\TasksQuery;
 
-class ScryWpAdminPageFeature extends PluginFeature {
+class ScrySearch_AdminPageFeature extends PluginFeature {
     
     /**
      * Registry of admin pages
@@ -170,20 +170,20 @@ class ScryWpAdminPageFeature extends PluginFeature {
      */
     public function ajax_get_tasks() {
         // Verify nonce
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], $this->prefixed('get_tasks'))) {
-            wp_send_json_error(array('message' => __('Security check failed', "scry_search_meilisearch")));
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('get_tasks'))) {
+            wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
         
         // Check user permissions
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => __('Permission denied', "scry_search_meilisearch")));
+            wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
             return;
         }
         
         // Get pagination parameters
-        $limit = isset($_POST['limit']) ? absint($_POST['limit']) : 20;
-        $page = isset($_POST['page']) ? absint($_POST['page']) : 1;
+        $limit = isset($_POST['limit']) ? absint(wp_unslash($_POST['limit'])) : 20;
+        $page = isset($_POST['page']) ? absint(wp_unslash($_POST['page'])) : 1;
         
         // Validate limit (max 100 per Meilisearch API)
         if ($limit > 100) {
@@ -195,7 +195,7 @@ class ScryWpAdminPageFeature extends PluginFeature {
         $meilisearch_admin_key = get_option($this->prefixed('meilisearch_admin_key'), '');
         
         if (empty($meilisearch_url) || empty($meilisearch_admin_key)) {
-            wp_send_json_error(array('message' => __('Connection settings are not configured', "scry_search_meilisearch")));
+            wp_send_json_error(array('message' => __('Connection settings are not configured', "scry-search")));
             return;
         }
         
@@ -287,17 +287,17 @@ class ScryWpAdminPageFeature extends PluginFeature {
         } catch (CommunicationException $e) {
             // Network/connection error
             wp_send_json_error(array(
-                'message' => sprintf(__('Connection failed: %s', "scry_search_meilisearch"), $e->getMessage())
+                'message' => sprintf(__('Connection failed: %s', "scry-search"), $e->getMessage())
             ));
         } catch (ApiException $e) {
             // API error
             wp_send_json_error(array(
-                'message' => sprintf(__('API error: %s', "scry_search_meilisearch"), $e->getMessage())
+                'message' => sprintf(__('API error: %s', "scry-search"), $e->getMessage())
             ));
         } catch (\Exception $e) {
             // General error
             wp_send_json_error(array(
-                'message' => sprintf(__('Error: %s', "scry_search_meilisearch"), $e->getMessage())
+                'message' => sprintf(__('Error: %s', "scry-search"), $e->getMessage())
             ));
         }
     }

@@ -13,7 +13,7 @@ use Meilisearch\Contracts\SearchQuery;
 use Meilisearch\Contracts\MultiSearchFederation;
 use Meilisearch\Contracts\FederationOptions;
 
-class ScryWpSearchFeature extends PluginFeature {
+class ScrySearch_SearchFeature extends PluginFeature {
     
     public function add_filters() {
         // Add any filters here if needed
@@ -185,9 +185,9 @@ class ScryWpSearchFeature extends PluginFeature {
         // Register the search weights section
         add_settings_section(
             $this->prefixed('search_weights_section'),
-            __('Search Weights', "scry_search_meilisearch"),
+            __('Search Weights', "scry-search"),
             function() {
-                echo '<p>' . esc_html__('Configure search weights for each post type. Higher weights will prioritize results from that post type in federated searches.', "scry_search_meilisearch") . '</p>';
+                echo '<p>' . esc_html__('Configure search weights for each post type. Higher weights will prioritize results from that post type in federated searches.', "scry-search") . '</p>';
             },
             $this->prefixed('search_settings_group')
         );
@@ -195,7 +195,7 @@ class ScryWpSearchFeature extends PluginFeature {
         // Add the search weights field
         add_settings_field(
             $this->prefixed('search_weights'),
-            __('Post Type Weights', "scry_search_meilisearch"),
+            __('Post Type Weights', "scry-search"),
             function() {
                 require_once plugin_dir_path(__FILE__) . 'elements/settings/search_weights_input.php';
             },
@@ -254,10 +254,10 @@ class ScryWpSearchFeature extends PluginFeature {
         $admin_page_feature = $this->get_feature('scry_ms_admin_page');
         if ($admin_page_feature && method_exists($admin_page_feature, 'register_admin_page')) {
             $admin_page_feature->register_admin_page(
-                'scry-search-meilisearch-search-config',
-                __('Search Settings', "scry_search_meilisearch"),
+                'scrywp-search-config',
+                __('Search Settings', "scry-search"),
                 'dashicons-search',
-                __('Configure the search settings for Scry Search for Meilisearch.', "scry_search_meilisearch")
+                __('Configure the search settings for ScryWP Search.', "scry-search")
             );
         }
 
