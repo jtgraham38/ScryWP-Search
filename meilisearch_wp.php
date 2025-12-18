@@ -10,7 +10,7 @@
  * Author URI:	https://jacob-t-graham.com
  * License:	GPLv3 or later
  * License URI:	https://www.gnu.org/licenses/gpl-3.0.html
- * Text Domain:	scry-search
+ * Text Domain:	scry-ms-search
  */
 
 //exit if accessed directly
