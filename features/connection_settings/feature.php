@@ -10,7 +10,7 @@ require_once plugin_dir_path(__FILE__) . '../../vendor/autoload.php';
 use jtgraham38\jgwordpresskit\PluginFeature;
 use Meilisearch\Client as MeilisearchClient;
 
-class ScryWpConnectionSettingsFeature extends PluginFeature {
+class ScrySearch_ConnectionSettingsFeature extends PluginFeature {
     
     public function add_filters() {
         // Individual settings are sanitized via register_setting sanitize_callback

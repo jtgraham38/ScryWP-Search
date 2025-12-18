@@ -13,7 +13,7 @@ use Meilisearch\Contracts\SearchQuery;
 use Meilisearch\Contracts\MultiSearchFederation;
 use Meilisearch\Contracts\FederationOptions;
 
-class ScryWpSearchFeature extends PluginFeature {
+class ScrySearch_SearchFeature extends PluginFeature {
     
     public function add_filters() {
         // Add any filters here if needed

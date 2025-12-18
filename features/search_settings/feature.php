@@ -9,7 +9,7 @@ require_once plugin_dir_path(__FILE__) . '../../vendor/autoload.php';
 
 use jtgraham38\jgwordpresskit\PluginFeature;
 
-class ScryWpSearchSettingsFeature extends PluginFeature {
+class ScrySearch_SearchSettingsFeature extends PluginFeature {
     
     public function add_filters() {
         

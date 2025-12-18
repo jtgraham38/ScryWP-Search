@@ -13,7 +13,7 @@ use Meilisearch\Exceptions\CommunicationException;
 use Meilisearch\Exceptions\ApiException;
 use Meilisearch\Contracts\TasksQuery;
 
-class ScryWpAdminPageFeature extends PluginFeature {
+class ScrySearch_AdminPageFeature extends PluginFeature {
     
     /**
      * Registry of admin pages

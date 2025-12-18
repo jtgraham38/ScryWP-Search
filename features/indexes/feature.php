@@ -12,7 +12,7 @@ use Meilisearch\Client;
 use Meilisearch\Exceptions\CommunicationException;
 use Meilisearch\Exceptions\ApiException;
 
-class ScryWpIndexesFeature extends PluginFeature {
+class ScrySearch_IndexesFeature extends PluginFeature {
     
     public function add_filters() {
         // Individual settings are sanitized via register_setting sanitize_callback
