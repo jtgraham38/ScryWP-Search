@@ -1,5 +1,5 @@
 === ScryWP Search ===
-Contributors: JG Web Development
+Contributors: JG Web Development, jtgraham38
 Tags: search, meilisearch, fast-search, typo-tolerant, search-engine, relevancy, indexing, multi-post-type
 Requires at least: 5.2
 Tested up to: 6.8

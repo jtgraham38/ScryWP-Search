@@ -14,6 +14,6 @@ $required = ($connection_type === 'manual') ? 'required' : '';
 
 <div class="scrywp-manual-config-field">
     <input type="url" name="<?php echo $this->prefixed('meilisearch_url'); ?>" value="<?php echo esc_attr($url); ?>" class="regular-text" placeholder="https://your-meilisearch-instance.com" <?php echo $readonly . ' ' . $required; ?>>
-    <p class="description"><?php _e('The URL of your Meilisearch instance.', "meilisearch_wp"); ?></p>
+    <p class="description"><?php _e('The URL of your Meilisearch instance.', "scry-search"); ?></p>
 </div>
 
