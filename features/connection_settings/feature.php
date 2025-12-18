@@ -217,7 +217,7 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
      */
     public function ajax_test_connection() {
         // Verify nonce
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'scrywp_test_connection')) {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'scrywp_test_connection')) {
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
@@ -229,10 +229,10 @@ class ScryWpConnectionSettingsFeature extends PluginFeature {
         }
         
         // Get connection settings from POST data
-        $url = isset($_POST['meilisearch_url']) ? sanitize_text_field($_POST['meilisearch_url']) : '';
-        $admin_key = isset($_POST['meilisearch_admin_key']) ? sanitize_text_field($_POST['meilisearch_admin_key']) : '';
-        $search_key = isset($_POST['meilisearch_search_key']) ? sanitize_text_field($_POST['meilisearch_search_key']) : '';
-        $connection_type = isset($_POST['connection_type']) ? sanitize_text_field($_POST['connection_type']) : '';
+        $url = isset($_POST['meilisearch_url']) ? sanitize_text_field(wp_unslash($_POST['meilisearch_url'])) : '';
+        $admin_key = isset($_POST['meilisearch_admin_key']) ? sanitize_text_field(wp_unslash($_POST['meilisearch_admin_key'])) : '';
+        $search_key = isset($_POST['meilisearch_search_key']) ? sanitize_text_field(wp_unslash($_POST['meilisearch_search_key'])) : '';
+        $connection_type = isset($_POST['connection_type']) ? sanitize_text_field(wp_unslash($_POST['connection_type'])) : '';
         
         // If no URL provided, try to get from saved settings
         if (empty($url)) {

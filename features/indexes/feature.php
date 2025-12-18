@@ -79,7 +79,7 @@ class ScryWpIndexesFeature extends PluginFeature {
             add_action('admin_notices', function() use ($e) {
                 ?>
                 <div class="notice notice-error">
-                    <p><?php echo $e->getMessage(); ?></p>
+                    <p><?php echo esc_html($e->getMessage()); ?></p>
                     <details>
                         <summary>View Details</summary>
                         <pre><?php echo esc_html(print_r($e, true)); ?></pre>
@@ -119,7 +119,7 @@ class ScryWpIndexesFeature extends PluginFeature {
             add_action('admin_notices', function() use ($e) {
                 ?>
                 <div class="notice notice-error">
-                    <p><?php echo $e->getMessage(); ?></p>
+                    <p><?php echo esc_html($e->getMessage()); ?></p>
                     <details>
                         <summary>View Details</summary>
                         <pre><?php echo esc_html(print_r($e, true)); ?></pre>
@@ -176,7 +176,7 @@ class ScryWpIndexesFeature extends PluginFeature {
             add_action('admin_notices', function() use ($e) {
                 ?>
                 <div class="notice notice-error">
-                    <p><?php echo $e->getMessage(); ?></p>
+                    <p><?php echo esc_html($e->getMessage()); ?></p>
                     <details>
                         <summary>View Details</summary>
                         <pre><?php echo esc_html(print_r($e, true)); ?></pre>
@@ -190,7 +190,7 @@ class ScryWpIndexesFeature extends PluginFeature {
             add_action('admin_notices', function() use ($e) {
                 ?>
                 <div class="notice notice-error">
-                    <p><?php echo $e->getMessage(); ?></p>
+                    <p><?php echo esc_html($e->getMessage()); ?></p>
                     <details>
                         <summary>View Details</summary>
                         <pre><?php echo esc_html(print_r($e, true)); ?></pre>
@@ -312,7 +312,7 @@ class ScryWpIndexesFeature extends PluginFeature {
      */
     public function ajax_wipe_index() {
         // Verify nonce
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], $this->prefixed('wipe_index'))) {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('wipe_index'))) {
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
@@ -324,7 +324,7 @@ class ScryWpIndexesFeature extends PluginFeature {
         }
         
         // Get index name from POST data
-        $index_name = isset($_POST['index_name']) ? sanitize_text_field($_POST['index_name']) : '';
+        $index_name = isset($_POST['index_name']) ? sanitize_text_field(wp_unslash($_POST['index_name'])) : '';
         
         // Validate index name
         if (empty($index_name)) {
@@ -394,7 +394,7 @@ class ScryWpIndexesFeature extends PluginFeature {
      */
     public function ajax_index_posts() {
         // Verify nonce
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], $this->prefixed('index_posts'))) {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('index_posts'))) {
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
@@ -406,7 +406,7 @@ class ScryWpIndexesFeature extends PluginFeature {
         }
         
         // Get post type from POST data
-        $post_type = isset($_POST['post_type']) ? sanitize_text_field($_POST['post_type']) : '';
+        $post_type = isset($_POST['post_type']) ? sanitize_text_field(wp_unslash($_POST['post_type'])) : '';
         
         // Validate post type
         if (empty($post_type)) {
@@ -552,7 +552,7 @@ class ScryWpIndexesFeature extends PluginFeature {
      */
     public function ajax_search_index() {
         // Verify nonce
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], $this->prefixed('search_index'))) {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('search_index'))) {
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
@@ -564,8 +564,8 @@ class ScryWpIndexesFeature extends PluginFeature {
         }
         
         // Get search query and index name from POST data
-        $search_query = isset($_POST['search_query']) ? sanitize_text_field($_POST['search_query']) : '';
-        $index_name = isset($_POST['index_name']) ? sanitize_text_field($_POST['index_name']) : '';
+        $search_query = isset($_POST['search_query']) ? sanitize_text_field(wp_unslash($_POST['search_query'])) : '';
+        $index_name = isset($_POST['index_name']) ? sanitize_text_field(wp_unslash($_POST['index_name'])) : '';
         
         // Validate inputs
         if (empty($search_query)) {
@@ -722,7 +722,7 @@ class ScryWpIndexesFeature extends PluginFeature {
      */
     public function ajax_get_index_settings() {
         // Verify nonce
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], $this->prefixed('get_index_settings'))) {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('get_index_settings'))) {
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
@@ -734,7 +734,7 @@ class ScryWpIndexesFeature extends PluginFeature {
         }
         
         // Get index name from POST data
-        $index_name = isset($_POST['index_name']) ? sanitize_text_field($_POST['index_name']) : '';
+        $index_name = isset($_POST['index_name']) ? sanitize_text_field(wp_unslash($_POST['index_name'])) : '';
         
         // Validate index name
         if (empty($index_name)) {
@@ -822,7 +822,7 @@ class ScryWpIndexesFeature extends PluginFeature {
      */
     public function ajax_update_index_settings() {
         // Verify nonce
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], $this->prefixed('update_index_settings'))) {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('update_index_settings'))) {
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
@@ -834,7 +834,7 @@ class ScryWpIndexesFeature extends PluginFeature {
         }
         
         // Get index name from POST data
-        $index_name = isset($_POST['index_name']) ? sanitize_text_field($_POST['index_name']) : '';
+        $index_name = isset($_POST['index_name']) ? sanitize_text_field(wp_unslash($_POST['index_name'])) : '';
         
         // Validate index name
         if (empty($index_name)) {
@@ -850,7 +850,7 @@ class ScryWpIndexesFeature extends PluginFeature {
         }
         
         // Get ranking rules from POST data (should be array from multi-value form inputs)
-        $ranking_rules = isset($_POST['ranking_rules']) ? $_POST['ranking_rules'] : array();
+        $ranking_rules = isset($_POST['ranking_rules']) ? wp_unslash($_POST['ranking_rules']) : array();
         if (!is_array($ranking_rules)) {
             $ranking_rules = array();
         }
@@ -858,7 +858,7 @@ class ScryWpIndexesFeature extends PluginFeature {
         $ranking_rules = array_map('sanitize_text_field', $ranking_rules);
         
         // Get searchable attributes from POST data (should be array from multi-value form inputs)
-        $searchable_attributes = isset($_POST['searchable_attributes']) ? $_POST['searchable_attributes'] : array();
+        $searchable_attributes = isset($_POST['searchable_attributes']) ? wp_unslash($_POST['searchable_attributes']) : array();
         if (!is_array($searchable_attributes)) {
             $searchable_attributes = array();
         }

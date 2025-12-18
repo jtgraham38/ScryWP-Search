@@ -162,7 +162,7 @@ class ScryWpAdminPageFeature extends PluginFeature {
      */
     public function ajax_get_tasks() {
         // Verify nonce
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], $this->prefixed('get_tasks'))) {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('get_tasks'))) {
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
@@ -174,8 +174,8 @@ class ScryWpAdminPageFeature extends PluginFeature {
         }
         
         // Get pagination parameters
-        $limit = isset($_POST['limit']) ? absint($_POST['limit']) : 20;
-        $page = isset($_POST['page']) ? absint($_POST['page']) : 1;
+        $limit = isset($_POST['limit']) ? absint(wp_unslash($_POST['limit'])) : 20;
+        $page = isset($_POST['page']) ? absint(wp_unslash($_POST['page'])) : 1;
         
         // Validate limit (max 100 per Meilisearch API)
         if ($limit > 100) {

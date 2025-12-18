@@ -1236,6 +1236,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Helper function to escape HTML for JSON display
                     function escapeHtml(text) {
+                        if (text === null || text === undefined) {
+                            return '';
+                        }
                         var map = {
                             '&': '&amp;',
                             '<': '&lt;',
@@ -1243,7 +1246,16 @@ document.addEventListener('DOMContentLoaded', function() {
                             '"': '&quot;',
                             "'": '&#039;'
                         };
-                        return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+                        return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
+                    }
+                    
+                    // Helper function to escape URLs for href attributes
+                    function escapeUrl(url) {
+                        if (!url) return '';
+                        // Convert to string and escape HTML entities
+                        var escaped = escapeHtml(String(url));
+                        // Additional escaping for URL-specific characters in attributes
+                        return escaped.replace(/ /g, '%20');
                     }
                     
                     // Build results HTML
@@ -1254,18 +1266,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     results.forEach(function(result) {
                         resultsHTML += '<div class="scrywp-index-dialog-result">';
-                        resultsHTML += '<h4 class="scrywp-index-dialog-result-title">' + (result.title || untitledLabel) + '</h4>';
+                        resultsHTML += '<h4 class="scrywp-index-dialog-result-title">' + escapeHtml(result.title || untitledLabel) + '</h4>';
                         
                         if (result.excerpt) {
-                            resultsHTML += '<p class="scrywp-index-dialog-result-excerpt">' + result.excerpt + '</p>';
+                            resultsHTML += '<p class="scrywp-index-dialog-result-excerpt">' + escapeHtml(result.excerpt) + '</p>';
                         }
                         
                         resultsHTML += '<div class="scrywp-index-dialog-result-meta">';
-                        resultsHTML += '<span>' + result.ID + '</span>';
-                        resultsHTML += '<span>' + result.post_type + '</span>';
-                        resultsHTML += '<span>' + result.post_status + '</span>';
+                        resultsHTML += '<span>' + escapeHtml(String(result.ID || '')) + '</span>';
+                        resultsHTML += '<span>' + escapeHtml(result.post_type || '') + '</span>';
+                        resultsHTML += '<span>' + escapeHtml(result.post_status || '') + '</span>';
                         if (result.post_date) {
-                            resultsHTML += '<span>' + result.post_date + '</span>';
+                            resultsHTML += '<span>' + escapeHtml(result.post_date) + '</span>';
                         }
                         resultsHTML += '</div>';
                         
@@ -1277,10 +1289,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         resultsHTML += '<div class="scrywp-index-dialog-result-actions">';
                         if (result.permalink) {
-                            resultsHTML += '<a href="' + result.permalink + '" target="_blank" class="scrywp-index-dialog-result-link" aria-label="' + viewPostLabel + '">' + viewPostLabel + '</a>';
+                            // Escape URL for href attribute
+                            var escapedPermalink = escapeUrl(result.permalink);
+                            resultsHTML += '<a href="' + escapedPermalink + '" target="_blank" class="scrywp-index-dialog-result-link" aria-label="' + viewPostLabel + '">' + viewPostLabel + '</a>';
                         }
                         if (result.edit_link) {
-                            resultsHTML += '<a href="' + result.edit_link + '" target="_blank" class="scrywp-index-dialog-result-edit-link" aria-label="' + editPostLabel + '">' + editPostLabel + '</a>';
+                            // Escape URL for href attribute
+                            var escapedEditLink = escapeUrl(result.edit_link);
+                            resultsHTML += '<a href="' + escapedEditLink + '" target="_blank" class="scrywp-index-dialog-result-edit-link" aria-label="' + editPostLabel + '">' + editPostLabel + '</a>';
                         }
                         resultsHTML += '</div>';
                         
