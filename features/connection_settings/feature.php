@@ -70,14 +70,14 @@ class ScrySearch_ConnectionSettingsFeature extends PluginFeature {
                 'searchKeyField' => $this->prefixed('meilisearch_search_key'),
                 'adminKeyField' => $this->prefixed('meilisearch_admin_key'),
                 'i18n' => array(
-                    'testing' => __('Testing...', "scry_search_meilisearch"),
-                    'testConnection' => __('Test Connection', "scry_search_meilisearch"),
-                    'success' => __('Success!', "scry_search_meilisearch"),
-                    'error' => __('Error:', "scry_search_meilisearch"),
-                    'testFailed' => __('Connection test failed', "scry_search_meilisearch"),
-                    'failedToTest' => __('Failed to test connection', "scry_search_meilisearch"),
-                    'selectConnectionType' => __('Please select a connection type', "scry_search_meilisearch"),
-                    'fillRequiredFields' => __('Please fill in all required fields', "scry_search_meilisearch"),
+                    'testing' => __('Testing...', "scry-search"),
+                    'testConnection' => __('Test Connection', "scry-search"),
+                    'success' => __('Success!', "scry-search"),
+                    'error' => __('Error:', "scry-search"),
+                    'testFailed' => __('Connection test failed', "scry-search"),
+                    'failedToTest' => __('Failed to test connection', "scry-search"),
+                    'selectConnectionType' => __('Please select a connection type', "scry-search"),
+                    'fillRequiredFields' => __('Please fill in all required fields', "scry-search"),
                 ),
             )
         );

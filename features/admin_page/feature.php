@@ -76,9 +76,9 @@ class ScrySearch_AdminPageFeature extends PluginFeature {
         // Register the main page
         $this->register_admin_page(
             'scry-search-meilisearch',
-            __('Overview', "scry_search_meilisearch"),
+            __('Overview', "scry-search"),
             'dashicons-search',
-            __('Welcome to Scry Search for Meilisearch. Configure your search settings and manage indexes.', "scry_search_meilisearch")
+            __('Welcome to Scry Search for Meilisearch. Configure your search settings and manage indexes.', "scry-search")
         );
         
         add_menu_page(
