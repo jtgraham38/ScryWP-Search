@@ -22,7 +22,7 @@ $manual_url = $this->get_base_url() . 'assets/images/manual.png';
         ?>
         
         <div class="scrywp-connection-type-section">
-            <h3><?php esc_html_e('Connection Type', "scry-search"); ?></h3>
+            <h3><?php esc_html_e('Connection Type', "scry-ms-search"); ?></h3>
             <div class="scrywp-connection-type-cards">
                 
                 <!-- Scry Search Managed Service - Prominent card -->
@@ -48,12 +48,12 @@ $manual_url = $this->get_base_url() . 'assets/images/manual.png';
             </div>
         </div>
         <div class="scrywp-managed-get-connection-info<?php echo ($connection_type === 'scrywp') ? ' scrywp-section-visible' : ''; ?>">
-            <h3><?php esc_html_e('Get Connection Info', "scry-search"); ?></h3>
+            <h3><?php esc_html_e('Get Connection Info', "scry-ms-search"); ?></h3>
             <p class="description">
-                <?php esc_html_e('Get your connection info from ScryWP.', "scry-search"); ?>
+                <?php esc_html_e('Get your connection info from ScryWP.', "scry-ms-search"); ?>
             </p>
             <button type="button" id="scrywp-get-connection-info" class="button button-secondary">
-                <?php esc_html_e('Get Connection Info', "scry-search"); ?>
+                <?php esc_html_e('Get Connection Info', "scry-ms-search"); ?>
             </button>
             <div id="scrywp-connection-info" class="scrywp-connection-info"></div>
             <small>
@@ -63,12 +63,12 @@ $manual_url = $this->get_base_url() . 'assets/images/manual.png';
         
         
         <div class="scrywp-connection-test-section">
-            <h3><?php esc_html_e('Test Connection', "scry-search"); ?></h3>
+            <h3><?php esc_html_e('Test Connection', "scry-ms-search"); ?></h3>
             <p class="description">
-                <?php esc_html_e('Test your connection settings before saving.', "scry-search"); ?>
+                <?php esc_html_e('Test your connection settings before saving.', "scry-ms-search"); ?>
             </p>
             <button type="button" id="scrywp-test-connection" class="button button-secondary">
-                <?php esc_html_e('Test Connection', "scry-search"); ?>
+                <?php esc_html_e('Test Connection', "scry-ms-search"); ?>
             </button>
             <div id="scrywp-connection-test-result" class="scrywp-test-result"></div>
         </div>

@@ -2,7 +2,7 @@
 Contributors: JG Web Development, jtgraham38
 Tags: search, meilisearch, fast-search, typo-tolerant, search-engine, relevancy, indexing, multi-post-type
 Requires at least: 5.2
-Tested up to: 6.8
+Tested up to: 6.9
 Stable tag: 1.0.0
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
