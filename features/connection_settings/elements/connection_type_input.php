@@ -21,22 +21,22 @@ $manual_url = $this->get_base_url() . 'assets/images/manual.png';
         ?>
         
         <div class="scrywp-connection-type-section">
-            <h3><?php _e('Connection Type', "scry-search"); ?></h3>
+            <h3><?php esc_html_e('Connection Type', "scry-search"); ?></h3>
             <div class="scrywp-connection-type-cards">
                 
                 <!-- ScryWP Managed Service - Prominent card -->
                 <label class="scrywp-connection-card scrywp-connection-card-prominent">
-                    <input type="radio" name="<?php echo $this->prefixed('connection_type'); ?>" value="scrywp" <?php checked($connection_type, 'scrywp'); ?>>
+                    <input type="radio" name="<?php echo esc_attr($this->prefixed('connection_type')); ?>" value="scrywp" <?php checked($connection_type, 'scrywp'); ?>>
                     <div class="scrywp-card-content">
                         <div class="scrywp-card-title">ScryWP Managed Service</div>
-                        <img src="<?php echo $coai_dark_url; ?>" alt="ScryWP Managed Service" class="scrywp-connection-card-image">
+                        <img src="<?php echo esc_url($coai_dark_url); ?>" alt="ScryWP Managed Service" class="scrywp-connection-card-image">
                         <div class="scrywp-card-description">Recommended: Let ScryWP manage your Meilisearch instance</div>
                     </div>
                 </label>
                 
                 <!-- Manual Configuration - Muted card -->
                 <label class="scrywp-connection-card scrywp-connection-card-muted">
-                    <input type="radio" name="<?php echo $this->prefixed('connection_type'); ?>" value="manual" <?php checked($connection_type, 'manual'); ?>>
+                    <input type="radio" name="<?php echo esc_attr($this->prefixed('connection_type')); ?>" value="manual" <?php checked($connection_type, 'manual'); ?>>
                     <div class="scrywp-card-content">
                         <div class="scrywp-card-title">Manual Configuration</div>
                         <!-- <img src="<?php echo $manual_url; ?>" alt="Manual Configuration" class="scrywp-connection-card-image"> -->
@@ -47,12 +47,12 @@ $manual_url = $this->get_base_url() . 'assets/images/manual.png';
             </div>
         </div>
         <div class="scrywp-managed-get-connection-info<?php echo ($connection_type === 'scrywp') ? ' scrywp-section-visible' : ''; ?>">
-            <h3><?php _e('Get Connection Info', "scry-search"); ?></h3>
+            <h3><?php esc_html_e('Get Connection Info', "scry-search"); ?></h3>
             <p class="description">
-                <?php _e('Get your connection info from ScryWP.', "scry-search"); ?>
+                <?php esc_html_e('Get your connection info from ScryWP.', "scry-search"); ?>
             </p>
             <button type="button" id="scrywp-get-connection-info" class="button button-secondary">
-                <?php _e('Get Connection Info', "scry-search"); ?>
+                <?php esc_html_e('Get Connection Info', "scry-search"); ?>
             </button>
             <div id="scrywp-connection-info" class="scrywp-connection-info"></div>
             <small>
@@ -62,12 +62,12 @@ $manual_url = $this->get_base_url() . 'assets/images/manual.png';
         
         
         <div class="scrywp-connection-test-section">
-            <h3><?php _e('Test Connection', "scry-search"); ?></h3>
+            <h3><?php esc_html_e('Test Connection', "scry-search"); ?></h3>
             <p class="description">
-                <?php _e('Test your connection settings before saving.', "scry-search"); ?>
+                <?php esc_html_e('Test your connection settings before saving.', "scry-search"); ?>
             </p>
             <button type="button" id="scrywp-test-connection" class="button button-secondary">
-                <?php _e('Test Connection', "scry-search"); ?>
+                <?php esc_html_e('Test Connection', "scry-search"); ?>
             </button>
             <div id="scrywp-connection-test-result" class="scrywp-test-result"></div>
         </div>
@@ -417,7 +417,7 @@ document.addEventListener('DOMContentLoaded', function() {
     toggleSectionsBasedOnConnectionType();
     
     // Watch for changes to connection type
-    var connectionTypeInputs = $$('input[name="<?php echo $this->prefixed('connection_type'); ?>"]');
+    var connectionTypeInputs = $$('input[name="<?php echo esc_js($this->prefixed('connection_type')); ?>"]');
     connectionTypeInputs.forEach(function(input) {
         input.addEventListener('change', function() {
             toggleSectionsBasedOnConnectionType();
@@ -432,16 +432,16 @@ document.addEventListener('DOMContentLoaded', function() {
             var result = $('#scrywp-connection-test-result');
             
             button.disabled = true;
-            button.textContent = '<?php _e('Testing...', "scry-search"); ?>';
+            button.textContent = '<?php echo esc_js(__('Testing...', "scry-search")); ?>';
             if (result) {
                 result.style.display = 'none';
             }
             
             // Get form data using WordPress Settings API field names
-            var connectionTypeInput = $('input[name="<?php echo $this->prefixed('connection_type'); ?>"]:checked');
-            var urlInput = $('input[name="<?php echo $this->prefixed('meilisearch_url'); ?>"]');
-            var searchKeyInput = $('input[name="<?php echo $this->prefixed('meilisearch_search_key'); ?>"]');
-            var adminKeyInput = $('input[name="<?php echo $this->prefixed('meilisearch_admin_key'); ?>"]');
+            var connectionTypeInput = $('input[name="<?php echo esc_js($this->prefixed('connection_type')); ?>"]:checked');
+            var urlInput = $('input[name="<?php echo esc_js($this->prefixed('meilisearch_url')); ?>"]');
+            var searchKeyInput = $('input[name="<?php echo esc_js($this->prefixed('meilisearch_search_key')); ?>"]');
+            var adminKeyInput = $('input[name="<?php echo esc_js($this->prefixed('meilisearch_admin_key')); ?>"]');
             
             var formData = new FormData();
             formData.append('action', 'scrywp_test_connection');
@@ -467,11 +467,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     if (data.success) {
                         result.classList.add('success');
-                        result.innerHTML = '<strong><?php _e('Success!', "scry-search"); ?></strong> ' + (data.data && data.data.message ? data.data.message : '');
+                        result.innerHTML = '<strong><?php echo esc_js(__('Success!', "scry-search")); ?></strong> ' + (data.data && data.data.message ? data.data.message : '');
                     } else {
                         result.classList.add('error');
-                        var errorMessage = (data.data && data.data.message) ? data.data.message : '<?php _e('Connection test failed', "scry-search"); ?>';
-                        result.innerHTML = '<strong><?php _e('Error:', "scry-search"); ?></strong> ' + errorMessage;
+                        var errorMessage = (data.data && data.data.message) ? data.data.message : '<?php echo esc_js(__('Connection test failed', "scry-search")); ?>';
+                        result.innerHTML = '<strong><?php echo esc_js(__('Error:', "scry-search")); ?></strong> ' + errorMessage;
                     }
                     result.style.display = 'block';
                 }
@@ -480,13 +480,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (result) {
                     result.classList.remove('success', 'error');
                     result.classList.add('error');
-                    result.innerHTML = '<strong><?php _e('Error:', "scry-search"); ?></strong> <?php _e('Failed to test connection', "scry-search"); ?>';
+                    result.innerHTML = '<strong><?php echo esc_js(__('Error:', "scry-search")); ?></strong> <?php echo esc_js(__('Failed to test connection', "scry-search")); ?>';
                     result.style.display = 'block';
                 }
             })
             .finally(function() {
                 button.disabled = false;
-                button.textContent = '<?php _e('Test Connection', "scry-search"); ?>';
+                button.textContent = '<?php echo esc_js(__('Test Connection', "scry-search")); ?>';
             });
         });
     }
@@ -495,11 +495,11 @@ document.addEventListener('DOMContentLoaded', function() {
     var form = $('form.scrywp-connection-form');
     if (form) {
         form.addEventListener('submit', function(e) {
-            var connectionTypeInput = $('input[name="<?php echo $this->prefixed('connection_type'); ?>"]:checked');
+            var connectionTypeInput = $('input[name="<?php echo esc_js($this->prefixed('connection_type')); ?>"]:checked');
             var connectionType = connectionTypeInput ? connectionTypeInput.value : '';
             
             if (!connectionType) {
-                alert('<?php _e('Please select a connection type', "scry-search"); ?>');
+                alert('<?php echo esc_js(__('Please select a connection type', "scry-search")); ?>');
                 e.preventDefault();
                 return false;
             }
@@ -515,7 +515,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 var adminKey = adminKeyInput ? adminKeyInput.value : '';
                 
                 if (!url || !searchKey || !adminKey) {
-                    alert('<?php _e('Please fill in all required fields', "scry-search"); ?>');
+                    alert('<?php echo esc_js(__('Please fill in all required fields', "scry-search")); ?>');
                     e.preventDefault();
                     return false;
                 }

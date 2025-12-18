@@ -53,7 +53,7 @@ if (method_exists($this, 'get_registered_pages')) {
 <div class="wrap">
     <h1 class="wp-heading-inline">
         <span class="dashicons dashicons-search" style="font-size: 30px; width: 30px; height: 30px; margin-right: 10px;"></span>
-        <?php _e('ScryWP Search', "scry-search"); ?>
+        <?php esc_html_e('ScryWP Search', "scry-search"); ?>
     </h1>
     
     <hr class="wp-header-end">
