@@ -254,7 +254,7 @@ class ScrySearch_SearchFeature extends PluginFeature {
         $admin_page_feature = $this->get_feature('scry_ms_admin_page');
         if ($admin_page_feature && method_exists($admin_page_feature, 'register_admin_page')) {
             $admin_page_feature->register_admin_page(
-                'scrywp-search-config',
+                'scry-search-meilisearch-search-config',
                 __('Search Settings', "scry-search"),
                 'dashicons-search',
                 __('Configure the search settings for ScryWP Search.', "scry-search")

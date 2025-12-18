@@ -288,7 +288,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         $admin_page_feature = $this->get_feature('scry_ms_admin_page');
         if ($admin_page_feature && method_exists($admin_page_feature, 'register_admin_page')) {
             $admin_page_feature->register_admin_page(
-                'scrywp-index-settings',
+                'scry-search-meilisearch-index-settings',
                 __('Index Settings', "scry-search"),
                 'dashicons-index-card',
                 __('Manage post type indexes, configure indexing settings, and view index status.', "scry-search")

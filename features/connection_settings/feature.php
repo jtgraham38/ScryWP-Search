@@ -92,7 +92,7 @@ class ScrySearch_ConnectionSettingsFeature extends PluginFeature {
         $admin_page_feature = $this->get_feature('scry_ms_admin_page');
         if ($admin_page_feature && method_exists($admin_page_feature, 'register_admin_page')) {
             $admin_page_feature->register_admin_page(
-                'scrywp-search-settings',
+                'scry-search-meilisearch-settings',
                 __('Connection Settings', "scry-search"),
                 'dashicons-admin-generic',
                 __('Configure the connection settings for ScryWP Search, including connection type and server credentials.', "scry-search")
@@ -138,7 +138,7 @@ class ScrySearch_ConnectionSettingsFeature extends PluginFeature {
             $this->prefixed('connection_settings_section'),
             'Connection Settings',
             function() {
-                echo esc_html__('<p>Configure the connection settings for Scry Search for Meilisearch.</p>', "scry-search");
+                echo "<p>" . esc_html__('Configure the connection settings for Scry Search for Meilisearch.', "scry-search") . "</p>";
             },
             $this->prefixed('connection_settings_group')
         );
