@@ -24,8 +24,8 @@ $post_types_setting = get_option($this->prefixed('post_types'));
     <div>
         <div>
             <select
-                id="<?php echo $this->prefixed('post_types_input'); ?>"
-                name="<?php echo $this->prefixed('post_types'); ?>[]"
+                id="<?php echo esc_attr($this->prefixed('post_types_input')); ?>"
+                name="<?php echo esc_attr($this->prefixed('post_types')); ?>[]"
                 multiple
                 title="Select which post types our AI should use to generate its search response.  It will use the title, contents, links, media, and more to generate a response."
                 required
