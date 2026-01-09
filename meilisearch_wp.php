@@ -45,5 +45,9 @@ require_once plugin_dir_path(__FILE__) . '/features/connection_settings/feature.
 $connection_settings_feature = new ScrySearch_ConnectionSettingsFeature();
 $plugin->register_feature("scry_ms_connection_settings", $connection_settings_feature);
 
+require_once plugin_dir_path(__FILE__) . '/features/analytics/feature.php';
+$analytics_feature = new ScrySearch_AnalyticsFeature();
+$plugin->register_feature("scry_ms_analytics", $analytics_feature);
+
 //init the plugin
 $plugin->init();
