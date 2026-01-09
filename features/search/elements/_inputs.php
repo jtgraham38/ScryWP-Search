@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
 ?>
 
 <div class="wrap p-1">
-    <h1><?php esc_html_e('Search Settings', "scry-ms-search"); ?></h1>
+    <h1><?php esc_html_e('Search Settings', "scry-search"); ?></h1>
 
     <form method="post" action="options.php">
         <?php

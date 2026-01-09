@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 // Security check
 if (!current_user_can('manage_options')) {
-    wp_die(__('You do not have sufficient permissions to access this page.', "scry-ms-search"));
+    wp_die(esc_html__('You do not have sufficient permissions to access this page.', "scry-search"));
 }
 
 // Get registered pages from the admin page feature
@@ -30,9 +30,9 @@ unset($registered_pages['scry-search-meilisearch']);
 
 <div class="scrywp-admin-overview">
     <div class="scrywp-admin-overview-header">
-        <h2><?php esc_html_e('Welcome to ScryWP Search', "scry-ms-search"); ?></h2>
+        <h2><?php esc_html_e('Welcome to ScryWP Search', "scry-search"); ?></h2>
         <p class="description">
-            <?php esc_html_e('Configure your search settings, manage connections, and set up indexes for powerful semantic search capabilities.', "scry-ms-search"); ?>
+            <?php esc_html_e('Configure your search settings, manage connections, and set up indexes for powerful semantic search capabilities.', "scry-search"); ?>
         </p>
     </div>
 
@@ -58,7 +58,7 @@ unset($registered_pages['scry-search-meilisearch']);
                             <a href="<?php echo esc_url($page_data['url']); ?>" class="button button-primary">
                                 <?php 
                                 /* translators: %s: Page title */
-                                printf(esc_html__('Configure %s', "scry-ms-search"), esc_html($page_data['label'])); 
+                                printf(esc_html__('Configure %s', "scry-search"), esc_html($page_data['label'])); 
                                 ?>
                                 <span class="dashicons dashicons-arrow-right-alt" style="margin-left: 5px;"></span>
                             </a>
@@ -69,7 +69,7 @@ unset($registered_pages['scry-search-meilisearch']);
         </div>
     <?php else : ?>
         <div class="notice notice-info">
-            <p><?php esc_html_e('No additional settings pages are available.', "scry-ms-search"); ?></p>
+            <p><?php esc_html_e('No additional settings pages are available.', "scry-search"); ?></p>
         </div>
     <?php endif; ?>
 </div>

@@ -27,7 +27,7 @@ $admin_page_feature = $this;
 <div class="scrywp-task-drawer-toggle-wrapper">
     <button type="button" class="button scrywp-task-drawer-toggle" id="scrywp-task-drawer-toggle">
         <span class="dashicons dashicons-arrow-left-alt"></span>
-        <?php esc_html_e('View Tasks', "scry-ms-search"); ?>
+        <?php esc_html_e('View Tasks', "scry-search"); ?>
     </button>
 </div>
 
@@ -40,9 +40,9 @@ $admin_page_feature = $this;
     <div class="scrywp-task-drawer-header">
         <h2 class="scrywp-task-drawer-title">
             <span class="dashicons dashicons-list-view"></span>
-            <?php esc_html_e('Meilisearch Tasks', "scry-ms-search"); ?>
+            <?php esc_html_e('Meilisearch Tasks', "scry-search"); ?>
         </h2>
-        <button type="button" class="scrywp-task-drawer-close" id="scrywp-task-drawer-close" aria-label="<?php esc_attr_e('Close drawer', "scry-ms-search"); ?>">
+        <button type="button" class="scrywp-task-drawer-close" id="scrywp-task-drawer-close" aria-label="<?php esc_attr_e('Close drawer', "scry-search"); ?>">
             <span class="dashicons dashicons-no-alt"></span>
         </button>
     </div>
@@ -52,17 +52,17 @@ $admin_page_feature = $this;
         <!-- Loading State -->
         <div class="scrywp-task-drawer-loading" id="scrywp-task-drawer-loading">
             <span class="spinner is-active" style="float: none; margin: 20px auto;"></span>
-            <p><?php esc_html_e('Loading tasks...', "scry-ms-search"); ?></p>
+            <p><?php esc_html_e('Loading tasks...', "scry-search"); ?></p>
         </div>
 
         <!-- Empty State -->
         <div class="scrywp-task-drawer-empty" id="scrywp-task-drawer-empty" style="display: none;">
-            <p><?php esc_html_e('No tasks found.', "scry-ms-search"); ?></p>
+            <p><?php esc_html_e('No tasks found.', "scry-search"); ?></p>
         </div>
 
         <!-- Error State -->
         <div class="scrywp-task-drawer-error" id="scrywp-task-drawer-error" style="display: none;">
-            <p><?php esc_html_e('Error loading tasks.', "scry-ms-search"); ?></p>
+            <p><?php esc_html_e('Error loading tasks.', "scry-search"); ?></p>
             <p class="scrywp-task-drawer-error-message" id="scrywp-task-drawer-error-message"></p>
         </div>
 
@@ -70,25 +70,25 @@ $admin_page_feature = $this;
         <div class="scrywp-task-drawer-pagination" id="scrywp-task-drawer-pagination" style="display: none;">
             <button type="button" class="button scrywp-task-drawer-prev" id="scrywp-task-drawer-prev" disabled>
                 <span class="dashicons dashicons-arrow-left-alt"></span>
-                <?php esc_html_e('Previous', "scry-ms-search"); ?>
+                <?php esc_html_e('Previous', "scry-search"); ?>
             </button>
             <div class="scrywp-task-drawer-pagination-center">
                 <div class="scrywp-task-drawer-page-input-wrapper">
                     <label for="scrywp-task-drawer-page-input" class="scrywp-task-drawer-page-label">
-                        <?php esc_html_e('Page:', "scry-ms-search"); ?>
+                        <?php esc_html_e('Page:', "scry-search"); ?>
                     </label>
                     <input type="number" 
                            id="scrywp-task-drawer-page-input" 
                            class="scrywp-task-drawer-page-input" 
                            min="1" 
                            value="1"
-                           aria-label="<?php esc_attr_e('Page number', "scry-ms-search"); ?>">
+                           aria-label="<?php esc_attr_e('Page number', "scry-search"); ?>">
                     <span class="scrywp-task-drawer-total-pages" id="scrywp-task-drawer-total-pages"></span>
                 </div>
                 <span class="scrywp-task-drawer-pagination-info" id="scrywp-task-drawer-pagination-info"></span>
             </div>
             <button type="button" class="button scrywp-task-drawer-next" id="scrywp-task-drawer-next">
-                <?php esc_html_e('Next', "scry-ms-search"); ?>
+                <?php esc_html_e('Next', "scry-search"); ?>
                 <span class="dashicons dashicons-arrow-right-alt"></span>
             </button>
         </div>
@@ -108,9 +108,9 @@ wp_localize_script(
         'action' => $admin_page_feature->prefixed('get_tasks'),
         'nonce' => wp_create_nonce($admin_page_feature->prefixed('get_tasks')),
         'i18n' => array(
-            'loading' => __('Loading tasks...', "scry-ms-search"),
-            'noTasks' => __('No tasks found.', "scry-ms-search"),
-            'tasksInfo' => __('Showing %1$d-%2$d of %3$d tasks', "scry-ms-search"),
+            'loading' => __('Loading tasks...', "scry-search"),
+            'noTasks' => __('No tasks found.', "scry-search"),
+            'tasksInfo' => __('Showing %1$d-%2$d of %3$d tasks', "scry-search"),
         ),
     )
 );

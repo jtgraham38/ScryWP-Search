@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 // Security check
 if (!current_user_can('manage_options')) {
-    wp_die(__('You do not have sufficient permissions to access this page.', "scry-ms-search"));
+    wp_die(esc_html(__('You do not have sufficient permissions to access this page.', "scry-search")));
 }
 
 // Get current page
@@ -53,7 +53,7 @@ if (method_exists($this, 'get_registered_pages')) {
 <div class="wrap">
     <h1 class="wp-heading-inline">
         <span class="dashicons dashicons-search" style="font-size: 30px; width: 30px; height: 30px; margin-right: 10px;"></span>
-        <?php esc_html_e('ScryWP Search', "scry-ms-search"); ?>
+        <?php esc_html_e('ScryWP Search', "scry-search"); ?>
     </h1>
     
     <hr class="wp-header-end">
@@ -78,5 +78,9 @@ if (method_exists($this, 'get_registered_pages')) {
 </div>
 
 <div>
-    <?php echo $content; //already escaped ?>
+    <?php 
+        echo $content; //already escaped 
+        //^ the above is already excaped, because it is nothing more than another php file loaded using require_once, and echoed here
+        //^ so that we can use have one page template for multiple pages.  As such, it is a false positive.  Escaping again here causes display issues.
+    ?>
 </div>

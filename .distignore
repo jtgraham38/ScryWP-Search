@@ -25,5 +25,7 @@ Thumbs.db
 **/node_modules
 **/.gitignore
 /vendor/**/tests
+/vendor/**/CNAME
+/vendor/**/tmp-*
 scoper.inc.php
 **/setup.sh
