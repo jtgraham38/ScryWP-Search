@@ -267,7 +267,7 @@ class ScrySearch_ConnectionSettingsFeature extends PluginFeature {
      */
     public function ajax_test_connection() {
         // Verify nonce
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'scry_ms_test_connection')) {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'scry_ms_test_connection')) {
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
