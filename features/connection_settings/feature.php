@@ -238,7 +238,7 @@ class ScrySearch_ConnectionSettingsFeature extends PluginFeature {
                 'description' => 'Meilisearch search API key for Scry Search for Meilisearch.',
                 'sanitize_callback' => function($input) {
                     // Sanitize as text field but preserve the key
-                    return sanitize_text_field(trim($input));
+                    return is_string($input) ? trim($input) : '';
                 },
                 'default' => '',
                 'show_in_rest' => false,
@@ -254,7 +254,7 @@ class ScrySearch_ConnectionSettingsFeature extends PluginFeature {
                 'description' => 'Meilisearch admin API key for Scry Search for Meilisearch.',
                 'sanitize_callback' => function($input) {
                     // Sanitize as text field but preserve the key
-                    return sanitize_text_field(trim($input));
+                    return is_string($input) ? trim($input) : '';
                 },
                 'default' => '',
                 'show_in_rest' => false,

@@ -251,10 +251,22 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                 'type' => 'array',
                 'description' => 'Post types to index for Scry Search for Meilisearch.',
                 'sanitize_callback' => function($input) {
+                    //ensure input is an array
                     if (!is_array($input)) {
                         return array();
                     }
-                    return array_map('sanitize_text_field', $input);
+
+                    //get all post types registered in wordpress
+                    $post_types = get_post_types(array(), 'names');
+
+                    //remove any post types that are not registered in wordpress
+                    $input = array_intersect($input, $post_types);
+
+                    //sanitize the input
+                    $input = array_map('sanitize_text_field', $input);
+
+                    //return the input
+                    return $input;
                 },
                 'default' => array(),
                 'show_in_rest' => false,
