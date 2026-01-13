@@ -87,10 +87,8 @@ class ScrySearch_AdminPageFeature extends PluginFeature {
             'manage_options', // Capability required
             'scry-search-meilisearch', // Menu slug
             function() {
-                ob_start();
-                require_once plugin_dir_path(__FILE__) . 'elements/main_page.php';
-                $content = ob_get_clean();
-                $this->render_admin_page($content);
+                $file_path = plugin_dir_path(__FILE__) . 'elements/main_page.php';
+                $this->render_admin_page($file_path);
             }, // Callback function
             'dashicons-search', // Icon
             30 // Position
@@ -161,7 +159,7 @@ class ScrySearch_AdminPageFeature extends PluginFeature {
      * 
      * @param string $content The page content to render
      */
-    public function render_admin_page($content) {
+    public function render_admin_page($file_path) {
         require_once plugin_dir_path(__FILE__) . 'elements/base_layout.php';
     }
     

@@ -110,10 +110,8 @@ class ScrySearch_ConnectionSettingsFeature extends PluginFeature {
             function() use ($feature) {
                 // Bind closure to feature so $this works in included files
                 $closure = function() use ($feature) {
-                    ob_start();
-                    require_once plugin_dir_path(__FILE__) . 'elements/_inputs.php';
-                    $content = ob_get_clean();
-                    $feature->get_feature('scry_ms_admin_page')->render_admin_page($content);
+                    $file_path = plugin_dir_path(__FILE__) . 'elements/_inputs.php';
+                    $feature->get_feature('scry_ms_admin_page')->render_admin_page($file_path);
                 };
                 $bound = \Closure::bind($closure, $feature);
                 $bound();

@@ -205,10 +205,8 @@ class ScrySearch_SearchFeature extends PluginFeature {
             'manage_options',
             'scry-search-meilisearch-analytics-config',
             function() {
-                ob_start();
-                require_once plugin_dir_path(__FILE__) . 'elements/_inputs.php';
-                $content = ob_get_clean();
-                $this->get_feature('scry_ms_admin_page')->render_admin_page($content);
+                $file_path = plugin_dir_path(__FILE__) . 'elements/_inputs.php';
+                $this->get_feature('scry_ms_admin_page')->render_admin_page($file_path);
             }
         );
     }

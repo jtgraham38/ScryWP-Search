@@ -79,8 +79,6 @@ if (method_exists($this, 'get_registered_pages')) {
 
 <div>
     <?php 
-        echo $content; //already escaped 
-        //^ the above is already excaped, because it is nothing more than another php file loaded using require_once, and echoed here
-        //^ so that we can use have one page template for multiple pages.  As such, it is a false positive.  Escaping again here causes display issues.
+        require_once $file_path;
     ?>
 </div>
