@@ -46,6 +46,9 @@ class ScrySearch_SearchFeature extends PluginFeature {
         //get all the post types we are searching, that overlap with
         //the indexed post types
         $indexed_post_types = get_option($this->prefixed('post_types'));
+        if (!is_array($indexed_post_types)) {
+            $indexed_post_types = array();
+        }
         $post_types_values = $query->get('post_type');
         if (empty($post_types_values)) {
             return $posts;
@@ -138,6 +141,22 @@ class ScrySearch_SearchFeature extends PluginFeature {
         if (isset($search_results['hits']) && is_array($search_results['hits'])) {
             $all_results = $search_results['hits'];
             $total_hits = $search_results['estimatedTotalHits'];
+        }
+
+        // Track search analytics
+        try {
+            $analytics_feature = $this->get_feature('scry_ms_analytics');
+            if ($analytics_feature) {
+                $analytics_feature->insert_search_analytics_event(array(
+                    'search_term'         => $query_params['q'],
+                    'result_count'        => $total_hits,
+                    'result_ids'          => array_column($all_results, 'ID'),
+                    'result_titles'       => array_column($all_results, 'post_title'),
+                    'post_types_searched' => array_values($post_types_to_search),
+                ));
+            }
+        } catch (Exception $e) {
+            // Silently fail - analytics should not break search
         }
         
         //get the post ids from the search results

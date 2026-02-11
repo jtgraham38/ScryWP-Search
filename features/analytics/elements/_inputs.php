@@ -7,12 +7,10 @@ if (!defined('ABSPATH')) {
 ?>
 
 <div class="wrap p-1">
-    <h1><?php esc_html_e('Analytics Settings', "scry-ms-search"); ?></h1>
-
     <form method="post" action="options.php">
         <?php
-                // settings_fields($this->prefixed('search_settings_group'));
-                // do_settings_sections($this->prefixed('search_settings_group'));
+            settings_fields($this->prefixed('analytics_settings_group'));
+            do_settings_sections($this->prefixed('analytics_settings_group'));
         ?>
         <br>
         <?php submit_button(); ?>
