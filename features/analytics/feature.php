@@ -399,7 +399,7 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
         // Chart.js from CDN
         wp_enqueue_script(
             $this->prefixed('chartjs'),
-            'https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js',
+            plugin_dir_url(__FILE__) . 'assets/js/chart.min.js',
             array(),
             '4.4.7',
             true
