@@ -214,37 +214,22 @@ class ScrySearch_AdminPageFeature extends PluginFeature {
             
             // Calculate pagination
             $current_page = $page > 0 ? $page : 1;
-            $total_pages = $total > 0 ? ceil($total / $limit) : 1;
+            $total_pages = $total > 0 ? (int) ceil($total / $limit) : 1;
             
-            // Calculate reverse offset for pagination
-            // Meilisearch orders tasks oldest first by default (lowest UID to highest UID)
-            // So: offset 0 = oldest tasks (UID 0), offset (total - limit) = newest tasks (highest UID)
-            // To get newest on page 1 and oldest on last page, we reverse the offset:
-            // - Page 1: offset = (total_pages - 1) * limit = newest tasks (highest UIDs)
-            // - Page N: offset = (total_pages - N) * limit = older tasks
-            // - Last page: offset = 0 = oldest tasks (UID 0)
-            // Example: If total = 1913, limit = 20, total_pages = 96:
-            // - Page 1: offset = (96 - 1) * 20 = 1900 = newest tasks (UIDs 1912-1893)
-            // - Page 96: offset = (96 - 96) * 20 = 0 = oldest tasks (UIDs 0-19)
-            $offset = ($total_pages - $current_page) * $limit;
-            
-            // Ensure offset doesn't exceed total - limit (maximum valid offset)
-            $max_offset = max(0, $total - $limit);
-            if ($offset > $max_offset) {
-                $offset = $max_offset;
+            // Build tasks query
+            // Meilisearch tasks API: `from` is a task UID (not an offset).
+            // Tasks are returned in descending UID order starting from `from`.
+            // If `from` is not set, it starts from the newest task (highest UID).
+            //
+            // Page 1: don't set `from` → returns newest tasks
+            // Page N: set `from` to skip the first (N-1)*limit newest tasks
+            //   Approximation: from_uid = total - 1 - ((N-1) * limit)
+            $tasks_query = (new TasksQuery())->setLimit($limit);
+
+            if ($current_page > 1) {
+                $from_uid = max(0, $total - 1 - (($current_page - 1) * $limit));
+                $tasks_query->setFrom($from_uid);
             }
-            
-            // Ensure offset is at least 0 (since UIDs start at 0)
-            if ($offset < 0) {
-                $offset = 0;
-            }
-            
-            // Get tasks using Meilisearch PHP client with TasksQuery
-            // Meilisearch returns tasks ordered newest first by default
-            // So page 1 will show newest tasks (highest UIDs) and last page will show oldest (lowest UIDs)
-            $tasks_query = (new TasksQuery())
-                ->setLimit($limit)
-                ->setFrom($offset);
             
             $tasks_response = $client->getTasks($tasks_query);
             
@@ -275,7 +260,6 @@ class ScrySearch_AdminPageFeature extends PluginFeature {
             wp_send_json_success(array(
                 'tasks' => $formatted_tasks,
                 'total' => $total,
-                'from' => $offset,
                 'limit' => $limit,
                 'currentPage' => $current_page,
                 'totalPages' => $total_pages,
