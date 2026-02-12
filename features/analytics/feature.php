@@ -115,7 +115,7 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
             $referrer = '';
         }
 
-        // Check GDPR anonymization setting
+        // Check anonymization setting
         $anonymize = get_option($this->prefixed('anonymize_analytics'), '0');
         if ($anonymize === '1') {
             $user_id = 0;
@@ -318,9 +318,9 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
             return;
         }
 
-        // Register the GDPR settings section
+        // Register the anonymization settings section
         add_settings_section(
-            $this->prefixed('analytics_gdpr_section'),
+            $this->prefixed('analytics_anonymization_section'),
             __('Privacy Settings', "scry-search"),
             function() {
                 echo '<p>' . esc_html__('Configure privacy and data collection settings for search analytics.', "scry-search") . '</p>';
@@ -331,12 +331,12 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
         // Add the anonymize checkbox field
         add_settings_field(
             $this->prefixed('anonymize_analytics'),
-            __('GDPR Anonymization', "scry-search"),
+            __('Anonymize Analytics', "scry-search"),
             function() {
                 require_once plugin_dir_path(__FILE__) . 'elements/settings/anonymize_input.php';
             },
             $this->prefixed('analytics_settings_group'),
-            $this->prefixed('analytics_gdpr_section')
+            $this->prefixed('analytics_anonymization_section')
         );
 
         // Register the anonymize setting
@@ -345,7 +345,7 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
             $this->prefixed('anonymize_analytics'),
             array(
                 'type'              => 'string',
-                'description'       => 'Enable GDPR anonymization for search analytics data.',
+                'description'       => 'Enable anonymization for search analytics data.',
                 'sanitize_callback' => function($input) {
                     return $input === '1' ? '1' : '0';
                 },

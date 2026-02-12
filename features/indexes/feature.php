@@ -109,11 +109,11 @@ class ScrySearch_IndexesFeature extends PluginFeature {
 
         //provide success and error handling
         try {
-        //init a meilisearch client
-        $client = new Client(
-            get_option($this->prefixed('meilisearch_url')), 
-            get_option($this->prefixed('meilisearch_admin_key'))
-        );
+            //init a meilisearch client
+            $client = new Client(
+                get_option($this->prefixed('meilisearch_url')), 
+                get_option($this->prefixed('meilisearch_admin_key'))
+            );
 
             //delete the post from the index
             $client->index($index_name)->deleteDocument($post_id);
@@ -1201,10 +1201,10 @@ class ScrySearch_IndexesFeature extends PluginFeature {
     public function get_index_names() {
         global $wpdb;
         $index_names = array();
-        $post_types_to_index = get_option($this->prefixed('post_types'));
+        $post_types_to_index = get_option($this->prefixed('post_types'), array());
         foreach ($post_types_to_index as $post_type) {
             $index_names[$post_type] = $wpdb->prefix . $this->get_prefix() . get_option($this->prefixed('index_affix')) . $post_type;
-        }   
+        }
         return $index_names;
     }
     

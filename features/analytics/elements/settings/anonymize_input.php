@@ -15,7 +15,7 @@ $value = get_option($option_name, '0');
         value="1"
         <?php checked($value, '1'); ?>
     />
-    <?php esc_html_e('Anonymize analytics data (GDPR compliance)', "scry-search"); ?>
+    <?php esc_html_e('Anonymize analytics data', "scry-search"); ?>
 </label>
 <p class="description">
     <?php esc_html_e('When enabled, user IP addresses are hashed, and user IDs, user agents, and referrer URLs are not stored. This cannot retroactively anonymize previously collected data.', "scry-search"); ?>

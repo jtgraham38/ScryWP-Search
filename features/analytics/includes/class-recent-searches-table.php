@@ -141,15 +141,50 @@ class ScrySearch_Recent_Searches_Table extends WP_List_Table {
      */
     public function column_search_term($item) {
         $term = esc_html($item['search_term']);
+        return '<strong>' . $term . '</strong>';
+    }
 
-        $result_titles = is_array($item['result_titles']) ? $item['result_titles'] : array();
-        $result_ids = is_array($item['result_ids']) ? $item['result_ids'] : array();
+    /**
+     * User column
+     */
+    public function column_user($item) {
+        $display = esc_html($item['user_display_name']);
+        if (!empty($item['user_id'])) {
+            $display .= ' <span class="description">(ID: ' . absint($item['user_id']) . ')</span>';
+        }
+        return $display;
+    }
 
-        if (empty($result_titles)) {
-            return '<strong>' . $term . '</strong>';
+    /**
+     * IP column
+     */
+    public function column_user_ip($item) {
+
+        //check if the ip is (does not meet the ipv4 or ipv6 format)
+        if (!filter_var($item['user_ip'], FILTER_VALIDATE_IP)) {
+            return '<span class="description">' . esc_html__('Anonymized', 'scry-search') . '</span>';
+        }
+
+        $ip = esc_html($item['user_ip']);
+        if (empty($ip)) {
+            return '<span class="description">' . esc_html__('N/A', 'scry-search') . '</span>';
+        }
+        return '<code>' . $ip . '</code>';
+    }
+
+    /**
+     * Result count column with color coding
+     */
+    public function column_result_count($item) {
+        $count = absint($item['result_count']);
+
+        if ($count === 0) {
+            return '<span style="color:#d63638;font-weight:600;">0</span>';
         }
 
         // Build expandable results list
+        $result_titles = is_array($item['result_titles']) ? $item['result_titles'] : array();
+        $result_ids = is_array($item['result_ids']) ? $item['result_ids'] : array();
         $details_id = 'scry-results-' . esc_attr($item['id']);
         $toggle = '<button type="button" class="button-link scry-toggle-results" data-target="' . $details_id . '" aria-expanded="false">'
             . '<span class="dashicons dashicons-arrow-right-alt2" style="font-size:14px;width:14px;height:14px;vertical-align:middle;"></span> '
@@ -172,41 +207,8 @@ class ScrySearch_Recent_Searches_Table extends WP_List_Table {
             $list .= '<li>' . $safe_title . '</li>';
         }
         $list .= '</ol></div>';
-
-        return '<strong>' . $term . '</strong><br>' . $toggle . $list;
-    }
-
-    /**
-     * User column
-     */
-    public function column_user($item) {
-        $display = esc_html($item['user_display_name']);
-        if (!empty($item['user_id'])) {
-            $display .= ' <span class="description">(ID: ' . absint($item['user_id']) . ')</span>';
-        }
-        return $display;
-    }
-
-    /**
-     * IP column
-     */
-    public function column_user_ip($item) {
-        $ip = esc_html($item['user_ip']);
-        if (empty($ip)) {
-            return '<span class="description">' . esc_html__('N/A', 'scry-search') . '</span>';
-        }
-        return '<code>' . $ip . '</code>';
-    }
-
-    /**
-     * Result count column with color coding
-     */
-    public function column_result_count($item) {
-        $count = absint($item['result_count']);
-        if ($count === 0) {
-            return '<span style="color:#d63638;font-weight:600;">0</span>';
-        }
-        return '<span style="color:#00a32a;font-weight:600;">' . number_format_i18n($count) . '</span>';
+        
+        return '<span style="color:#00a32a;font-weight:600;">' . number_format_i18n($count) . '</span><br>' . $toggle . $list;
     }
 
     /**

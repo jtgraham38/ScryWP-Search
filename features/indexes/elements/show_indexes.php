@@ -20,7 +20,8 @@ $error_message = '';
 if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
     try {
         $client = new Client($meilisearch_url, $meilisearch_admin_key);
-        $index_names = $this->get_index_names();
+        $indexes_feature = $this->get_feature('scry_ms_indexes');
+        $index_names = $indexes_feature->get_index_names();
         
         foreach ($index_names as $post_type => $index_name) {
             try {
