@@ -211,6 +211,16 @@ class ScrySearch_SearchFeature extends PluginFeature {
             $this->prefixed('search_settings_group')
         );
 
+        // Register the facets section
+        add_settings_section(
+            $this->prefixed('search_facets_section'),
+            __('Facets', "scry-search"),
+            function() {
+                echo '<p>' . esc_html__('Configure facets to allow users to filter search results.', "scry-search") . '</p>';
+            },
+            $this->prefixed('search_settings_group')
+        );
+
         // Add the search weights field
         add_settings_field(
             $this->prefixed('search_weights'),
@@ -220,6 +230,17 @@ class ScrySearch_SearchFeature extends PluginFeature {
             },
             $this->prefixed('search_settings_group'),
             $this->prefixed('search_weights_section')
+        );
+
+        // Add the facets field
+        add_settings_field(
+            $this->prefixed('search_facets'),
+            __('Facets', "scry-search"),
+            function() {
+                require_once plugin_dir_path(__FILE__) . 'elements/settings/facets_input.php';
+            },
+            $this->prefixed('search_settings_group'),
+            $this->prefixed('search_facets_section')
         );
 
         // Register search weights setting
@@ -263,6 +284,46 @@ class ScrySearch_SearchFeature extends PluginFeature {
                 },
                 'default' => array(),
                 'show_in_rest' => false,
+            )
+        );
+
+        // Register the facets setting
+        register_setting(
+            $this->prefixed('search_settings_group'),
+            $this->prefixed('search_facets'),
+            array(
+                'type' => 'array',
+                'description' => 'Facets for Scry Search for Meilisearch.',
+                'sanitize_callback' => function($input) {
+
+
+                    //return default value
+                    if (!is_array($input)) {
+                        return array(
+                            'taxonomies' => array(),
+                            'meta' => array(),
+                        );
+                    }
+
+                    //unset all keys that are not 'taxonomies' or 'meta'
+                    $input = array_intersect_key($input, array(
+                        'taxonomies' => array(),
+                        'meta' => array(),
+                    ));
+
+                    //sanitize the taxonomies, and set the value to an array of term ids
+                    $sanitized_taxonomies = array();
+                    foreach ($input['taxonomies'] as $taxonomy => $term_ids) {
+                        $sanitized_taxonomies[$taxonomy] = array_map('intval', $term_ids);
+                    }
+                    $input['taxonomies'] = $sanitized_taxonomies;
+
+                    //TODO: sanitize the meta
+                    
+                    //sanitize the meta
+                    return $input;
+                },
+                'default' => array(),
             )
         );
     }

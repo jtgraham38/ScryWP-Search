@@ -26,6 +26,7 @@ if (method_exists($this, 'get_registered_pages')) {
 // Separate main page from other pages
 $main_page = isset($registered_pages['scry-search-meilisearch']) ? $registered_pages['scry-search-meilisearch'] : null;
 unset($registered_pages['scry-search-meilisearch']);
+$all_taxonomies_objects = get_taxonomies( [], 'names' );
 ?>
 
 <div class="scrywp-admin-overview">
