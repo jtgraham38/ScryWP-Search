@@ -1,1 +1,8 @@
-.wp-block-scry-search-facets .scry-facets-preview-clear-button{opacity:.45;transform:scale(1);transition:opacity .12s ease,transform .12s ease}.wp-block-scry-search-facets .scry-facets-preview-clear-button:focus-visible,.wp-block-scry-search-facets .scry-facets-preview-clear-button:hover{opacity:1;transform:scale(1.15)}.wp-block-scry-search-facets .scry-facets-preview-checkbox{accent-color:#6b7280}@supports(accent-color:color-mix(in srgb,black 50%,white 50%)){.wp-block-scry-search-facets .scry-facets-preview-checkbox{accent-color:color-mix(in srgb,currentColor 68%,transparent)}}
+/*!***********************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[4].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[4].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[4].use[3]!./src/facets/editor.scss ***!
+  \***********************************************************************************************************************************************************************************************************************************************/
+/**
+ * The following styles get applied inside the editor only.
+ *
+ * Replace them with your own styles or remove the file completely.
+ */

@@ -20,6 +20,7 @@ return array(
 		),
 		'supports' => array(
 			'html' => false,
+			'interactivity' => true,
 			'color' => array(
 				'background' => true,
 				'text' => true
@@ -97,6 +98,6 @@ return array(
 		'editorStyle' => 'file:./index.css',
 		'style' => 'file:./style-index.css',
 		'render' => 'file:./render.php',
-		'viewScript' => 'file:./view.js'
+		'viewScriptModule' => 'file:./view.js'
 	)
 );

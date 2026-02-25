@@ -1,1 +1,60 @@
-.wp-block-scry-search-facets{background-color:#21759b;color:#fff;padding:2px}
+/*!**********************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[4].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[4].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[4].use[3]!./src/facets/style.scss ***!
+  \**********************************************************************************************************************************************************************************************************************************************/
+/**
+ * The following styles get applied both on the front of your site
+ * and in the editor.
+ *
+ * Replace them with your own styles or remove the file completely.
+ */
+.wp-block-scry-search-facets .scry-facets-clear-button {
+  margin-top: 6px;
+  align-self: flex-start;
+  background: transparent;
+  color: inherit;
+  border: none;
+  padding: 2px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.45;
+  transform: scale(1);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+.wp-block-scry-search-facets .scry-facets-clear-button:hover,
+.wp-block-scry-search-facets .scry-facets-clear-button:focus-visible {
+  opacity: 1;
+  transform: scale(1.15);
+}
+.wp-block-scry-search-facets .scry-facets-checkbox {
+  /* Neutral fallback for browsers without color-mix support. */
+  accent-color: #6b7280;
+}
+@supports (accent-color: color-mix(in srgb, black 50%, white 50%)) {
+  .wp-block-scry-search-facets .scry-facets-checkbox {
+    /* Use a muted version of text color for better contrast on varied backgrounds. */
+    accent-color: color-mix(in srgb, currentColor 68%, transparent);
+  }
+}
+.scry-facets-container {
+  gap: 12px;
+}
+.scry-facets-container--column {
+  display: flex;
+  flex-direction: column;
+}
+.scry-facets-container--row {
+  display: flex;
+  flex-direction: row;
+}
+.scry-facets-container--grid {
+  display: grid;
+  grid-template-columns: repeat(var(--scry-facets-grid-columns, 3), minmax(0, 1fr));
+}
+.scry-facets-terms-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 6px;
+}
+
+/*# sourceMappingURL=style-index.css.map*/

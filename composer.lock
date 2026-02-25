@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "26a14bd3b99f5369ac3d164f32f47eb2",
+    "content-hash": "160243f5f2583e62232b24fab06a8384",
     "packages": [
         {
             "name": "guzzlehttp/guzzle",
@@ -388,6 +388,46 @@
                 "source": "https://github.com/http-interop/http-factory-guzzle/tree/1.2.1"
             },
             "time": "2025-12-15T11:28:16+00:00"
+        },
+        {
+            "name": "jtgraham38/jgwordpressblockstyle",
+            "version": "0.1.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/jtgraham38/JGWPBlockStyles.git",
+                "reference": "3173a2b827a88b7736ae93143d5ec80237c9f978"
+            },
+            "dist": {
+                "type": "tar",
+                "url": "http://php.jacob-t-graham.com/dist/jtgraham38/jgwordpressblockstyle/jtgraham38-jgwordpressblockstyle-3173a2b827a88b7736ae93143d5ec80237c9f978-zip-06a1e0.tar",
+                "reference": "3173a2b827a88b7736ae93143d5ec80237c9f978",
+                "shasum": "28513896767b0241abb62e7b23e83e4e416f382e"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^10.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "jtgraham38\\jgwordpressstyle\\": "src/",
+                    "jtgraham38\\jgwordpressstyle\\styles\\": "src/styles/"
+                }
+            },
+            "license": [
+                "GPLv3"
+            ],
+            "authors": [
+                {
+                    "name": "Jacob Graham",
+                    "email": "jtgraham38@gmail.com"
+                }
+            ],
+            "description": "A set of utility functions for extracting style values from a block's attributes object.",
+            "support": {
+                "source": "https://github.com/jtgraham38/JGWPBlockStyles/tree/0.1.2",
+                "issues": "https://github.com/jtgraham38/JGWPBlockStyles/issues"
+            },
+            "time": "2025-05-14T18:58:24+00:00"
         },
         {
             "name": "jtgraham38/jgwordpresskit",

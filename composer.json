@@ -14,7 +14,8 @@
         "jtgraham38/jgwordpresskit": "^2.0.4",
         "meilisearch/meilisearch-php": "^1.16",
         "guzzlehttp/guzzle": "^7.10",
-        "http-interop/http-factory-guzzle": "^1.0"
+        "http-interop/http-factory-guzzle": "^1.0",
+        "jtgraham38/jgwordpressblockstyle": "^0.1.2"
     },
     "repositories": [
         {

@@ -3,27 +3,3 @@
  *
  * Replace them with your own styles or remove the file completely.
  */
-
-.wp-block-scry-search-facets .scry-facets-preview-clear-button {
-	opacity: 0.45;
-	transform: scale(1);
-	transition: opacity 120ms ease, transform 120ms ease;
-}
-
-.wp-block-scry-search-facets .scry-facets-preview-clear-button:hover,
-.wp-block-scry-search-facets .scry-facets-preview-clear-button:focus-visible {
-	opacity: 1;
-	transform: scale(1.15);
-}
-
-.wp-block-scry-search-facets .scry-facets-preview-checkbox {
-	/* Neutral fallback for browsers without color-mix support. */
-	accent-color: #6b7280;
-}
-
-@supports (accent-color: color-mix(in srgb, black 50%, white 50%)) {
-	.wp-block-scry-search-facets .scry-facets-preview-checkbox {
-		/* Use a muted version of text color for better contrast on varied backgrounds. */
-		accent-color: color-mix(in srgb, currentColor 68%, transparent);
-	}
-}

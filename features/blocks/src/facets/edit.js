@@ -45,7 +45,7 @@ export default function Edit({ attributes, setAttributes }) {
 	const [availableTaxonomies, setAvailableTaxonomies] = useState({});
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState('');
-	const [previewSelections, setPreviewSelections] = useState({});
+	const [facetSelections, setFacetSelections] = useState({});
 	const blockProps = useBlockProps();
 	const borderProps = useBorderProps(attributes);
 	const wrappedBlockProps = {
@@ -131,24 +131,24 @@ export default function Edit({ attributes, setAttributes }) {
 		updateFacets(next);
 	};
 
-	const previewFacetTaxonomySlugs = Object.entries(facetsTaxonomies)
+	const facetTaxonomySlugs = Object.entries(facetsTaxonomies)
 		.filter(([, terms]) => Array.isArray(terms) && terms.length > 0)
 		.map(([slug]) => slug);
 
-	// Keep preview checkbox state in sync with Inspector-selected terms.
+	// Keep checkbox state in sync with Inspector-selected terms.
 	useEffect(() => {
-		const nextPreviewSelections = {};
+		const nextFacetSelections = {};
 		Object.entries(facetsTaxonomies).forEach(([taxonomySlug, terms]) => {
-			nextPreviewSelections[taxonomySlug] = Array.isArray(terms)
+			nextFacetSelections[taxonomySlug] = Array.isArray(terms)
 				? terms.map((term) => term.id)
 				: [];
 		});
-		setPreviewSelections(nextPreviewSelections);
+		setFacetSelections(nextFacetSelections);
 	}, [facetsTaxonomies]);
 
-	//toggle the preview term
-	const togglePreviewTerm = (taxonomySlug, termId, checked) => {
-		setPreviewSelections((prev) => {
+	//toggle the term
+	const toggleFacetTerm = (taxonomySlug, termId, checked) => {
+		setFacetSelections((prev) => {
 			const current = Array.isArray(prev[taxonomySlug]) ? [...prev[taxonomySlug]] : [];
 			const exists = current.includes(termId);
 			if (checked && !exists) {
@@ -167,31 +167,19 @@ export default function Edit({ attributes, setAttributes }) {
 		});
 	};
 
-	//clear the preview taxonomy
-	const clearPreviewTaxonomy = (taxonomySlug) => {
-		setPreviewSelections((prev) => ({
+	//clear the taxonomy
+	const clearFacetTaxonomy = (taxonomySlug) => {
+		setFacetSelections((prev) => ({
 			...prev,
 			[taxonomySlug]: [],
 		}));
 	};
 
-	const previewContainerStyle = {
-		display: displayLayout === 'grid' ? 'grid' : 'flex',
-		flexDirection: displayLayout === 'row' ? 'row' : 'column',
-		gridTemplateColumns: displayLayout === 'grid' ? `repeat(${Math.max(1, gridColumns)}, minmax(0, 1fr))` : undefined,
-		gap: '12px',
-	};
-
-	const previewButtonStyle = {
-		marginTop: '6px',
-		alignSelf: 'flex-start',
-		background: 'transparent',
-		color: 'inherit',
-		border: 'none',
-		padding: '2px',
-		lineHeight: 1,
-		cursor: 'pointer',
-	};
+	//get the container class name and css vars
+	const facetsContainerClassName = `scry-facets-container scry-facets-container--${displayLayout}`;
+	const facetsContainerCssVars = displayLayout === 'grid'
+		? { '--scry-facets-grid-columns': Math.max(1, gridColumns) }
+		: undefined;
 
 	return (
 		<>
@@ -282,18 +270,18 @@ export default function Edit({ attributes, setAttributes }) {
 				</PanelBody>
 			</InspectorControls>
 
-			<div>
-				{previewFacetTaxonomySlugs.length > 0 && (
-					<div style={previewContainerStyle}>
-						{previewFacetTaxonomySlugs.map((taxonomySlug) => {
+			<div className="scry-facets-container">
+				{facetTaxonomySlugs.length > 0 && (
+					<div className={facetsContainerClassName} style={facetsContainerCssVars}>
+						{facetTaxonomySlugs.map((taxonomySlug) => {
 							const taxonomyData = availableTaxonomies[taxonomySlug];
 							const selectedTerms = Array.isArray(facetsTaxonomies[taxonomySlug]) ? facetsTaxonomies[taxonomySlug] : [];
-							const previewCheckedIds = Array.isArray(previewSelections[taxonomySlug]) ? previewSelections[taxonomySlug] : selectedTerms.map((term) => term.id);
+							const checkedTermIds = Array.isArray(facetSelections[taxonomySlug]) ? facetSelections[taxonomySlug] : selectedTerms.map((term) => term.id);
 							const taxonomyLabel = taxonomyData?.label || taxonomySlug;
 
 							return (
 								<details
-									key={`preview-${taxonomySlug}`}
+									key={`facet-${taxonomySlug}`}
 									open
 									{...wrappedBlockProps}
 								>
@@ -301,19 +289,19 @@ export default function Edit({ attributes, setAttributes }) {
 										{`${taxonomyLabel}`}
 									</summary>
 
-									<div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '6px' }}>
+									<div className="scry-facets-terms-container">
 										{selectedTerms.length === 0 && (
 											<span>{__('No terms available for this taxonomy.', 'scry-search')}</span>
 										)}
 
 										{selectedTerms.map((term) => {
 											return (
-												<label key={`preview-term-${taxonomySlug}-${term.id}`} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+												<label key={`facet-term-${taxonomySlug}-${term.id}`} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
 													<input
 														type="checkbox"
-														className="scry-facets-preview-checkbox"
-														checked={previewCheckedIds.includes(term.id)}
-														onChange={(event) => togglePreviewTerm(taxonomySlug, term.id, event.target.checked)}
+														className="scry-facets-checkbox"
+														checked={checkedTermIds.includes(term.id)}
+														onChange={(event) => toggleFacetTerm(taxonomySlug, term.id, event.target.checked)}
 													/>
 													<span>{`${term.name} (${term.count})`}</span>
 												</label>
@@ -322,9 +310,8 @@ export default function Edit({ attributes, setAttributes }) {
 
 										<button
 											type="button"
-											className="scry-facets-preview-clear-button"
-											style={previewButtonStyle}
-											onClick={() => clearPreviewTaxonomy(taxonomySlug)}
+											className="scry-facets-clear-button"
+											onClick={() => clearFacetTaxonomy(taxonomySlug)}
 											aria-label={__('Clear selections', 'scry-search')}
 											title={__('Clear selections', 'scry-search')}
 										>
