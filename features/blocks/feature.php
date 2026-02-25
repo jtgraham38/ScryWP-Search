@@ -73,14 +73,25 @@ class ScrySearch_BlocksFeature extends PluginFeature {
                 'methods' => 'GET',
                 'callback' => function(){
 
-                    //get the excluded taxonomies from the settings
-                    $excluded_taxonomies = array(
-                        'post_format',
-                        'nav_menu',
-                        'link_category',
-                        'wp_theme',
-                        'wp_template_part_area',
+                    // Only include taxonomies enabled as filterable in Search Settings.
+                    $search_facets_settings = get_option(
+                        $this->prefixed('search_facets'),
+                        array('taxonomies' => array(), 'meta' => array())
                     );
+                    $allowed_taxonomy_slugs = array();
+                    if (isset($search_facets_settings['taxonomies']) && is_array($search_facets_settings['taxonomies'])) {
+                        foreach ($search_facets_settings['taxonomies'] as $taxonomy_key => $taxonomy_value) {
+                            // Support legacy associative format where taxonomy slug may be the array key.
+                            if (is_string($taxonomy_key) && $taxonomy_key !== '' && !is_numeric($taxonomy_key)) {
+                                $allowed_taxonomy_slugs[] = sanitize_key($taxonomy_key);
+                                continue;
+                            }
+                            if (is_string($taxonomy_value) && $taxonomy_value !== '') {
+                                $allowed_taxonomy_slugs[] = sanitize_key($taxonomy_value);
+                            }
+                        }
+                    }
+                    $allowed_taxonomy_slugs = array_values(array_unique(array_filter($allowed_taxonomy_slugs)));
 
                     //get all the taxonomies
                     $all_taxonomies = get_taxonomies(array(), 'objects');
@@ -90,7 +101,12 @@ class ScrySearch_BlocksFeature extends PluginFeature {
                     foreach ($all_taxonomies as $slug => $taxonomy) {
 
                         //skip the excluded taxonomies
-                        if (in_array($slug, $excluded_taxonomies, true)) {
+                        if (in_array($slug, $this->config('excluded_taxonomies'), true)) {
+                            continue;
+                        }
+
+                        //skip taxonomies not enabled in search settings
+                        if (!in_array($slug, $allowed_taxonomy_slugs, true)) {
                             continue;
                         }
 

@@ -231,7 +231,7 @@ class ScrySearch_SearchFeature extends PluginFeature {
             $this->prefixed('search_weights_section')
         );
 
-                // Register search weights setting
+        // Register search weights setting
         register_setting(
             $this->prefixed('search_settings_group'),
             $this->prefixed('search_weights'),
@@ -270,7 +270,94 @@ class ScrySearch_SearchFeature extends PluginFeature {
                     
                     return $sanitized;
                 },
-                'default' => array(),
+                'default' => array(
+                    'taxonomies' => array(),
+                    'meta' => array(),
+                ),
+                'show_in_rest' => false,
+            )
+        );
+
+        // Register facets section
+        add_settings_section(
+            $this->prefixed('search_facets_section'),
+            __('Filterable Facets', "scry-search"),
+            function() {
+                echo '<p>' . esc_html__('Select which taxonomies can be used as facets in search filtering.', "scry-search") . '</p>';
+            },
+            $this->prefixed('search_settings_group')
+        );
+
+        // Add facets field
+        add_settings_field(
+            $this->prefixed('search_facets'),
+            __('Taxonomies', "scry-search"),
+            function() {
+                require_once plugin_dir_path(__FILE__) . 'elements/settings/facets_input.php';
+            },
+            $this->prefixed('search_settings_group'),
+            $this->prefixed('search_facets_section')
+        );
+
+        // Register facets setting
+        register_setting(
+            $this->prefixed('search_settings_group'),
+            $this->prefixed('search_facets'),
+            array(
+                'type' => 'array',
+                'description' => 'Selected taxonomy slugs that are filterable facets in Scry Search for Meilisearch.',
+                'sanitize_callback' => function($input) {
+                    if (!is_array($input)) {
+                        return array(
+                            'taxonomies' => array(),
+                            'meta' => array(),
+                        );
+                    }
+
+                    $raw_taxonomies = array();
+                    if (isset($input['taxonomies'])) {
+                        $raw_taxonomies = is_array($input['taxonomies'])
+                            ? $input['taxonomies']
+                            : array($input['taxonomies']);
+                    }
+
+                    // Keep only valid taxonomy slugs.
+                    $valid_taxonomies = get_taxonomies(array(), 'names');
+                    $excluded_taxonomies = array('post_format', 'nav_menu', 'link_category', 'wp_theme', 'wp_template_part_area');
+                    $valid_taxonomies = array_values(array_diff($valid_taxonomies, $excluded_taxonomies));
+
+                    $sanitized_taxonomies = array();
+                    foreach ($raw_taxonomies as $taxonomy_slug) {
+                        if (!is_string($taxonomy_slug)) {
+                            continue;
+                        }
+                        $taxonomy_slug = sanitize_key($taxonomy_slug);
+                        if ($taxonomy_slug === '') {
+                            continue;
+                        }
+                        if (!in_array($taxonomy_slug, $valid_taxonomies, true)) {
+                            continue;
+                        }
+                        $sanitized_taxonomies[] = $taxonomy_slug;
+                    }
+
+                    $sanitized_facets = array(
+                        'taxonomies' => array_values(array_unique($sanitized_taxonomies)),
+                        'meta' => array(),
+                    );
+
+                    // Keep index filterable attributes in sync with selected taxonomy facets.
+                    $index_feature = $this->get_feature('scry_ms_indexes');
+                    if ($index_feature && method_exists($index_feature, 'update_filterable_attributes_for_taxonomies')) {
+                        $index_feature->update_filterable_attributes_for_taxonomies($sanitized_facets['taxonomies']);
+                    }
+
+                    return $sanitized_facets;
+                },
+                'default' => array(
+                    'taxonomies' => array(),
+                    'meta' => array(),
+                ),
                 'show_in_rest' => false,
             )
         );

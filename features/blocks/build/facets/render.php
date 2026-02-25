@@ -102,6 +102,31 @@ $facet_taxonomies = array_filter(
 	}
 );
 
+// Validate rendered taxonomy groups against Search Settings allowlist.
+$search_facets_settings = get_option(
+	'scry_ms_search_facets',
+	array('taxonomies' => array(), 'meta' => array())
+);
+$allowed_taxonomy_slugs = array();
+if (isset($search_facets_settings['taxonomies']) && is_array($search_facets_settings['taxonomies'])) {
+	foreach ($search_facets_settings['taxonomies'] as $taxonomy_key => $taxonomy_value) {
+		// Support legacy associative format where taxonomy slug may be the array key.
+		if (is_string($taxonomy_key) && $taxonomy_key !== '' && !is_numeric($taxonomy_key)) {
+			$allowed_taxonomy_slugs[] = sanitize_key($taxonomy_key);
+			continue;
+		}
+		if (is_string($taxonomy_value) && $taxonomy_value !== '') {
+			$allowed_taxonomy_slugs[] = sanitize_key($taxonomy_value);
+		}
+	}
+}
+$allowed_taxonomy_slugs = array_values(array_unique(array_filter($allowed_taxonomy_slugs)));
+if (!empty($allowed_taxonomy_slugs)) {
+	$facet_taxonomies = array_intersect_key($facet_taxonomies, array_flip($allowed_taxonomy_slugs));
+} else {
+	$facet_taxonomies = array();
+}
+
 // Build layout classes and optional CSS variable used by grid.
 $facets_container_class = 'scry-facets-container scry-facets-container--' . $display_layout;
 $facets_container_style = $display_layout === 'grid'
@@ -321,12 +346,17 @@ $details_style = implode(';', $details_style_parts);
 
 // Read selected facet IDs from the current URL query params.
 $selected_facet_ids = array();
-if (isset($_GET['scry-search']) && is_array($_GET['scry-search']) && isset($_GET['scry-search']['facets'])) {
-	$raw_selected_facets = $_GET['scry-search']['facets'];
+if (
+	isset($_GET['scry-search'])
+	&& is_array($_GET['scry-search'])
+	&& isset($_GET['scry-search']['facets'])
+	&& is_array($_GET['scry-search']['facets'])
+	&& isset($_GET['scry-search']['facets']['taxonomies'])
+) {
+	$raw_selected_facets = $_GET['scry-search']['facets']['taxonomies'];
 	if (!is_array($raw_selected_facets)) {
 		$raw_selected_facets = array($raw_selected_facets);
 	}
-
 	$selected_facet_ids = array_values(
 		array_unique(
 			array_filter(

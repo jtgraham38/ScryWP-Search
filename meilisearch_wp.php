@@ -25,8 +25,21 @@ require_once plugin_dir_path(__FILE__) . '/vendor/autoload.php';
 use jtgraham38\jgwordpresskit\Plugin;
 use jtgraham38\jgwordpresskit\PluginFeature;
 
+
+//set plugin config
+$config = array(
+    'excluded_taxonomies' => array(
+        'post_format',
+        'nav_menu',
+        'link_category',
+        'wp_theme',
+        'wp_template_part_area',
+    ),
+);
+
 //create a new plugin manager
-$plugin = new Plugin("scry_ms_", plugin_dir_path( __FILE__ ), plugin_dir_url( __FILE__ ));
+$plugin = new Plugin("scry_ms_", plugin_dir_path( __FILE__ ), plugin_dir_url( __FILE__ ), $config);
+
 
 //register features with the plugin manager here...
 require_once plugin_dir_path(__FILE__) . '/features/admin_page/feature.php';
