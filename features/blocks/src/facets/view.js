@@ -74,11 +74,41 @@ const { state } = store('scry-search/facets', {
     },
     callbacks: {
         init() {
+
+            //get context data once while this callback has interactivity scope
+            const context = getContext();
+
+            //get the search form class from the context data
+            const searchFormClassName = context?.searchFormClassName;
+            console.log(searchFormClassName);
+
+            //seed selected state from URL-selected facets so checks persist across reloads
+            const selectedFacetIds = Array.isArray(context?.selectedFacetIds)
+                ? context.selectedFacetIds.map((id) => Number(id))
+                : [];
+            if (selectedFacetIds.length > 0 && state.selectedTaxonomyFacets.length === 0) {
+                const allTerms = Object.values(context?.facetTaxonomies ?? {}).flat();
+                state.selectedTaxonomyFacets = selectedFacetIds
+                    .map((id) => allTerms.find((term) => Number(term.id) === id))
+                    .filter(Boolean);
+            }
+
             const bindSearchForms = () => {
                 console.log('[scry facets] init callback running');
 
                 //here, we will search the webpage for all search forms, and we will submit our facets with their contents
+                //if the searchFormClassName is set, we will filter for that too
+
                 let searchForms = Array.from(document.querySelectorAll('form'));
+                if (searchFormClassName) {
+                    searchForms = searchForms.filter((form) => {
+                        return form.classList.contains(searchFormClassName);
+                    });
+                }
+                //otherwise, we will search for all forms
+                else {
+                    searchForms = Array.from(document.querySelectorAll('form'));
+                }
 
                 //we will keep only forms that have an input of type text/search with the name "s"
                 searchForms = searchForms.filter((form) => {
@@ -105,7 +135,6 @@ const { state } = store('scry-search/facets', {
                         formData.delete('scry-search[facets]');
                         formData.delete('scry-search[facets][]');
                         state.selectedTaxonomyFacets.forEach((facet) => {
-                            console.log(facet.id);
                             formData.append('scry-search[facets][]', String(facet.id));
                         });
 

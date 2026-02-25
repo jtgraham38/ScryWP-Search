@@ -23,9 +23,7 @@ class ScrySearch_SearchFeature extends PluginFeature {
     
     public function add_actions() {
         // Register settings on init so they are available to REST requests.
-        add_action('init', array($this, 'register_settings'));
-        // Register admin settings UI on admin_init so sections/fields render.
-        add_action('admin_init', array($this, 'register_settings_fields'));
+        add_action('admin_init', array($this, 'register_settings'));
         // Custom REST endpoint for block editor facet settings lookup.
         add_action('admin_menu', array($this, 'add_admin_page'));
     }
@@ -198,7 +196,7 @@ class ScrySearch_SearchFeature extends PluginFeature {
     /**
      * Register settings sections/fields for the admin page UI.
      */
-    public function register_settings_fields() {
+    public function register_settings() {
         if (!current_user_can('manage_options')) {
             return;
         }
@@ -209,16 +207,6 @@ class ScrySearch_SearchFeature extends PluginFeature {
             __('Search Weights', "scry-search"),
             function() {
                 echo '<p>' . esc_html__('Configure search weights for each post type. Higher weights will prioritize results from that post type in federated searches.', "scry-search") . '</p>';
-            },
-            $this->prefixed('search_settings_group')
-        );
-
-        // Register the facets section
-        add_settings_section(
-            $this->prefixed('search_facets_section'),
-            __('Facets', "scry-search"),
-            function() {
-                echo '<p>' . esc_html__('Configure facets to allow users to filter search results.', "scry-search") . '</p>';
             },
             $this->prefixed('search_settings_group')
         );
@@ -234,24 +222,7 @@ class ScrySearch_SearchFeature extends PluginFeature {
             $this->prefixed('search_weights_section')
         );
 
-        // Add the facets field
-        add_settings_field(
-            $this->prefixed('search_facets'),
-            __('Facets', "scry-search"),
-            function() {
-                require_once plugin_dir_path(__FILE__) . 'elements/settings/facets_input.php';
-            },
-            $this->prefixed('search_settings_group'),
-            $this->prefixed('search_facets_section')
-        );
-    }
-
-    /**
-     * Register WordPress settings (including REST exposure).
-     */
-    public function register_settings() {
-
-        // Register search weights setting
+                // Register search weights setting
         register_setting(
             $this->prefixed('search_settings_group'),
             $this->prefixed('search_weights'),
@@ -292,75 +263,6 @@ class ScrySearch_SearchFeature extends PluginFeature {
                 },
                 'default' => array(),
                 'show_in_rest' => false,
-            )
-        );
-
-        // Register the facets setting
-        register_setting(
-            $this->prefixed('search_settings_group'),
-            $this->prefixed('search_facets'),
-            array(
-                'type' => 'object',
-                'description' => 'Facets for Scry Search for Meilisearch.',
-                'sanitize_callback' => function($input) {
-
-
-                    //return default value
-                    if (!is_array($input)) {
-                        return array(
-                            'taxonomies' => array(),
-                            'meta' => array(),
-                        );
-                    }
-
-                    //unset all keys that are not 'taxonomies' or 'meta'
-                    $input = array_intersect_key($input, array(
-                        'taxonomies' => array(),
-                        'meta' => array(),
-                    ));
-
-                    if (!isset($input['taxonomies']) || !is_array($input['taxonomies'])) {
-                        $input['taxonomies'] = array();
-                    }
-
-                    //sanitize the taxonomies, and set the value to an array of term ids
-                    $sanitized_taxonomies = array();
-                    foreach ($input['taxonomies'] as $taxonomy => $term_ids) {
-                        $sanitized_taxonomies[$taxonomy] = array_map('intval', $term_ids);
-                    }
-                    $input['taxonomies'] = $sanitized_taxonomies;
-
-                    //TODO: sanitize the meta
-                    //for now, just set it to an empty array
-                    $input['meta'] = array();
-
-                    //return the input
-                    return $input;
-                },
-                'default' => array(
-                    'taxonomies' => array(),
-                    'meta' => array(),
-                ),
-                'show_in_rest' => array(
-                    'schema' => array(
-                        'type' => 'object',
-                        'properties' => array(
-                            'taxonomies' => array(
-                                'type' => 'object',
-                                'additionalProperties' => array(
-                                    'type' => 'array',
-                                    'items' => array(
-                                        'type' => 'integer',
-                                    ),
-                                ),
-                            ),
-                            'meta' => array(
-                                'type' => 'object',
-                                'additionalProperties' => true,
-                            ),
-                        ),
-                    ),
-                ),
             )
         );
     }

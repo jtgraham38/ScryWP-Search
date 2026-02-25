@@ -319,10 +319,35 @@ if ($has_border_radius_style) {
 // Flatten all style declarations into a single inline style string.
 $details_style = implode(';', $details_style_parts);
 
+// Read selected facet IDs from the current URL query params.
+$selected_facet_ids = array();
+if (isset($_GET['scry-search']) && is_array($_GET['scry-search']) && isset($_GET['scry-search']['facets'])) {
+	$raw_selected_facets = $_GET['scry-search']['facets'];
+	if (!is_array($raw_selected_facets)) {
+		$raw_selected_facets = array($raw_selected_facets);
+	}
+
+	$selected_facet_ids = array_values(
+		array_unique(
+			array_filter(
+				array_map(
+					'absint',
+					wp_unslash($raw_selected_facets)
+				),
+				static function ($facet_id) {
+					return $facet_id > 0;
+				}
+			)
+		)
+	);
+}
+
 // Expose server-rendered facet attributes to the Interactivity API context.
 $interactivity_context_json = wp_json_encode(
 	array(
 		'facetTaxonomies' => $facet_taxonomies,
+		'searchFormClassName' => $search_form_class,
+		'selectedFacetIds' => $selected_facet_ids,
 	)
 );
 if (!is_string($interactivity_context_json) || $interactivity_context_json === '') {
@@ -379,12 +404,14 @@ if (!is_string($interactivity_context_json) || $interactivity_context_json === '
 							$term_id    = isset($term['id']) ? (int) $term['id'] : 0;
 							$term_name  = isset($term['name']) ? (string) $term['name'] : '';
 							$term_count = isset($term['count']) ? (int) $term['count'] : 0;
+							$is_checked = in_array($term_id, $selected_facet_ids, true);
 							?>
 							<label style="display:flex;gap:8px;align-items:center;">
 								<input
 									type="checkbox"
 									class="scry-facets-checkbox"
 									value="<?php echo esc_attr($term_id); ?>"
+									<?php checked($is_checked); ?>
 									data-wp-on--change="actions.handleFacetChange"
 								/>
 								<span><?php echo esc_html(sprintf('%s (%d)', $term_name, $term_count)); ?></span>
