@@ -49,5 +49,9 @@ require_once plugin_dir_path(__FILE__) . '/features/analytics/feature.php';
 $analytics_feature = new ScrySearch_AnalyticsFeature();
 $plugin->register_feature("scry_ms_analytics", $analytics_feature);
 
+require_once plugin_dir_path(__FILE__) . '/features/blocks/feature.php';
+$blocks_feature = new ScrySearch_BlocksFeature();
+$plugin->register_feature("scry_ms_blocks", $blocks_feature);
+
 //init the plugin
 $plugin->init();

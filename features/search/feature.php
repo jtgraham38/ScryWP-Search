@@ -22,8 +22,11 @@ class ScrySearch_SearchFeature extends PluginFeature {
     }
     
     public function add_actions() {
-        // Add any actions here if needed
-        add_action('admin_init', array($this, 'register_settings'));
+        // Register settings on init so they are available to REST requests.
+        add_action('init', array($this, 'register_settings'));
+        // Register admin settings UI on admin_init so sections/fields render.
+        add_action('admin_init', array($this, 'register_settings_fields'));
+        // Custom REST endpoint for block editor facet settings lookup.
         add_action('admin_menu', array($this, 'add_admin_page'));
     }
 
@@ -193,10 +196,9 @@ class ScrySearch_SearchFeature extends PluginFeature {
     }
 
     /**
-     * Register WordPress settings
+     * Register settings sections/fields for the admin page UI.
      */
-    public function register_settings() {
-        // Only allow administrators to access these settings
+    public function register_settings_fields() {
         if (!current_user_can('manage_options')) {
             return;
         }
@@ -242,6 +244,12 @@ class ScrySearch_SearchFeature extends PluginFeature {
             $this->prefixed('search_settings_group'),
             $this->prefixed('search_facets_section')
         );
+    }
+
+    /**
+     * Register WordPress settings (including REST exposure).
+     */
+    public function register_settings() {
 
         // Register search weights setting
         register_setting(
@@ -292,7 +300,7 @@ class ScrySearch_SearchFeature extends PluginFeature {
             $this->prefixed('search_settings_group'),
             $this->prefixed('search_facets'),
             array(
-                'type' => 'array',
+                'type' => 'object',
                 'description' => 'Facets for Scry Search for Meilisearch.',
                 'sanitize_callback' => function($input) {
 
@@ -311,6 +319,10 @@ class ScrySearch_SearchFeature extends PluginFeature {
                         'meta' => array(),
                     ));
 
+                    if (!isset($input['taxonomies']) || !is_array($input['taxonomies'])) {
+                        $input['taxonomies'] = array();
+                    }
+
                     //sanitize the taxonomies, and set the value to an array of term ids
                     $sanitized_taxonomies = array();
                     foreach ($input['taxonomies'] as $taxonomy => $term_ids) {
@@ -325,7 +337,30 @@ class ScrySearch_SearchFeature extends PluginFeature {
                     //return the input
                     return $input;
                 },
-                'default' => array(),
+                'default' => array(
+                    'taxonomies' => array(),
+                    'meta' => array(),
+                ),
+                'show_in_rest' => array(
+                    'schema' => array(
+                        'type' => 'object',
+                        'properties' => array(
+                            'taxonomies' => array(
+                                'type' => 'object',
+                                'additionalProperties' => array(
+                                    'type' => 'array',
+                                    'items' => array(
+                                        'type' => 'integer',
+                                    ),
+                                ),
+                            ),
+                            'meta' => array(
+                                'type' => 'object',
+                                'additionalProperties' => true,
+                            ),
+                        ),
+                    ),
+                ),
             )
         );
     }

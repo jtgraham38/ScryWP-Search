@@ -23,6 +23,9 @@ array(
 );
 */
 $current_facet_settings = get_option($this->prefixed('search_facets'), array( 'taxonomies' => array(), 'meta' => array() ));
+echo '<pre>';
+var_dump($current_facet_settings);
+echo '</pre>';
 
 //get all taxonomies
 $all_taxonomies = get_taxonomies( [], 'names' );
@@ -82,7 +85,7 @@ foreach ($all_taxonomies as $taxonomy) {
                                         class="<?php echo esc_attr($this->prefixed('search_facets_taxonomies_input_checkbox')); ?>"
                                         type="checkbox" 
                                         name="<?php echo esc_attr($this->prefixed('search_facets') . '[taxonomies][' . $taxonomy . '][' . $term->term_id . ']'); ?>" 
-                                        value="1" 
+                                        value="<?php echo esc_attr($term->term_id); ?>" 
                                         <?php checked(isset($current_facet_settings['taxonomies'][$taxonomy][$term->term_id]), true); ?>
                                     >
                                     <span class="<?php echo esc_attr($this->prefixed('search_facets_taxonomies_input_label')); ?>">
@@ -104,52 +107,52 @@ foreach ($all_taxonomies as $taxonomy) {
 
 <script>
 
-//apply logic
-document.addEventListener('DOMContentLoaded', function() {
-    const facetsInput = document.querySelector('.' + '<?php echo esc_attr($this->prefixed('search_facets_input')); ?>');
-    
+    //apply logic
+    document.addEventListener('DOMContentLoaded', function() {
+        const facetsInput = document.querySelector('.' + '<?php echo esc_attr($this->prefixed('search_facets_input')); ?>');
+        
 
-    //get all the taxonomy groups, and wire them up
-    const taxonomyGroups = facetsInput.querySelectorAll('.scry_ms_search_facets_taxonomies_input_item');
-    taxonomyGroups.forEach(group => {
-        taxonomyGroup(group);
-    });
-});
-
-//define how each group of taxonomy checkboxes should work
-function taxonomyGroup(scry_ms_search_facets_input_item){
-    //get the master checkbox for the taxonomy, which determines whether this taxonomy is enabled or disabled
-    const enabledCheckbox = scry_ms_search_facets_input_item.querySelector('.scry_ms_search_facet_enabled_taxonomies_input_checkbox');
-
-    //get the list of terms
-    const termsList = scry_ms_search_facets_input_item.querySelector('.scry_ms_search_facets_taxonomies_input_terms_list');
-    if (termsList) {
-        const terms = termsList.querySelectorAll('.scry_ms_search_facets_taxonomies_input_checkbox');
-        terms.forEach(term => {
-            term.disabled = !enabledCheckbox.checked;
+        //get all the taxonomy groups, and wire them up
+        const taxonomyGroups = facetsInput.querySelectorAll('.scry_ms_search_facets_taxonomies_input_item');
+        taxonomyGroups.forEach(group => {
+            taxonomyGroup(group);
         });
-    }
+    });
 
-    //get each of the term checkboxes within the terms list
-    const termCheckboxes = termsList.querySelectorAll('.scry_ms_search_facets_taxonomies_input_checkbox');
+    //define how each group of taxonomy checkboxes should work
+    function taxonomyGroup(scry_ms_search_facets_input_item){
+        //get the master checkbox for the taxonomy, which determines whether this taxonomy is enabled or disabled
+        const enabledCheckbox = scry_ms_search_facets_input_item.querySelector('.scry_ms_search_facet_enabled_taxonomies_input_checkbox');
 
-    //add an event listener for changes to the enabled checkbox
-    //when it is checked, enable all the term checkboxes
-    //when it is unchecked, disable and uncheck all the term checkboxes
-    enabledCheckbox.addEventListener('change', function() {
-        if (enabledCheckbox.checked) {
-            termCheckboxes.forEach(checkbox => {
-                checkbox.disabled = false;
-            });
-        } else {
-            termCheckboxes.forEach(checkbox => {
-                checkbox.disabled = true;
-                checkbox.checked = false;
+        //get the list of terms
+        const termsList = scry_ms_search_facets_input_item.querySelector('.scry_ms_search_facets_taxonomies_input_terms_list');
+        if (termsList) {
+            const terms = termsList.querySelectorAll('.scry_ms_search_facets_taxonomies_input_checkbox');
+            terms.forEach(term => {
+                term.disabled = !enabledCheckbox.checked;
             });
         }
-    });
 
-}
+        //get each of the term checkboxes within the terms list
+        const termCheckboxes = termsList.querySelectorAll('.scry_ms_search_facets_taxonomies_input_checkbox');
+
+        //add an event listener for changes to the enabled checkbox
+        //when it is checked, enable all the term checkboxes
+        //when it is unchecked, disable and uncheck all the term checkboxes
+        enabledCheckbox.addEventListener('change', function() {
+            if (enabledCheckbox.checked) {
+                termCheckboxes.forEach(checkbox => {
+                    checkbox.disabled = false;
+                });
+            } else {
+                termCheckboxes.forEach(checkbox => {
+                    checkbox.disabled = true;
+                    checkbox.checked = false;
+                });
+            }
+        });
+
+    }
 
 </script>
 
