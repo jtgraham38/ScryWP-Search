@@ -70,10 +70,6 @@ const {
 } = (0,_wordpress_interactivity__WEBPACK_IMPORTED_MODULE_0__.store)('scry-search/facets', {
   state: {
     selectedTaxonomyFacets: [],
-    get searchFacets() {
-      //NOTE: later, when I add meta facets, we will combing them here
-      return state.selectedTaxonomyFacets;
-    },
     get allStateText() {
       return JSON.stringify({
         searchFacets: state.searchFacets
@@ -184,7 +180,7 @@ const {
             formData.delete('scry-search[facets]');
             formData.delete('scry-search[facets][]');
             state.selectedTaxonomyFacets.forEach(facet => {
-              formData.append('scry-search[facets][]', String(facet.id));
+              formData.append('scry-search[facets][taxonomies][]', String(facet.id));
             });
 
             //submit the form

@@ -35,7 +35,6 @@ class ScrySearch_SearchFeature extends PluginFeature {
         if (!$query || !($query instanceof WP_Query)) {
             return $posts;
         }
-        
         //ensure this is a search query (frontend, url contains "?s=...")
         if (!$query->is_search) {
             return $posts; // Return null or existing posts to let WordPress handle it normally
@@ -92,6 +91,16 @@ class ScrySearch_SearchFeature extends PluginFeature {
         //skip hitsPerPage for now
         //skip page for now
         //THE ABOVE ARE VITAL, ADD SUPPORT FOR THE REST IN DOCUMENTATION ORDER!.
+
+        //add support for facets
+        if (isset($_GET['scry-search']['facets']['taxonomies'])) {
+            $taxonomy_facets_to_search = $_GET['scry-search']['facets']['taxonomies'];
+            //
+            //
+            ////TODO: use these ids in the search query
+            //
+            //
+        }
 
         //ensure we gracefully fall back to the wordpress search if the meilisearch search fails
         try {
