@@ -319,8 +319,10 @@ class ScrySearch_SearchFeature extends PluginFeature {
                     $input['taxonomies'] = $sanitized_taxonomies;
 
                     //TODO: sanitize the meta
-                    
-                    //sanitize the meta
+                    //for now, just set it to an empty array
+                    $input['meta'] = array();
+
+                    //return the input
                     return $input;
                 },
                 'default' => array(),
