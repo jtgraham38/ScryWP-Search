@@ -74,12 +74,53 @@ const { state } = store('scry-search/facets', {
     },
     callbacks: {
         init() {
-            //here, we will search the webpage for all search forms, and we will submit our facets with their contents
-            document.addEventListener('DOMContentLoaded', () => {
-                const searchForms = document.querySelectorAll('form');
-                console.log(searchForms);
-            });
+            const bindSearchForms = () => {
+                console.log('[scry facets] init callback running');
 
+                //here, we will search the webpage for all search forms, and we will submit our facets with their contents
+                let searchForms = Array.from(document.querySelectorAll('form'));
+
+                //we will keep only forms that have an input of type text/search with the name "s"
+                searchForms = searchForms.filter((form) => {
+                    const input = form.querySelector('input[name="s"]');
+                    return input && (input.type === 'text' || input.type === 'search') && form.method.toUpperCase() === 'GET';
+                });
+
+                console.log('[scry facets] eligible search forms:', searchForms.length);
+
+                //add an event listener for each search form to submit the facets with their contents
+                searchForms.forEach((form) => {
+                    if (form.dataset.scryFacetsBound === '1') {
+                        return;
+                    }
+                    form.dataset.scryFacetsBound = '1';
+
+                    form.addEventListener('submit', (event) => {
+                        event.preventDefault();
+
+                        //get the form data
+                        const formData = new FormData(form);
+
+                        //add new fields to the form data, nesting the facets under the key "scry-search->facets"
+                        formData.delete('scry-search[facets]');
+                        formData.delete('scry-search[facets][]');
+                        state.selectedTaxonomyFacets.forEach((facet) => {
+                            console.log(facet.id);
+                            formData.append('scry-search[facets][]', String(facet.id));
+                        });
+
+                        //submit the form
+                        const params = new URLSearchParams(formData);
+                        window.location.assign(`${form.action}?${params.toString()}`);
+                    });
+                });
+            };
+
+            if (document.readyState === 'complete') {
+                bindSearchForms();
+            } else {
+                window.addEventListener('load', bindSearchForms, { once: true });
+            }
         },
     },
 });
