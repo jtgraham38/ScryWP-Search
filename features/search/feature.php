@@ -23,10 +23,8 @@ class ScrySearch_SearchFeature extends PluginFeature {
     
     public function add_actions() {
         // Register settings on init so they are available to REST requests.
-        add_action('init', array($this, 'register_settings'));
-        // Register admin settings UI on admin_init so sections/fields render.
-        add_action('admin_init', array($this, 'register_settings_fields'));
-        // Custom REST endpoint for block editor facet settings lookup.
+        add_action('admin_init', array($this, 'register_settings'));
+        // Register search settings admin page.
         add_action('admin_menu', array($this, 'add_admin_page'));
     }
 
@@ -37,7 +35,6 @@ class ScrySearch_SearchFeature extends PluginFeature {
         if (!$query || !($query instanceof WP_Query)) {
             return $posts;
         }
-        
         //ensure this is a search query (frontend, url contains "?s=...")
         if (!$query->is_search) {
             return $posts; // Return null or existing posts to let WordPress handle it normally
@@ -95,6 +92,7 @@ class ScrySearch_SearchFeature extends PluginFeature {
         //skip page for now
         //THE ABOVE ARE VITAL, ADD SUPPORT FOR THE REST IN DOCUMENTATION ORDER!.
 
+
         //ensure we gracefully fall back to the wordpress search if the meilisearch search fails
         try {
             //create a meilisearch client
@@ -113,26 +111,48 @@ class ScrySearch_SearchFeature extends PluginFeature {
                 //get the search weight for the index, or default to 1.0 if not set
                 $search_weight = isset($search_weights[$post_type]) ? $search_weights[$post_type] : 1.0;
 
+                //create federated search options
+                $federated_search_options = (new FederationOptions())
+                    ->setWeight(floatval($search_weight));
+
                 //create a new search query
-                $search_queries[] = (new SearchQuery())
+                $search_query = (new SearchQuery())
                     ->setIndexUid($index_name)
-                    ->setFederationOptions((new FederationOptions())->setWeight(floatval($search_weight)))
+                    ->setFederationOptions(( $federated_search_options ))
                     ->setQuery($query_params['q']);
+                
+
+                //let tother plugins modify the search query before it is used to search the index
+                $search_query = apply_filters($this->config('hook_prefix') . 'multi_search_query', $search_query, $index_name);
+
+                //add it to the search queries
+                $search_queries[] = $search_query;
             }
 
             // Set pagination on MultiSearchFederation (handles federated search pagination)
             $federation = new MultiSearchFederation();
+
+            //set limit and offset
             if (isset($query_params['limit'])) {
                 $federation->setLimit($query_params['limit']);
             }
             if (isset($query_params['offset'])) {
                 $federation->setOffset($query_params['offset']);
             }
-            
+
+            //allow other plugins to modify the federation object before it is used to search the indexes
+            $federation = apply_filters($this->config('hook_prefix') . 'multi_search_federation', $federation);
+
             //use federated multi search to search the indexes
             $search_results = $client->multiSearch($search_queries, $federation);
 
+            // echo '<pre>';
+            // var_dump($search_queries);
+            // echo '</pre>';
+            // die;
+
         } catch (Exception $e) {
+
             //fall back to the wordpress search
             return $posts;
         }
@@ -198,7 +218,7 @@ class ScrySearch_SearchFeature extends PluginFeature {
     /**
      * Register settings sections/fields for the admin page UI.
      */
-    public function register_settings_fields() {
+    public function register_settings() {
         if (!current_user_can('manage_options')) {
             return;
         }
@@ -213,16 +233,6 @@ class ScrySearch_SearchFeature extends PluginFeature {
             $this->prefixed('search_settings_group')
         );
 
-        // Register the facets section
-        add_settings_section(
-            $this->prefixed('search_facets_section'),
-            __('Facets', "scry-search"),
-            function() {
-                echo '<p>' . esc_html__('Configure facets to allow users to filter search results.', "scry-search") . '</p>';
-            },
-            $this->prefixed('search_settings_group')
-        );
-
         // Add the search weights field
         add_settings_field(
             $this->prefixed('search_weights'),
@@ -233,23 +243,6 @@ class ScrySearch_SearchFeature extends PluginFeature {
             $this->prefixed('search_settings_group'),
             $this->prefixed('search_weights_section')
         );
-
-        // Add the facets field
-        add_settings_field(
-            $this->prefixed('search_facets'),
-            __('Facets', "scry-search"),
-            function() {
-                require_once plugin_dir_path(__FILE__) . 'elements/settings/facets_input.php';
-            },
-            $this->prefixed('search_settings_group'),
-            $this->prefixed('search_facets_section')
-        );
-    }
-
-    /**
-     * Register WordPress settings (including REST exposure).
-     */
-    public function register_settings() {
 
         // Register search weights setting
         register_setting(
@@ -290,79 +283,14 @@ class ScrySearch_SearchFeature extends PluginFeature {
                     
                     return $sanitized;
                 },
-                'default' => array(),
-                'show_in_rest' => false,
-            )
-        );
-
-        // Register the facets setting
-        register_setting(
-            $this->prefixed('search_settings_group'),
-            $this->prefixed('search_facets'),
-            array(
-                'type' => 'object',
-                'description' => 'Facets for Scry Search for Meilisearch.',
-                'sanitize_callback' => function($input) {
-
-
-                    //return default value
-                    if (!is_array($input)) {
-                        return array(
-                            'taxonomies' => array(),
-                            'meta' => array(),
-                        );
-                    }
-
-                    //unset all keys that are not 'taxonomies' or 'meta'
-                    $input = array_intersect_key($input, array(
-                        'taxonomies' => array(),
-                        'meta' => array(),
-                    ));
-
-                    if (!isset($input['taxonomies']) || !is_array($input['taxonomies'])) {
-                        $input['taxonomies'] = array();
-                    }
-
-                    //sanitize the taxonomies, and set the value to an array of term ids
-                    $sanitized_taxonomies = array();
-                    foreach ($input['taxonomies'] as $taxonomy => $term_ids) {
-                        $sanitized_taxonomies[$taxonomy] = array_map('intval', $term_ids);
-                    }
-                    $input['taxonomies'] = $sanitized_taxonomies;
-
-                    //TODO: sanitize the meta
-                    //for now, just set it to an empty array
-                    $input['meta'] = array();
-
-                    //return the input
-                    return $input;
-                },
                 'default' => array(
                     'taxonomies' => array(),
                     'meta' => array(),
                 ),
-                'show_in_rest' => array(
-                    'schema' => array(
-                        'type' => 'object',
-                        'properties' => array(
-                            'taxonomies' => array(
-                                'type' => 'object',
-                                'additionalProperties' => array(
-                                    'type' => 'array',
-                                    'items' => array(
-                                        'type' => 'integer',
-                                    ),
-                                ),
-                            ),
-                            'meta' => array(
-                                'type' => 'object',
-                                'additionalProperties' => true,
-                            ),
-                        ),
-                    ),
-                ),
+                'show_in_rest' => false,
             )
         );
+
     }
 
     //add an admin page for the search settings

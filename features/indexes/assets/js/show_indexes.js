@@ -405,16 +405,16 @@
 
             var rulesList = dialog.querySelector('.scrywp-ranking-rules-list');
             var fieldsTree = dialog.querySelector('.scrywp-searchable-fields-tree');
+            var rankingRulesInputsContainer = dialog.querySelector('.scrywp-ranking-rules-hidden-inputs');
             var loadingDiv = dialog.querySelector('.scrywp-index-settings-loading');
             var loadedDiv = dialog.querySelector('.scrywp-index-settings-loaded');
+            var settingsForm = dialog.querySelector('.scrywp-index-settings-form');
             var errorDiv = dialog.querySelector('.scrywp-index-settings-error');
             var saveButton = dialog.querySelector('.scrywp-save-index-settings-button');
             var saveErrorDiv = dialog.querySelector('.scrywp-index-settings-save-error');
             var saveErrorMessage = dialog.querySelector('.scrywp-index-settings-save-error-message');
 
             var currentRankingRules = [];
-            var currentSearchableAttributes = [];
-            var availableFields = {};
 
             // Store original button text
             var originalSaveButtonText = saveButton ? saveButton.textContent : '';
@@ -450,7 +450,7 @@
                 }, 100);
             });
 
-            // Function to load index settings
+            // Function to initialize settings from server-rendered form controls
             function loadIndexSettings(indexName) {
                 loadingDiv.style.display = 'block';
                 loadedDiv.style.display = 'none';
@@ -459,42 +459,20 @@
                 // Reset button state when loading
                 resetSaveButton();
 
-                var formData = new FormData();
-                formData.append('action', scrywpIndexes.actions.getIndexSettings);
-                formData.append('nonce', scrywpIndexes.nonces.getIndexSettings);
-                formData.append('index_name', indexName);
+                try {
+                    hydrateRankingRulesFromDom();
+                    syncRankingRulesInputs();
+                    setupDragAndDrop();
+                    setupSearchableFieldsInteractions();
 
-                fetch(scrywpIndexes.ajaxUrl, {
-                    method: 'POST',
-                    body: formData
-                })
-                    .then(function (response) {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json();
-                    })
-                    .then(function (data) {
-                        if (data.success) {
-                            currentRankingRules = data.data.ranking_rules || [];
-                            currentSearchableAttributes = data.data.searchable_attributes || [];
-                            availableFields = data.data.available_fields || {};
+                    loadingDiv.style.display = 'none';
+                    loadedDiv.style.display = 'block';
 
-                            renderRankingRules();
-                            renderSearchableFields();
-
-                            loadingDiv.style.display = 'none';
-                            loadedDiv.style.display = 'block';
-
-                            // Reset button state after successful load
-                            resetSaveButton();
-                        } else {
-                            showSettingsError(data.data && data.data.message ? data.data.message : scrywpIndexes.i18n.failedToLoadSettings);
-                        }
-                    })
-                    .catch(function (error) {
-                        showSettingsError(scrywpIndexes.i18n.errorFailedToLoadSettings);
-                    });
+                    // Reset button state after successful load
+                    resetSaveButton();
+                } catch (error) {
+                    showSettingsError(scrywpIndexes.i18n.errorFailedToLoadSettings);
+                }
             }
 
             // Function to show error
@@ -503,6 +481,24 @@
                 loadedDiv.style.display = 'none';
                 errorDiv.style.display = 'block';
                 errorDiv.querySelector('.scrywp-index-settings-error-message').textContent = message;
+            }
+
+            function hydrateRankingRulesFromDom() {
+                if (!rulesList) {
+                    currentRankingRules = [];
+                    return;
+                }
+                currentRankingRules = Array.from(rulesList.querySelectorAll('.scrywp-ranking-rule-item'))
+                    .map(function (item) {
+                        if (item.dataset.rule) {
+                            return item.dataset.rule;
+                        }
+                        var label = item.querySelector('.scrywp-ranking-rule-label');
+                        return label ? label.textContent.trim() : '';
+                    })
+                    .filter(function (rule) {
+                        return !!rule;
+                    });
             }
 
             // Function to render ranking rules
@@ -532,8 +528,25 @@
                     rulesList.appendChild(li);
                 });
 
+                syncRankingRulesInputs();
+
                 // Setup drag and drop
                 setupDragAndDrop();
+            }
+
+            // Keep ranking rules serialized as ordered hidden form inputs.
+            function syncRankingRulesInputs() {
+                if (!settingsForm || !rankingRulesInputsContainer) return;
+
+                rankingRulesInputsContainer.innerHTML = '';
+
+                currentRankingRules.forEach(function (rule) {
+                    var hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = 'ranking_rules[]';
+                    hiddenInput.value = rule;
+                    rankingRulesInputsContainer.appendChild(hiddenInput);
+                });
             }
 
             // Function to setup drag and drop
@@ -542,6 +555,11 @@
                 var draggedElement = null;
 
                 items.forEach(function (item) {
+                    if (item.dataset.dragListenersAttached === '1') {
+                        return;
+                    }
+                    item.dataset.dragListenersAttached = '1';
+
                     item.addEventListener('dragstart', function (e) {
                         draggedElement = this;
                         this.style.opacity = '0.5';
@@ -593,115 +611,50 @@
                     });
                 });
             }
-
-            // Function to render searchable fields
-            function renderSearchableFields() {
+            function setupSearchableFieldsInteractions() {
                 if (!fieldsTree) return;
 
-                fieldsTree.innerHTML = '';
+                var groups = fieldsTree.querySelectorAll('.scrywp-searchable-field-group');
+                groups.forEach(function (group) {
+                    if (group.dataset.groupListenersAttached === '1') {
+                        return;
+                    }
+                    group.dataset.groupListenersAttached = '1';
 
-                // Build field tree
-                Object.keys(availableFields).forEach(function (fieldKey) {
-                    var field = availableFields[fieldKey];
-                    var isChecked = currentSearchableAttributes.indexOf(field.path) !== -1;
+                    var groupCheckbox = group.querySelector('.scrywp-searchable-field-group-label .scrywp-searchable-field-checkbox');
+                    var expandButton = group.querySelector('.scrywp-searchable-field-expand');
+                    var childrenDiv = group.querySelector('.scrywp-searchable-field-children');
 
-                    if (field.type === 'group' && field.children) {
-                        // Render group with children
-                        var groupDiv = document.createElement('div');
-                        groupDiv.className = 'scrywp-searchable-field-group';
-
-                        var groupLabel = document.createElement('label');
-                        groupLabel.className = 'scrywp-searchable-field-group-label';
-
-                        var groupCheckbox = document.createElement('input');
-                        groupCheckbox.type = 'checkbox';
-                        groupCheckbox.className = 'scrywp-searchable-field-checkbox';
-                        groupCheckbox.dataset.fieldPath = field.path;
-                        groupCheckbox.checked = isChecked;
-
-                        var groupSpan = document.createElement('span');
-                        groupSpan.textContent = field.label;
-
-                        groupLabel.appendChild(groupCheckbox);
-                        groupLabel.appendChild(groupSpan);
-
-                        var expandButton = document.createElement('button');
-                        expandButton.type = 'button';
-                        expandButton.className = 'scrywp-searchable-field-expand';
-                        expandButton.textContent = '▶';
-                        expandButton.setAttribute('aria-label', scrywpIndexes.i18n.expand);
-
-                        groupLabel.appendChild(expandButton);
-                        groupDiv.appendChild(groupLabel);
-
-                        var childrenDiv = document.createElement('div');
-                        childrenDiv.className = 'scrywp-searchable-field-children';
-                        childrenDiv.style.display = 'none';
-
-                        Object.keys(field.children).forEach(function (childKey) {
-                            var child = field.children[childKey];
-                            var childIsChecked = currentSearchableAttributes.indexOf(child.path) !== -1;
-
-                            var childLabel = document.createElement('label');
-                            childLabel.className = 'scrywp-searchable-field-item';
-
-                            var childCheckbox = document.createElement('input');
-                            childCheckbox.type = 'checkbox';
-                            childCheckbox.className = 'scrywp-searchable-field-checkbox';
-                            childCheckbox.dataset.fieldPath = child.path;
-                            childCheckbox.checked = childIsChecked;
-
-                            var childSpan = document.createElement('span');
-                            childSpan.textContent = child.label;
-
-                            childLabel.appendChild(childCheckbox);
-                            childLabel.appendChild(childSpan);
-                            childrenDiv.appendChild(childLabel);
-                        });
-
-                        groupDiv.appendChild(childrenDiv);
-                        fieldsTree.appendChild(groupDiv);
-
-                        // Toggle expand/collapse
+                    if (expandButton && childrenDiv) {
                         expandButton.addEventListener('click', function () {
                             var isExpanded = childrenDiv.style.display !== 'none';
                             childrenDiv.style.display = isExpanded ? 'none' : 'block';
                             expandButton.textContent = isExpanded ? '▶' : '▼';
                         });
+                    }
 
-                        // Group checkbox controls children
+                    if (groupCheckbox && childrenDiv) {
                         groupCheckbox.addEventListener('change', function () {
                             var children = childrenDiv.querySelectorAll('.scrywp-searchable-field-checkbox');
                             children.forEach(function (child) {
                                 child.checked = groupCheckbox.checked;
                             });
                         });
-                    } else {
-                        // Render single field
-                        var label = document.createElement('label');
-                        label.className = 'scrywp-searchable-field-item';
-
-                        var checkbox = document.createElement('input');
-                        checkbox.type = 'checkbox';
-                        checkbox.className = 'scrywp-searchable-field-checkbox';
-                        checkbox.dataset.fieldPath = field.path;
-                        checkbox.checked = isChecked;
-
-                        var span = document.createElement('span');
-                        span.textContent = field.label;
-
-                        label.appendChild(checkbox);
-                        label.appendChild(span);
-                        fieldsTree.appendChild(label);
                     }
                 });
             }
 
             // Save settings
             if (saveButton) {
+                if (settingsForm) {
+                    settingsForm.addEventListener('submit', function (e) {
+                        e.preventDefault();
+                        saveButton.click();
+                    });
+                }
+
                 saveButton.addEventListener('click', function () {
                     var button = this;
-                    var originalText = button.textContent;
 
                     // Hide any previous error
                     if (saveErrorDiv) {
@@ -711,27 +664,11 @@
                     button.disabled = true;
                     button.textContent = scrywpIndexes.i18n.saving;
 
-                    // Collect searchable attributes from checkboxes
-                    var searchableAttributes = [];
-                    var checkboxes = dialog.querySelectorAll('.scrywp-searchable-field-checkbox:checked');
-                    checkboxes.forEach(function (checkbox) {
-                        searchableAttributes.push(checkbox.dataset.fieldPath);
-                    });
-
-                    var formData = new FormData();
-                    formData.append('action', scrywpIndexes.actions.updateIndexSettings);
-                    formData.append('nonce', scrywpIndexes.nonces.updateIndexSettings);
-                    formData.append('index_name', indexName);
-
-                    // Append ranking rules as multi-value form inputs
-                    currentRankingRules.forEach(function (rule) {
-                        formData.append('ranking_rules[]', rule);
-                    });
-
-                    // Append searchable attributes as multi-value form inputs
-                    searchableAttributes.forEach(function (attribute) {
-                        formData.append('searchable_attributes[]', attribute);
-                    });
+                    // Start with full form serialization so hook-injected inputs are included.
+                    var formData = settingsForm ? new FormData(settingsForm) : new FormData();
+                    formData.set('action', scrywpIndexes.actions.updateIndexSettings);
+                    formData.set('nonce', scrywpIndexes.nonces.updateIndexSettings);
+                    formData.set('index_name', indexName);
 
                     fetch(scrywpIndexes.ajaxUrl, {
                         method: 'POST',

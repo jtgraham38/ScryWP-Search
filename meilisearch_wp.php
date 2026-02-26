@@ -2,7 +2,7 @@
 /**
  * Plugin Name:	Scry Search for Meilisearch
  * Plugin URI:	https://scrywp.com
- * Description:	A powerful semantic search plugin, powered by Meilisearch.
+ * Description:	Bringing all the power of Meilisearch to WordPress.
  * Version:	1.0.0
  * Requires at least: 5.2
  * Requires PHP:      8.1
@@ -25,8 +25,22 @@ require_once plugin_dir_path(__FILE__) . '/vendor/autoload.php';
 use jtgraham38\jgwordpresskit\Plugin;
 use jtgraham38\jgwordpresskit\PluginFeature;
 
+
+//set plugin config
+$config = array(
+    'hook_prefix' => 'scry_ms_',    //set a separte prefix because changing it will break dependent plugins
+    'excluded_taxonomies' => array(
+        'post_format',
+        'nav_menu',
+        'link_category',
+        'wp_theme',
+        'wp_template_part_area',
+    ),
+);
+
 //create a new plugin manager
-$plugin = new Plugin("scry_ms_", plugin_dir_path( __FILE__ ), plugin_dir_url( __FILE__ ));
+$plugin = new Plugin("scry_ms_", plugin_dir_path( __FILE__ ), plugin_dir_url( __FILE__ ), $config);
+
 
 //register features with the plugin manager here...
 require_once plugin_dir_path(__FILE__) . '/features/admin_page/feature.php';
@@ -48,10 +62,6 @@ $plugin->register_feature("scry_ms_connection_settings", $connection_settings_fe
 require_once plugin_dir_path(__FILE__) . '/features/analytics/feature.php';
 $analytics_feature = new ScrySearch_AnalyticsFeature();
 $plugin->register_feature("scry_ms_analytics", $analytics_feature);
-
-require_once plugin_dir_path(__FILE__) . '/features/blocks/feature.php';
-$blocks_feature = new ScrySearch_BlocksFeature();
-$plugin->register_feature("scry_ms_blocks", $blocks_feature);
 
 //init the plugin
 $plugin->init();

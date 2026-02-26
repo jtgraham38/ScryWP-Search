@@ -591,7 +591,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         
         // Get post excerpt
         $excerpt = !empty($post->post_excerpt) ? wp_strip_all_tags($post->post_excerpt) : wp_trim_words($content, 55);
-        
+
         // Format the document
         $document = array(
             'ID' => (int) $post->ID,
@@ -608,22 +608,14 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             'post_name' => $post->post_name,
             'permalink' => get_permalink($post->ID),
         );
+
+        //let other plugins modify the document before it is indexed
+        $document = apply_filters($this->config('hook_prefix') . 'index_prepare_document', $document, $post);
         
         // Add author name if available
         $author = get_userdata($post->post_author);
         if ($author) {
             $document['author_name'] = $author->display_name;
-        }
-        
-        // Add categories and tags
-        $categories = wp_get_post_categories($post->ID, array('fields' => 'names'));
-        if (!empty($categories)) {
-            $document['categories'] = $categories;
-        }
-        
-        $tags = wp_get_post_tags($post->ID, array('fields' => 'names'));
-        if (!empty($tags)) {
-            $document['tags'] = $tags;
         }
         
         // Add featured image URL if available
@@ -632,7 +624,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             $document['featured_image'] = wp_get_attachment_image_url($thumbnail_id, 'full');
         }
 
-        // Add post meta date
+        // Add post meta data
         $post_meta = get_post_meta($post->ID);
         if (!empty($post_meta)) {
             $document['post_meta'] = $post_meta;
@@ -752,6 +744,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                 'orderby' => 'post__in', // Preserve Meilisearch order
                 'no_found_rows' => true,
                 'ignore_sticky_posts' => true,
+
             ));
             
             $posts = $query->posts;
@@ -760,7 +753,8 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             // Format results with database content
             $results = array();
             foreach ($posts as $post) {
-                $results[] = array(
+                //create result array
+                $result = array(
                     'ID' => $post->ID,
                     'title' => $post->post_title,
                     'excerpt' => !empty($post->post_excerpt) ? wp_strip_all_tags($post->post_excerpt) : wp_trim_words(wp_strip_all_tags($post->post_content), 30),
@@ -770,6 +764,8 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                     'post_status' => $post->post_status,
                     'post_date' => $post->post_date,
                 );
+
+                $results[] = $result;
             }
             
             wp_send_json_success(array(
@@ -880,7 +876,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             if (empty($searchable_attributes)) {
                 $searchable_attributes = $this->get_searchable_attributes();
             }
-            
+
             // Get available fields for this post type
             $available_fields = $this->get_available_fields_for_post_type($post_type);
             
@@ -958,7 +954,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         }
         // Sanitize searchable attributes
         $searchable_attributes = array_map('sanitize_text_field', $searchable_attributes);
-        
+
         // Get connection settings
         $meilisearch_url = get_option($this->prefixed('meilisearch_url'), '');
         $meilisearch_admin_key = get_option($this->prefixed('meilisearch_admin_key'), '');
@@ -982,6 +978,9 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             if (!empty($searchable_attributes)) {
                 $index->updateSearchableAttributes($searchable_attributes);
             }
+            
+            //let other plugins take action using the index and the settings
+            do_action($this->config('hook_prefix') . 'index_update_settings', $index);
             
             wp_send_json_success(array(
                 'message' => sprintf(__('Index settings updated successfully for "%s".', "scry-search"), $index_name)
@@ -1011,7 +1010,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
     /**
      * Get default Meilisearch ranking rules
      */
-    private function get_default_ranking_rules() {
+    public function get_default_ranking_rules() {
         return array(
             'words',
             'typo',
@@ -1025,7 +1024,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
     /**
      * Get available fields for a post type, including meta keys
      */
-    private function get_available_fields_for_post_type($post_type) {
+    public function get_available_fields_for_post_type($post_type) {
         $fields = array();
         
         // Core post fields
@@ -1050,20 +1049,6 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                 'path' => $field,
             );
         }
-        
-        // Categories
-        $fields['categories'] = array(
-            'label' => __('Categories', "scry-search"),
-            'type' => 'taxonomy',
-            'path' => 'categories',
-        );
-        
-        // Tags
-        $fields['tags'] = array(
-            'label' => __('Tags', "scry-search"),
-            'type' => 'taxonomy',
-            'path' => 'tags',
-        );
         
         // Featured Image
         $fields['featured_image'] = array(
@@ -1198,6 +1183,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
     }
     
     //  \\  //  \\  //  \\  Helpers  //  \\  //  \\  //  \\ 
+
     public function get_index_names() {
         global $wpdb;
         $index_names = array();
@@ -1212,7 +1198,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
      * Get the list of searchable attributes for Meilisearch indexes
      * Excludes: post_status, post_type, author_name, featured_image
      */
-    private function get_searchable_attributes() {
+    public function get_searchable_attributes() {
         return array(
             'ID',
             'post_title',
