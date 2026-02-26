@@ -24,7 +24,7 @@ class ScrySearch_SearchFeature extends PluginFeature {
     public function add_actions() {
         // Register settings on init so they are available to REST requests.
         add_action('admin_init', array($this, 'register_settings'));
-        // Custom REST endpoint for block editor facet settings lookup.
+        // Register search settings admin page.
         add_action('admin_menu', array($this, 'add_admin_page'));
     }
 
@@ -92,15 +92,6 @@ class ScrySearch_SearchFeature extends PluginFeature {
         //skip page for now
         //THE ABOVE ARE VITAL, ADD SUPPORT FOR THE REST IN DOCUMENTATION ORDER!.
 
-        //add support for facets
-        if (isset($_GET['scry-search']['facets']['taxonomies'])) {
-            $taxonomy_facets_to_search = $_GET['scry-search']['facets']['taxonomies'];
-            //
-            //
-            ////TODO: use these ids in the search query
-            //
-            //
-        }
 
         //ensure we gracefully fall back to the wordpress search if the meilisearch search fails
         try {
@@ -120,26 +111,48 @@ class ScrySearch_SearchFeature extends PluginFeature {
                 //get the search weight for the index, or default to 1.0 if not set
                 $search_weight = isset($search_weights[$post_type]) ? $search_weights[$post_type] : 1.0;
 
+                //create federated search options
+                $federated_search_options = (new FederationOptions())
+                    ->setWeight(floatval($search_weight));
+
                 //create a new search query
-                $search_queries[] = (new SearchQuery())
+                $search_query = (new SearchQuery())
                     ->setIndexUid($index_name)
-                    ->setFederationOptions((new FederationOptions())->setWeight(floatval($search_weight)))
+                    ->setFederationOptions(( $federated_search_options ))
                     ->setQuery($query_params['q']);
+                
+
+                //let tother plugins modify the search query before it is used to search the index
+                $search_query = apply_filters($this->config('hook_prefix') . 'multi_search_query', $search_query, $index_name);
+
+                //add it to the search queries
+                $search_queries[] = $search_query;
             }
 
             // Set pagination on MultiSearchFederation (handles federated search pagination)
             $federation = new MultiSearchFederation();
+
+            //set limit and offset
             if (isset($query_params['limit'])) {
                 $federation->setLimit($query_params['limit']);
             }
             if (isset($query_params['offset'])) {
                 $federation->setOffset($query_params['offset']);
             }
-            
+
+            //allow other plugins to modify the federation object before it is used to search the indexes
+            $federation = apply_filters($this->config('hook_prefix') . 'multi_search_federation', $federation);
+
             //use federated multi search to search the indexes
             $search_results = $client->multiSearch($search_queries, $federation);
 
+            // echo '<pre>';
+            // var_dump($search_queries);
+            // echo '</pre>';
+            // die;
+
         } catch (Exception $e) {
+
             //fall back to the wordpress search
             return $posts;
         }
@@ -278,89 +291,6 @@ class ScrySearch_SearchFeature extends PluginFeature {
             )
         );
 
-        // Register facets section
-        add_settings_section(
-            $this->prefixed('search_facets_section'),
-            __('Filterable Facets', "scry-search"),
-            function() {
-                echo '<p>' . esc_html__('Select which taxonomies can be used as facets in search filtering.', "scry-search") . '</p>';
-            },
-            $this->prefixed('search_settings_group')
-        );
-
-        // Add facets field
-        add_settings_field(
-            $this->prefixed('search_facets'),
-            __('Taxonomies', "scry-search"),
-            function() {
-                require_once plugin_dir_path(__FILE__) . 'elements/settings/facets_input.php';
-            },
-            $this->prefixed('search_settings_group'),
-            $this->prefixed('search_facets_section')
-        );
-
-        // Register facets setting
-        register_setting(
-            $this->prefixed('search_settings_group'),
-            $this->prefixed('search_facets'),
-            array(
-                'type' => 'array',
-                'description' => 'Selected taxonomy slugs that are filterable facets in Scry Search for Meilisearch.',
-                'sanitize_callback' => function($input) {
-                    if (!is_array($input)) {
-                        return array(
-                            'taxonomies' => array(),
-                            'meta' => array(),
-                        );
-                    }
-
-                    $raw_taxonomies = array();
-                    if (isset($input['taxonomies'])) {
-                        $raw_taxonomies = is_array($input['taxonomies'])
-                            ? $input['taxonomies']
-                            : array($input['taxonomies']);
-                    }
-
-                    // Keep only valid taxonomy slugs.
-                    $valid_taxonomies = get_taxonomies(array(), 'names');
-                    $excluded_taxonomies = array('post_format', 'nav_menu', 'link_category', 'wp_theme', 'wp_template_part_area');
-                    $valid_taxonomies = array_values(array_diff($valid_taxonomies, $excluded_taxonomies));
-
-                    $sanitized_taxonomies = array();
-                    foreach ($raw_taxonomies as $taxonomy_slug) {
-                        if (!is_string($taxonomy_slug)) {
-                            continue;
-                        }
-                        $taxonomy_slug = sanitize_key($taxonomy_slug);
-                        if ($taxonomy_slug === '') {
-                            continue;
-                        }
-                        if (!in_array($taxonomy_slug, $valid_taxonomies, true)) {
-                            continue;
-                        }
-                        $sanitized_taxonomies[] = $taxonomy_slug;
-                    }
-
-                    $sanitized_facets = array(
-                        'taxonomies' => array_values(array_unique($sanitized_taxonomies)),
-                        'meta' => array(),
-                    );
-
-                    // Keep index filterable attributes in sync with selected taxonomy facets.
-                    $index_feature = $this->get_feature('scry_ms_indexes');
-                    if ($index_feature && method_exists($index_feature, 'update_filterable_attributes_for_taxonomies')) {
-                        $index_feature->update_filterable_attributes_for_taxonomies($sanitized_facets['taxonomies']);
-                    }
-
-                    return $sanitized_facets;
-                },
-                'default' => array(
-                    'taxonomies' => array(),
-                    'meta' => array(),
-                ),
-                'show_in_rest' => false,
-            )
-        );
     }
 
     //add an admin page for the search settings

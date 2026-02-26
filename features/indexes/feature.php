@@ -592,27 +592,6 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         // Get post excerpt
         $excerpt = !empty($post->post_excerpt) ? wp_strip_all_tags($post->post_excerpt) : wp_trim_words($content, 55);
 
-        //get all taxonomies that are facetable
-
-        $filterable_taxonomies = get_option($this->prefixed('search_facets'), array('taxonomies' => array(), 'meta' => array()));
-        $filterable_taxonomies = $filterable_taxonomies['taxonomies'];
-
-        //for each filterable taxonomy, get the terms of this post for that taxonomy
-        $taxonomy_facets = array();
-        foreach ($filterable_taxonomies as $filterable_taxonomy) {
-            $terms = wp_get_post_terms($post->ID, $filterable_taxonomy);
-            $term_ids = array();
-            if (!empty($terms) && !is_wp_error($terms)) {
-                foreach ($terms as $term) {
-                    if (isset($term->term_id)) {
-                        $term_ids[] = (int) $term->term_id;
-                    }
-                }
-            }
-            $taxonomy_facets[$filterable_taxonomy] = $term_ids;
-        }
-        //TODO: add the filterable taxonomies to the document
-
         // Format the document
         $document = array(
             'ID' => (int) $post->ID,
@@ -630,27 +609,13 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             'permalink' => get_permalink($post->ID),
         );
 
-        //add the facetable taxonomies to the document
-        foreach ($taxonomy_facets as $filterable_taxonomy => $term_ids) {
-            $document[$filterable_taxonomy] = $term_ids;
-        }
-
+        //let other plugins modify the document before it is indexed
+        $document = apply_filters($this->config('hook_prefix') . 'index_prepare_document', $document, $post);
         
         // Add author name if available
         $author = get_userdata($post->post_author);
         if ($author) {
             $document['author_name'] = $author->display_name;
-        }
-        
-        // Add categories and tags
-        $categories = wp_get_post_categories($post->ID, array('fields' => 'names'));
-        if (!empty($categories)) {
-            $document['categories'] = $categories;
-        }
-        
-        $tags = wp_get_post_tags($post->ID, array('fields' => 'names'));
-        if (!empty($tags)) {
-            $document['tags'] = $tags;
         }
         
         // Add featured image URL if available
@@ -659,7 +624,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             $document['featured_image'] = wp_get_attachment_image_url($thumbnail_id, 'full');
         }
 
-        // Add post meta date
+        // Add post meta data
         $post_meta = get_post_meta($post->ID);
         if (!empty($post_meta)) {
             $document['post_meta'] = $post_meta;
@@ -800,24 +765,6 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                     'post_date' => $post->post_date,
                 );
 
-                //get the terms for the facetable taxonomies
-                $facetable_taxonomies = get_option(
-                    $this->prefixed('search_facets'), 
-                    array('taxonomies' => array(), 'meta' => array())
-                )['taxonomies'];
-                $facets_to_terms = array();
-                foreach ($facetable_taxonomies as $filterable_taxonomy) {
-                    $terms = wp_get_post_terms($post->ID, $filterable_taxonomy);
-                    $term_names = array();
-                    if (!empty($terms) && !is_wp_error($terms)) {
-                        foreach ($terms as $term) {
-                            $term_names[] = (string) $term->name;
-                        }
-                    }
-                    $facets_to_terms[$filterable_taxonomy] = $term_names;
-                    $result[$filterable_taxonomy] = $term_names;
-                }
-
                 $results[] = $result;
             }
             
@@ -929,7 +876,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             if (empty($searchable_attributes)) {
                 $searchable_attributes = $this->get_searchable_attributes();
             }
-            
+
             // Get available fields for this post type
             $available_fields = $this->get_available_fields_for_post_type($post_type);
             
@@ -1007,7 +954,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         }
         // Sanitize searchable attributes
         $searchable_attributes = array_map('sanitize_text_field', $searchable_attributes);
-        
+
         // Get connection settings
         $meilisearch_url = get_option($this->prefixed('meilisearch_url'), '');
         $meilisearch_admin_key = get_option($this->prefixed('meilisearch_admin_key'), '');
@@ -1031,6 +978,9 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             if (!empty($searchable_attributes)) {
                 $index->updateSearchableAttributes($searchable_attributes);
             }
+            
+            //let other plugins take action using the index and the settings
+            do_action($this->config('hook_prefix') . 'index_update_settings', $index);
             
             wp_send_json_success(array(
                 'message' => sprintf(__('Index settings updated successfully for "%s".', "scry-search"), $index_name)
@@ -1060,7 +1010,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
     /**
      * Get default Meilisearch ranking rules
      */
-    private function get_default_ranking_rules() {
+    public function get_default_ranking_rules() {
         return array(
             'words',
             'typo',
@@ -1074,7 +1024,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
     /**
      * Get available fields for a post type, including meta keys
      */
-    private function get_available_fields_for_post_type($post_type) {
+    public function get_available_fields_for_post_type($post_type) {
         $fields = array();
         
         // Core post fields
@@ -1099,20 +1049,6 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                 'path' => $field,
             );
         }
-        
-        // Categories
-        $fields['categories'] = array(
-            'label' => __('Categories', "scry-search"),
-            'type' => 'taxonomy',
-            'path' => 'categories',
-        );
-        
-        // Tags
-        $fields['tags'] = array(
-            'label' => __('Tags', "scry-search"),
-            'type' => 'taxonomy',
-            'path' => 'tags',
-        );
         
         // Featured Image
         $fields['featured_image'] = array(
@@ -1247,67 +1183,6 @@ class ScrySearch_IndexesFeature extends PluginFeature {
     }
     
     //  \\  //  \\  //  \\  Helpers  //  \\  //  \\  //  \\ 
-    /**
-     * Update Meilisearch filterable attributes from taxonomy facets.
-     *
-     * @param array       $taxonomy_slugs Selected taxonomy slugs.
-     * @param string|null $target_index_name Optional single index name to update.
-     */
-    public function update_filterable_attributes_for_taxonomies($taxonomy_slugs, $target_index_name = null) {
-        if (!is_array($taxonomy_slugs)) {
-            return;
-        }
-
-        // get the connection settings
-        $meilisearch_url = get_option($this->prefixed('meilisearch_url'), '');
-        $meilisearch_admin_key = get_option($this->prefixed('meilisearch_admin_key'), '');
-        if (empty($meilisearch_url) || empty($meilisearch_admin_key)) {
-            return;
-        }
-
-        // Normalize selected taxonomy slugs into a unique filterable attribute list.
-        $filterable_attributes = array();
-        foreach ($taxonomy_slugs as $taxonomy_slug) {
-            if (!is_string($taxonomy_slug)) {
-                continue;
-            }
-            $taxonomy_slug = sanitize_key($taxonomy_slug);
-            if ($taxonomy_slug === '') {
-                continue;
-            }
-            $filterable_attributes[] = $taxonomy_slug;
-        }
-        $filterable_attributes = array_values(array_unique($filterable_attributes));
-
-        //get the index names to update
-        $index_names = $this->get_index_names();
-        if (!is_array($index_names) || empty($index_names)) {
-            return;
-        }
-
-        // Allow triggering updates for only one index when provided.
-        $indexes_to_update = array_values($index_names);
-        if (is_string($target_index_name) && $target_index_name !== '') {
-            $target_index_name = sanitize_text_field($target_index_name);
-            if (!in_array($target_index_name, $indexes_to_update, true)) {
-                return;
-            }
-            $indexes_to_update = array($target_index_name);
-        }
-
-        //call the api to execute the update
-        try {
-            $client = new Client($meilisearch_url, $meilisearch_admin_key);
-            foreach ($indexes_to_update as $index_name) {
-                if (!is_string($index_name) || $index_name === '') {
-                    continue;
-                }
-                $client->index($index_name)->updateFilterableAttributes($filterable_attributes);
-            }
-        } catch (\Throwable $e) {
-            error_log('Scry Search for Meilisearch: Failed to update filterable attributes from taxonomy facets: ' . $e->getMessage());
-        }
-    }
 
     public function get_index_names() {
         global $wpdb;
@@ -1323,7 +1198,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
      * Get the list of searchable attributes for Meilisearch indexes
      * Excludes: post_status, post_type, author_name, featured_image
      */
-    private function get_searchable_attributes() {
+    public function get_searchable_attributes() {
         return array(
             'ID',
             'post_title',
