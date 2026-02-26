@@ -194,7 +194,7 @@
 
                 // Request confirmation
                 var confirmed = confirm(
-                    'Are you sure you want to wipe the index? All documents will be deleted. The index will be recreated automatically.'
+                    'Are you sure you want to wipe the index? All documents will be deleted, and index settings will be lost. The index will be recreated automatically.'
                 );
 
                 if (!confirmed) {
