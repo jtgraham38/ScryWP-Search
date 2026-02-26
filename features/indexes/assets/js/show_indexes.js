@@ -326,19 +326,22 @@
                             var untitledLabel = scrywpIndexes.i18n.untitled;
 
                             results.forEach(function (result) {
-                                resultsHTML += '<div class="scrywp-index-dialog-result">';
-                                resultsHTML += '<h4 class="scrywp-index-dialog-result-title">' + (result.title || untitledLabel) + '</h4>';
+                                var displayTitle = result.post_title || result.title || untitledLabel;
+                                var displayExcerpt = result.post_excerpt || result.excerpt || '';
 
-                                if (result.excerpt) {
-                                    resultsHTML += '<p class="scrywp-index-dialog-result-excerpt">' + result.excerpt + '</p>';
+                                resultsHTML += '<div class="scrywp-index-dialog-result">';
+                                resultsHTML += '<h4 class="scrywp-index-dialog-result-title">' + escapeHtml(String(displayTitle)) + '</h4>';
+
+                                if (displayExcerpt) {
+                                    resultsHTML += '<p class="scrywp-index-dialog-result-excerpt">' + escapeHtml(String(displayExcerpt)) + '</p>';
                                 }
 
                                 resultsHTML += '<div class="scrywp-index-dialog-result-meta">';
-                                resultsHTML += '<span>' + result.ID + '</span>';
-                                resultsHTML += '<span>' + result.post_type + '</span>';
-                                resultsHTML += '<span>' + result.post_status + '</span>';
+                                resultsHTML += '<span>' + escapeHtml(String(result.ID || '')) + '</span>';
+                                resultsHTML += '<span>' + escapeHtml(String(result.post_type || '')) + '</span>';
+                                resultsHTML += '<span>' + escapeHtml(String(result.post_status || '')) + '</span>';
                                 if (result.post_date) {
-                                    resultsHTML += '<span>' + result.post_date + '</span>';
+                                    resultsHTML += '<span>' + escapeHtml(String(result.post_date)) + '</span>';
                                 }
                                 resultsHTML += '</div>';
 

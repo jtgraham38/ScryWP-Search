@@ -710,60 +710,38 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                 return;
             }
 
-            // Extract post IDs from search results
-            // Use array_column if all hits have ID, otherwise use foreach for safety
-            $post_ids = array();
-            foreach ($hits as $hit) {
-                if (isset($hit['ID'])) {
-                    $post_ids[] = (int) $hit['ID'];
+            // Format results directly from Meilisearch hits.
+            // Permalink/edit link are still resolved through WordPress using the hit ID.
+            $sanitize_hit_value = function ($value) use (&$sanitize_hit_value) {
+                if (is_array($value)) {
+                    $sanitized = array();
+                    foreach ($value as $key => $nested_value) {
+                        $sanitized[$key] = $sanitize_hit_value($nested_value);
+                    }
+                    return $sanitized;
                 }
-            }
-            
-            // Ensure we have unique IDs and they're integers
-            $post_ids = array_unique(array_map('intval', $post_ids));
-            
-            if (empty($post_ids)) {
-                wp_send_json_success(array(
-                    'results' => array(),
-                    'message' => __('No valid post IDs found in results', "scry-search")
-                ));
-                return;
-            }
-            
-            // Fetch posts from database to ensure up-to-date content
-            // Use WP_Query directly for better control
-            // Get all registered post types to ensure we find the post
-            $post_types = get_option($this->prefixed('post_types'));
-            
-            
-            $query = new \WP_Query(array(
-                'post__in' => $post_ids,
-                'posts_per_page' => count($post_ids),
-                'post_status' => 'publish',
-                'post_type' => $post_types, // Use array of all post types
-                'orderby' => 'post__in', // Preserve Meilisearch order
-                'no_found_rows' => true,
-                'ignore_sticky_posts' => true,
+                if (is_int($value) || is_float($value) || is_bool($value) || is_null($value)) {
+                    return $value;
+                }
 
-            ));
-            
-            $posts = $query->posts;
-            wp_reset_postdata();
+                return sanitize_text_field(wp_strip_all_tags((string) $value));
+            };
 
-            // Format results with database content
             $results = array();
-            foreach ($posts as $post) {
-                //create result array
-                $result = array(
-                    'ID' => $post->ID,
-                    'title' => $post->post_title,
-                    'excerpt' => !empty($post->post_excerpt) ? wp_strip_all_tags($post->post_excerpt) : wp_trim_words(wp_strip_all_tags($post->post_content), 30),
-                    'permalink' => get_permalink($post->ID),
-                    'edit_link' => get_edit_post_link($post->ID, 'raw'),
-                    'post_type' => $post->post_type,
-                    'post_status' => $post->post_status,
-                    'post_date' => $post->post_date,
-                );
+            foreach ($hits as $hit) {
+                if (!is_array($hit)) {
+                    continue;
+                }
+
+                $post_id = isset($hit['ID']) ? (int) $hit['ID'] : 0;
+                $permalink = get_permalink($post_id);
+                $edit_link = get_edit_post_link($post_id, 'raw');
+
+                // Return the full Meilisearch document payload (sanitized),
+                // then override links from WordPress.
+                $result = $sanitize_hit_value($hit);
+                $result['permalink'] = is_string($permalink) ? esc_url_raw($permalink) : '';
+                $result['edit_link'] = is_string($edit_link) ? esc_url_raw($edit_link) : '';
 
                 $results[] = $result;
             }
