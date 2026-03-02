@@ -145,6 +145,7 @@ class ScrySearch_SearchFeature extends PluginFeature {
 
             //use federated multi search to search the indexes
             $search_results = $client->multiSearch($search_queries, $federation);
+            
 
             // echo '<pre>';
             // var_dump($search_queries);
