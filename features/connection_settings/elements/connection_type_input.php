@@ -25,13 +25,13 @@ $manual_url = $this->get_base_url() . 'assets/images/manual.png';
             <h3><?php esc_html_e('Connection Type', "scry-search"); ?></h3>
             <div class="scrywp-connection-type-cards">
                 
-                <!-- Scry Search Managed Service - Prominent card -->
+                <!-- Scry Search Managed Service - Prominent card (coming soon) -->
                 <label class="scrywp-connection-card scrywp-connection-card-prominent">
-                    <input type="radio" name="<?php echo esc_attr($this->prefixed('connection_type')); ?>" value="scrywp" <?php checked($connection_type, 'scrywp'); ?>>
+                    <input type="radio" disabled name="<?php echo esc_attr($this->prefixed('connection_type')); ?>" value="scrywp" <?php checked($connection_type, 'scrywp'); ?>>
                     <div class="scrywp-card-content">
-                        <div class="scrywp-card-title">ScryWP Managed Service</div>
+                        <div class="scrywp-card-title">ScryWP Managed Service (Coming Soon)</div>
                         <img src="<?php echo esc_url($coai_dark_url); ?>" alt="ScryWP Managed Service" class="scrywp-connection-card-image">
-                        <div class="scrywp-card-description">Recommended: Let ScryWP manage your Meilisearch instance</div>
+                        <div class="scrywp-card-description">Coming soon: ScryWP will manage your Meilisearch instance for you.</div>
                     </div>
                 </label>
                 
@@ -50,15 +50,14 @@ $manual_url = $this->get_base_url() . 'assets/images/manual.png';
         <div class="scrywp-managed-get-connection-info<?php echo ($connection_type === 'scrywp') ? ' scrywp-section-visible' : ''; ?>">
             <h3><?php esc_html_e('Get Connection Info', "scry-search"); ?></h3>
             <p class="description">
-                <?php esc_html_e('Get your connection info from ScryWP.', "scry-search"); ?>
+                <?php esc_html_e('This feature is coming soon.', "scry-search"); ?>
             </p>
+            <?php /*
             <button type="button" id="scrywp-get-connection-info" class="button button-secondary">
                 <?php esc_html_e('Get Connection Info', "scry-search"); ?>
             </button>
             <div id="scrywp-connection-info" class="scrywp-connection-info"></div>
-            <small>
-                todo: implement this
-            </small>
+            */ ?>
         </div>
         
         
