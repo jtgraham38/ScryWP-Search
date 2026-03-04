@@ -172,6 +172,9 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                         throw $e;
                     }
                 }
+
+                //hook to allow other plugsin to configure the index immediately after it is created
+                do_action($this->config('hook_prefix') . 'after_create_index', $index);
             }
         }
         catch (CommunicationException $e) {
