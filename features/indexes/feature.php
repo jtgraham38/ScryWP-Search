@@ -173,6 +173,35 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                     }
                 }
 
+                //if the index exists, check if we have a backup of the settings, and if so, restore them
+                $index_settings_backup_key = $this->prefixed('index_settings_backup_') . $index_name;
+                $index_settings_backup = get_option($index_settings_backup_key);
+
+                try{
+                    //restore the ranking rules if they are in the backup
+                    if (isset($index_settings_backup['ranking_rules'])) {
+                        $index->updateRankingRules($index_settings_backup['ranking_rules']);
+                    }
+
+                    //restore the searchable attributes if they are in the backup
+                    if (isset($index_settings_backup['searchable_attributes'])) {
+                        $index->updateSearchableAttributes($index_settings_backup['searchable_attributes']);
+                    }
+
+                    //hook to allow other plugins to act after the index settings are restored
+                    do_action($this->config('hook_prefix') . 'index_settings_restore', $index, $index_settings_backup);
+
+                } catch (Exception $e) {
+                    //throw the exception
+                    throw $e;
+                }
+
+
+                if ($index_settings_backup) {
+                    $index->updateRankingRules($index_settings_backup['ranking_rules']);
+                    $index->updateSearchableAttributes($index_settings_backup['searchable_attributes']);
+                }
+
                 //hook to allow other plugsin to configure the index immediately after it is created
                 do_action($this->config('hook_prefix') . 'after_create_index', $index);
             }
@@ -937,6 +966,19 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         }
         // Sanitize searchable attributes
         $searchable_attributes = array_map('sanitize_text_field', $searchable_attributes);
+
+        //backup the settings to the database
+        $index_settings_backup_key = $this->prefixed('index_settings_backup_') . $index_name;
+        $index_settings_backup = array(
+            'ranking_rules' => $ranking_rules,
+            'searchable_attributes' => $searchable_attributes,
+        );
+
+        //hook to allow other plugins to modify the index settings backup
+        $index_settings_backup = apply_filters($this->config('hook_prefix') . 'index_settings_backup', $index_settings_backup, $index_name);
+
+        //update the settings backup in the database
+        update_option($index_settings_backup_key, $index_settings_backup);
 
         // Get connection settings
         $meilisearch_url = get_option($this->prefixed('meilisearch_url'), '');
