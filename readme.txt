@@ -1,4 +1,4 @@
-=== Scry Search for Meilisearch ===
+=== Scry Search: Meilisearch for WordPress ===
 Contributors: JG Web Development, jtgraham38
 Tags: meilisearch, search, wordpress search, meilisearch for wordpress, fast search
 Requires at least: 5.2
