@@ -41,22 +41,6 @@
                 }
             }
 
-            // Toggle manual config fields (enable for manual, readonly for scrywp)
-            var manualConfigFields = $$('.scrywp-manual-config-field');
-            manualConfigFields.forEach(function (field) {
-                var inputs = field.querySelectorAll('input');
-                inputs.forEach(function (input) {
-                    if (connectionType === 'manual') {
-                        // Enable fields and make required for manual config
-                        input.removeAttribute('readonly');
-                        input.setAttribute('required', 'required');
-                    } else {
-                        // Make fields readonly (uneditable but still submits) and remove required for scrywp managed service
-                        input.setAttribute('readonly', 'readonly');
-                        input.removeAttribute('required');
-                    }
-                });
-            });
         }
 
         // Initial check
