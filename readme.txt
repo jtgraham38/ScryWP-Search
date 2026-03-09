@@ -3,12 +3,16 @@ Contributors: JG Web Development, jtgraham38
 Tags: meilisearch, search, wordpress search, meilisearch for wordpress, fast search
 Requires at least: 5.2
 Tested up to: 6.9
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 Requires PHP: 8.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
 The ultimate Meilisearch for WordPress integration. Lightning-fast, typo-tolerant search with zero frontend changes required.
+
+== Get Managed Hosting from ScryWP ==
+
+**Need a Meilisearch instance fast? [Host with ScryWP Search](https://scrywp.com)** and launch in minutes with a managed deployment built for WordPress.
 
 == Description ==
 
@@ -160,6 +164,9 @@ Yes. Scry Search follows WordPress security best practices: all AJAX requests us
 * Live search preview in admin panel
 * Zero frontend modifications required - true drop-in replacement
 * Full compatibility with existing WordPress search forms and templates
+
+= 1.0.1 =
+* Add support for ScryWP-hoster Meilisearch instances
 
 == Upgrade Notice ==
 

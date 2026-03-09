@@ -2,6 +2,10 @@
 
 **The ultimate Meilisearch for WordPress integration. Lightning-fast, typo-tolerant search with zero frontend changes required.**
 
+## Host with ScryWP
+
+> **Need a Meilisearch instance fast? [Host with ScryWP Search](https://scrywp.com)** and launch in minutes with managed infrastructure built for WordPress.
+
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![WordPress: 5.2+](https://img.shields.io/badge/WordPress-5.2%2B-blue.svg)](https://wordpress.org/)
 [![PHP: 8.1+](https://img.shields.io/badge/PHP-8.1%2B-purple.svg)](https://php.net/)
