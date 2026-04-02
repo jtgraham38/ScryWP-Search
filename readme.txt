@@ -1,9 +1,9 @@
 === Scry Search: Meilisearch for WordPress ===
 Contributors: JG Web Development, jtgraham38
-Tags: meilisearch, search, wordpress search, meilisearch for wordpress, fast search
+Tags: meilisearch, search, typo-tolerant search, custom search, facet search
 Requires at least: 5.2
 Tested up to: 6.9
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 Requires PHP: 8.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -43,6 +43,13 @@ Fine-tune how Meilisearch ranks your search results:
 * **Reorder Ranking Rules**: Use the intuitive drag-and-drop interface to prioritize typo tolerance over word proximity, or exactness over attribute order
 * **Searchable Attributes Control**: Decide which fields matter for search—include post titles, content, excerpts, categories, tags, author names, and any custom meta fields
 * **Post Type Weighting**: Running a store? Weight products higher than blog posts. Running a knowledge base? Prioritize documentation over news articles.
+
+= Synonyms & Stopwords =
+
+Fine-tune vocabulary **per index** from the WordPress admin (no code or Meilisearch config files required):
+
+* **Synonyms**: Treat different words as the same for search—product nicknames, abbreviations, UK/US spelling, or brand aliases—so visitors find the right results whichever term they use.
+* **Stopwords**: Ignore words that add noise to ranking (common filler words or domain-specific terms you do not want to influence scores) so Meilisearch emphasizes meaningful matches.
 
 = Built-In Task Monitor & Debugging =
 
@@ -102,7 +109,7 @@ Scry Search respects WordPress conventions and integrates seamlessly with:
 
 = What makes this the best Meilisearch for WordPress plugin? =
 
-Scry Search offers the most complete integration: per-post-type indexes with independent settings, federated search with configurable weights, full control over ranking rules and searchable fields, a built-in task monitor for debugging, and zero frontend modifications required.
+Scry Search offers the most complete integration: per-post-type indexes with independent settings, federated search with configurable weights, full control over ranking rules and searchable fields, synonyms and stopwords from the dashboard, a built-in task monitor for debugging, and zero frontend modifications required.
 
 = Do I need to modify my theme? =
 
@@ -166,7 +173,10 @@ Yes. Scry Search follows WordPress security best practices: all AJAX requests us
 * Full compatibility with existing WordPress search forms and templates
 
 = 1.0.1 =
-* Add support for ScryWP-hoster Meilisearch instances
+* Add support for ScryWP-hosted Meilisearch instances
+
+= 1.0.2 =
+* Add support for configuring Meilisearch synonyms and stopwords from the WordPress admin dashboard
 
 == Upgrade Notice ==
 

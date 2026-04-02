@@ -82,6 +82,15 @@ Choose exactly which fields are searchable for each post type:
 - Author information
 - **Custom post meta fields** — Including fields from ACF, Meta Box, and more
 
+### 📖 Synonyms & Stopwords
+
+Shape how Meilisearch interprets queries **per index**, directly in the WordPress admin:
+
+- **Synonyms** — Link terms that should match each other (aliases, abbreviations, regional variants) so different wording still surfaces the same content.
+- **Stopwords** — Omit words from relevance scoring when they would only add noise, keeping results focused on terms that actually distinguish your pages and products.
+
+Configure both alongside your other index options—no separate Meilisearch dashboard or deployment step required.
+
 ### 🔧 Built-In Task Monitor & Debugging
 
 The **Task Drawer** provides complete visibility into your Meilisearch operations:
@@ -184,6 +193,8 @@ For each post type index, you can configure:
 
 - **Searchable Attributes**: Which fields are included in search
 - **Ranking Rules**: Order of relevancy factors
+- **Synonyms**: Groups of equivalent terms Meilisearch should treat as interchangeable for that index
+- **Stopwords**: Words to exclude from ranking considerations for cleaner, more relevant matches
 - **Index Affix**: Custom prefix for index names (useful for staging/production separation)
 
 ### Search Settings
@@ -237,6 +248,7 @@ Higher weights mean results from that post type rank higher when searching acros
 | Per-post-type indexes | ✅ | ⚠️ Limited |
 | Federated search with weights | ✅ | ❌ Rare |
 | Custom ranking rules per index | ✅ | ❌ Usually global only |
+| Synonyms & stopwords per index (admin UI) | ✅ | ⚠️ Limited |
 | Built-in task monitoring | ✅ | ❌ Rare |
 | Custom meta field search | ✅ | ⚠️ Limited |
 | Managed cloud & self-hosted | ✅ | ⚠️ Limited options |

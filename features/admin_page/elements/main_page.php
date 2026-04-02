@@ -27,6 +27,8 @@ if (method_exists($this, 'get_registered_pages')) {
 $main_page = isset($registered_pages['scry-search-meilisearch']) ? $registered_pages['scry-search-meilisearch'] : null;
 unset($registered_pages['scry-search-meilisearch']);
 $all_taxonomies_objects = get_taxonomies( [], 'names' );
+$scrywp_hosting_url = 'https://scrywp.com';
+$scrywp_logo_url    = $this->get_base_url() . 'assets/images/coai_dark.png';
 ?>
 
 <div class="scrywp-admin-overview">
@@ -36,6 +38,21 @@ $all_taxonomies_objects = get_taxonomies( [], 'names' );
             <?php esc_html_e('Configure your search settings, manage connections, and set up indexes for powerful semantic search capabilities.', "scry-search"); ?>
         </p>
     </div>
+
+    <a class="scrywp-admin-overview-cta" href="<?php echo esc_url( $scrywp_hosting_url ); ?>" target="_blank" rel="noopener noreferrer">
+        <div class="scrywp-admin-overview-cta-inner">
+            <img class="scrywp-admin-overview-cta-logo" src="<?php echo esc_url( $scrywp_logo_url ); ?>" width="112" height="112" alt="<?php esc_attr_e( 'ScryWP', "scry-search" ); ?>" />
+            <div class="scrywp-admin-overview-cta-copy">
+                <span class="scrywp-admin-overview-cta-eyebrow"><?php esc_html_e( 'Managed Meilisearch', "scry-search" ); ?></span>
+                <span class="scrywp-admin-overview-cta-title"><?php esc_html_e( 'Ship search that feels instant—not another server to babysit', "scry-search" ); ?></span>
+                <span class="scrywp-admin-overview-cta-desc"><?php esc_html_e( 'Production-ready hosting, monitoring, and management. Connect in minutes and get back to building.', "scry-search" ); ?></span>
+            </div>
+            <span class="button button-primary scrywp-admin-overview-cta-button">
+                <?php esc_html_e( 'Start now at scrywp.com', "scry-search" ); ?>
+                <span class="dashicons dashicons-external" aria-hidden="true"></span>
+            </span>
+        </div>
+    </a>
 
     <?php if (!empty($registered_pages)) : ?>
         <div class="scrywp-admin-pages-grid">
