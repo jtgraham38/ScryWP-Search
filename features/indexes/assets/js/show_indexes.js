@@ -412,6 +412,10 @@
             var synonymsEditor = dialog.querySelector('.scrywp-synonyms-editor');
             var synonymsEntriesContainer = dialog.querySelector('.scrywp-synonyms-entries');
             var synonymsHiddenInputsContainer = dialog.querySelector('.scrywp-synonyms-hidden-inputs');
+            var stopWordsEditor = dialog.querySelector('.scrywp-stopwords-editor');
+            var stopWordsChipsContainer = dialog.querySelector('.scrywp-stopwords-chips');
+            var stopWordsInput = dialog.querySelector('.scrywp-stopwords-chip-input');
+            var stopWordsHiddenInputsContainer = dialog.querySelector('.scrywp-stopwords-hidden-inputs');
             var loadingDiv = dialog.querySelector('.scrywp-index-settings-loading');
             var loadedDiv = dialog.querySelector('.scrywp-index-settings-loaded');
             var settingsForm = dialog.querySelector('.scrywp-index-settings-form');
@@ -495,6 +499,29 @@
                         synonymsHiddenInputsContainer.appendChild(hidden);
                     });
                 });
+            }
+
+            /** Commit text still in synonym / stop-word inputs into chips (must run before save). */
+            function flushPendingSynonymAndStopWordInputs() {
+                if (synonymsEntriesContainer) {
+                    var entryEls = synonymsEntriesContainer.querySelectorAll('.scrywp-synonyms-entry');
+                    entryEls.forEach(function (entryEl) {
+                        var input = entryEl.querySelector('.scrywp-synonyms-chip-input');
+                        if (!input) return;
+                        var v = normalizeTerm(input.value);
+                        if (v) {
+                            addChip(entryEl, v);
+                            input.value = '';
+                        }
+                    });
+                }
+                if (stopWordsInput) {
+                    var sw = normalizeTerm(stopWordsInput.value);
+                    if (sw) {
+                        addStopWordChip(sw);
+                        stopWordsInput.value = '';
+                    }
+                }
             }
 
             function addChip(entryEl, term) {
@@ -649,6 +676,112 @@
                 syncSynonymsHiddenInputs();
             }
 
+            function clearStopWordsUi() {
+                if (stopWordsChipsContainer) {
+                    stopWordsChipsContainer.innerHTML = '';
+                }
+                if (stopWordsHiddenInputsContainer) {
+                    stopWordsHiddenInputsContainer.innerHTML = '';
+                }
+                if (stopWordsInput) {
+                    stopWordsInput.value = '';
+                }
+            }
+
+            function syncStopWordsHiddenInputs() {
+                if (!stopWordsHiddenInputsContainer || !stopWordsChipsContainer) return;
+                stopWordsHiddenInputsContainer.innerHTML = '';
+
+                var chips = Array.from(stopWordsChipsContainer.querySelectorAll('.scrywp-stopwords-chip'));
+                var seen = new Set();
+                chips.forEach(function (chipEl) {
+                    var value = normalizeTerm(chipEl.getAttribute('data-value') || chipEl.textContent);
+                    if (!value) return;
+                    if (seen.has(value)) return;
+                    seen.add(value);
+
+                    var hidden = document.createElement('input');
+                    hidden.type = 'hidden';
+                    hidden.name = 'stop_words[]';
+                    hidden.value = value;
+                    stopWordsHiddenInputsContainer.appendChild(hidden);
+                });
+            }
+
+            function addStopWordChip(term) {
+                var value = normalizeTerm(term);
+                if (!value || !stopWordsChipsContainer) return;
+
+                var exists = Array.from(stopWordsChipsContainer.querySelectorAll('.scrywp-stopwords-chip')).some(function (chipEl) {
+                    return normalizeTerm(chipEl.getAttribute('data-value')) === value;
+                });
+                if (exists) return;
+
+                var chip = document.createElement('span');
+                chip.className = 'scrywp-stopwords-chip';
+                chip.setAttribute('data-value', value);
+
+                var label = document.createElement('span');
+                label.className = 'scrywp-stopwords-chip-label';
+                label.textContent = value;
+
+                var removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'scrywp-stopwords-chip-remove';
+                removeBtn.setAttribute('aria-label', 'Remove stop word');
+                removeBtn.textContent = '×';
+                removeBtn.addEventListener('click', function () {
+                    chip.remove();
+                    syncStopWordsHiddenInputs();
+                });
+
+                chip.appendChild(label);
+                chip.appendChild(removeBtn);
+                stopWordsChipsContainer.appendChild(chip);
+                syncStopWordsHiddenInputs();
+            }
+
+            function setupStopWordsInteractions() {
+                if (!stopWordsEditor) return;
+                if (stopWordsEditor.dataset.stopWordsListenersAttached === '1') return;
+                stopWordsEditor.dataset.stopWordsListenersAttached = '1';
+
+                if (stopWordsInput) {
+                    stopWordsInput.addEventListener('keydown', function (e) {
+                        if (e.key === 'Enter' || e.key === ',') {
+                            e.preventDefault();
+                            addStopWordChip(stopWordsInput.value);
+                            stopWordsInput.value = '';
+                            return;
+                        }
+
+                        if (e.key === 'Backspace' && normalizeTerm(stopWordsInput.value) === '') {
+                            var chips = stopWordsChipsContainer ? stopWordsChipsContainer.querySelectorAll('.scrywp-stopwords-chip') : [];
+                            if (chips.length > 0) {
+                                chips[chips.length - 1].remove();
+                                syncStopWordsHiddenInputs();
+                            }
+                        }
+                    });
+                }
+            }
+
+            function hydrateStopWordsFromArray(stopWordsArr) {
+                clearStopWordsUi();
+                setupStopWordsInteractions();
+
+                if (!Array.isArray(stopWordsArr)) {
+                    syncStopWordsHiddenInputs();
+                    return;
+                }
+
+                stopWordsArr.forEach(function (term) {
+                    addStopWordChip(term);
+                });
+
+                syncStopWordsHiddenInputs();
+            }
+
             // Function to initialize settings from server-rendered form controls
             function loadIndexSettings(indexName) {
                 loadingDiv.style.display = 'block';
@@ -664,6 +797,7 @@
                     setupDragAndDrop();
                     setupSearchableFieldsInteractions();
                     setupSynonymsInteractions();
+                    setupStopWordsInteractions();
 
                     // Fetch latest settings (including synonyms) from server/Meilisearch.
                     var settingsFormData = new FormData();
@@ -688,10 +822,16 @@
                                 return;
                             }
 
-                            if (data.data && data.data.synonyms) {
+                            if (data.data && data.data.synonyms != null && typeof data.data.synonyms === 'object') {
                                 hydrateSynonymsFromObject(data.data.synonyms);
                             } else {
                                 hydrateSynonymsFromObject({});
+                            }
+
+                            if (data.data && data.data.stop_words) {
+                                hydrateStopWordsFromArray(data.data.stop_words);
+                            } else {
+                                hydrateStopWordsFromArray([]);
                             }
 
                             loadingDiv.style.display = 'none';
@@ -880,7 +1020,9 @@
                 if (settingsForm) {
                     settingsForm.addEventListener('submit', function (e) {
                         e.preventDefault();
+                        flushPendingSynonymAndStopWordInputs();
                         syncSynonymsHiddenInputs();
+                        syncStopWordsHiddenInputs();
                         saveButton.click();
                     });
                 }
@@ -897,7 +1039,9 @@
                     button.textContent = scrywpIndexes.i18n.saving;
 
                     // Start with full form serialization so hook-injected inputs are included.
+                    flushPendingSynonymAndStopWordInputs();
                     syncSynonymsHiddenInputs();
+                    syncStopWordsHiddenInputs();
                     var formData = settingsForm ? new FormData(settingsForm) : new FormData();
                     formData.set('action', scrywpIndexes.actions.updateIndexSettings);
                     formData.set('nonce', scrywpIndexes.nonces.updateIndexSettings);

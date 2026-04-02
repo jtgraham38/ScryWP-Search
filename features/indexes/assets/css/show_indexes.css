@@ -779,3 +779,51 @@ details[open] .scrywp-index-dialog-result-json-toggle::before {
 .scrywp-synonyms-remove-entry {
     margin-left: auto;
 }
+
+/* Stop words editor (chip input) */
+.scrywp-stopwords-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.scrywp-stopwords-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    background: #f6f7f7;
+    min-height: 42px;
+}
+
+.scrywp-stopwords-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #f0f0f1;
+    border: 1px solid #dcdcde;
+    color: #23282d;
+    font-size: 13px;
+}
+
+.scrywp-stopwords-chip-remove {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    font-size: 16px;
+    color: #50575e;
+}
+
+.scrywp-stopwords-chip-remove:hover {
+    color: #dc3232;
+}
+
+.scrywp-stopwords-chip-input {
+    max-width: 420px;
+}

@@ -291,7 +291,7 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
                                                         <span class="dashicons dashicons-external" style="font-size: 14px; width: 14px; height: 14px; vertical-align: middle; margin-left: 4px;"></span>
                                                     </a>
                                                 </div>
-                                                <p class="description"><?php esc_html_e('Add synonyms for this index. Create a base term, then add one or more synonym terms.', "scry-search"); ?></p>
+                                                <p class="description"><?php esc_html_e('Add synonyms for this index. Whenever the base term is searched, results with the synonyms will be returned as well.', "scry-search"); ?></p>
 
                                                 <div class="scrywp-synonyms-editor" data-index-name="<?php echo esc_attr($index['index_name']); ?>">
                                                     <div class="scrywp-synonyms-entries" aria-live="polite"></div>
@@ -304,6 +304,24 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
                                                 </div>
 
                                                 <div class="scrywp-synonyms-hidden-inputs" aria-hidden="true"></div>
+                                            </div>
+
+                                            <div class="scrywp-index-settings-section scrywp-stopwords-section" data-index-name="<?php echo esc_attr($index['index_name']); ?>">
+                                                <div class="scrywp-index-settings-section-header">
+                                                    <h4><?php esc_html_e('Stop Words', "scry-search"); ?></h4>
+                                                    <a href="https://specs.meilisearch.dev/specifications/text/0123-stop-words-setting-api.html" target="_blank" class="scrywp-index-settings-help-link" title="<?php esc_attr_e('Learn more about stop words', "scry-search"); ?>">
+                                                        <?php esc_html_e('Learn more', "scry-search"); ?>
+                                                        <span class="dashicons dashicons-external" style="font-size: 14px; width: 14px; height: 14px; vertical-align: middle; margin-left: 4px;"></span>
+                                                    </a>
+                                                </div>
+                                                <p class="description"><?php esc_html_e('Add stop words for this index. Stop words are ignored in search queries.', "scry-search"); ?></p>
+
+                                                <div class="scrywp-stopwords-editor" data-index-name="<?php echo esc_attr($index['index_name']); ?>">
+                                                    <div class="scrywp-stopwords-chips" aria-live="polite"></div>
+                                                    <input type="text" class="regular-text scrywp-stopwords-chip-input" placeholder="<?php esc_attr_e('Type a stop word and press Enter', "scry-search"); ?>">
+                                                </div>
+
+                                                <div class="scrywp-stopwords-hidden-inputs" aria-hidden="true"></div>
                                             </div>
                                             
                                             <div class="scrywp-index-settings-actions">

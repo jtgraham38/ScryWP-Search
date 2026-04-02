@@ -193,6 +193,11 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                         $index->updateSynonyms($index_settings_backup['synonyms']);
                     }
 
+                    //restore stop words if they are in the backup
+                    if (isset($index_settings_backup['stop_words']) && is_array($index_settings_backup['stop_words'])) {
+                        $index->updateStopWords($index_settings_backup['stop_words']);
+                    }
+
                     //hook to allow other plugins to act after the index settings are restored
                     do_action($this->config('hook_prefix') . 'index_settings_restore', $index, $index_settings_backup);
 
@@ -906,6 +911,18 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                 $synonyms = array();
             }
 
+            // Get current stop words (flat array)
+            $stop_words = array();
+            try {
+                $fetched_stop_words = $index->getStopWords();
+                if (is_array($fetched_stop_words)) {
+                    $stop_words = $fetched_stop_words;
+                }
+            } catch (\Exception $e) {
+                // If stop words fetch fails, return empty so UI remains usable.
+                $stop_words = array();
+            }
+
             // Get available fields for this post type
             $available_fields = $this->get_available_fields_for_post_type($post_type);
             
@@ -914,6 +931,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                 'searchable_attributes' => $searchable_attributes,
                 'available_fields' => $available_fields,
                 'synonyms' => $synonyms,
+                'stop_words' => $stop_words,
             ));
             
         } catch (\Meilisearch\Exceptions\CommunicationException $e) {
@@ -990,22 +1008,18 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         $raw_synonyms = isset($_POST['synonyms']) ? wp_unslash($_POST['synonyms']) : array();
         if (is_array($raw_synonyms)) {
             foreach ($raw_synonyms as $base => $values) {
-                //sanitize the base (key)
                 $base_sanitized = sanitize_text_field((string) $base);
                 $base_sanitized = trim($base_sanitized);
                 if ($base_sanitized === '') {
                     continue;
                 }
 
-                //ensure the values are an array
                 if (!is_array($values)) {
                     $values = array($values);
                 }
 
-                //sanitize the values
                 $sanitized_values = array();
                 foreach ($values as $value) {
-                    //sanitize the value
                     $term = is_string($value) ? trim(sanitize_text_field($value)) : '';
                     if ($term === '') {
                         continue;
@@ -1013,13 +1027,30 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                     $sanitized_values[] = $term;
                 }
 
-                //ensure the values are unique
                 $sanitized_values = array_values(array_unique($sanitized_values));
-
-                //add the synonyms to the array
-                $synonyms[$base_sanitized] = $sanitized_values;
+                if ($sanitized_values !== array()) {
+                    $synonyms[$base_sanitized] = $sanitized_values;
+                }
             }
         }
+
+        // Stop words are submitted as stop_words[] (always applied on save; empty clears).
+        $stop_words = array();
+        $raw_stop_words = isset($_POST['stop_words']) ? wp_unslash($_POST['stop_words']) : array();
+        //ensure the stop words are an array
+        if (!is_array($raw_stop_words)) {
+            $raw_stop_words = array($raw_stop_words);
+        }
+        //sanitize the stop words
+        foreach ($raw_stop_words as $word) {
+            $term = is_string($word) ? trim(sanitize_text_field($word)) : '';
+            if ($term === '') {
+                continue;
+            }
+            $stop_words[] = $term;
+        }
+        //ensure the stop words are unique
+        $stop_words = array_values(array_unique($stop_words));
 
         //backup the settings to the database
         $index_settings_backup_key = $this->prefixed('index_settings_backup_') . $index_name;
@@ -1027,6 +1058,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             'ranking_rules' => $ranking_rules,
             'searchable_attributes' => $searchable_attributes,
             'synonyms' => $synonyms,
+            'stop_words' => $stop_words,
         );
 
         //hook to allow other plugins to modify the index settings backup
@@ -1061,6 +1093,9 @@ class ScrySearch_IndexesFeature extends PluginFeature {
 
             // Synonyms: always sync from POST (empty array clears Meilisearch synonyms for this index).
             $index->updateSynonyms($synonyms);
+
+            // Stop words: always sync from POST (empty array clears Meilisearch stop words for this index).
+            $index->updateStopWords($stop_words);
             
             //let other plugins take action using the index and the settings
             do_action($this->config('hook_prefix') . 'index_update_settings', $index);
