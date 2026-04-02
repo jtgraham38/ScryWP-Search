@@ -1,5 +1,5 @@
 === Scry Search: Meilisearch for WordPress ===
-Contributors: JG Web Development, jtgraham38
+Contributors: jtgraham38
 Tags: meilisearch, search, typo-tolerant search, custom search, facet search
 Requires at least: 5.2
 Tested up to: 6.9
