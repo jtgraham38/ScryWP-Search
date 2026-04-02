@@ -282,6 +282,29 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
 
                                             <!-- here, we need to add a section that lets other plugins inject their own settings -->
                                             <?php do_action($this->config('hook_prefix') . 'index_settings_sections_ui', $index); ?>
+
+                                            <div class="scrywp-index-settings-section scrywp-synonyms-section" data-index-name="<?php echo esc_attr($index['index_name']); ?>">
+                                                <div class="scrywp-index-settings-section-header">
+                                                    <h4><?php esc_html_e('Synonyms', "scry-search"); ?></h4>
+                                                    <a href="https://www.meilisearch.com/docs/capabilities/full_text_search/relevancy/synonyms" target="_blank" class="scrywp-index-settings-help-link" title="<?php esc_attr_e('Learn more about synonyms', "scry-search"); ?>">
+                                                        <?php esc_html_e('Learn more', "scry-search"); ?>
+                                                        <span class="dashicons dashicons-external" style="font-size: 14px; width: 14px; height: 14px; vertical-align: middle; margin-left: 4px;"></span>
+                                                    </a>
+                                                </div>
+                                                <p class="description"><?php esc_html_e('Add synonyms for this index. Create a base term, then add one or more synonym terms.', "scry-search"); ?></p>
+
+                                                <div class="scrywp-synonyms-editor" data-index-name="<?php echo esc_attr($index['index_name']); ?>">
+                                                    <div class="scrywp-synonyms-entries" aria-live="polite"></div>
+
+                                                    <p>
+                                                        <button type="button" class="button button-secondary scrywp-synonyms-add-entry">
+                                                            <?php esc_html_e('Add base term', "scry-search"); ?>
+                                                        </button>
+                                                    </p>
+                                                </div>
+
+                                                <div class="scrywp-synonyms-hidden-inputs" aria-hidden="true"></div>
+                                            </div>
                                             
                                             <div class="scrywp-index-settings-actions">
                                                 <div class="scrywp-index-settings-save-error" style="display: none;">

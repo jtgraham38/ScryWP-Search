@@ -409,6 +409,9 @@
             var rulesList = dialog.querySelector('.scrywp-ranking-rules-list');
             var fieldsTree = dialog.querySelector('.scrywp-searchable-fields-tree');
             var rankingRulesInputsContainer = dialog.querySelector('.scrywp-ranking-rules-hidden-inputs');
+            var synonymsEditor = dialog.querySelector('.scrywp-synonyms-editor');
+            var synonymsEntriesContainer = dialog.querySelector('.scrywp-synonyms-entries');
+            var synonymsHiddenInputsContainer = dialog.querySelector('.scrywp-synonyms-hidden-inputs');
             var loadingDiv = dialog.querySelector('.scrywp-index-settings-loading');
             var loadedDiv = dialog.querySelector('.scrywp-index-settings-loaded');
             var settingsForm = dialog.querySelector('.scrywp-index-settings-form');
@@ -453,6 +456,199 @@
                 }, 100);
             });
 
+            function normalizeTerm(term) {
+                return (term || '').toString().trim();
+            }
+
+            function clearSynonymsUi() {
+                if (synonymsEntriesContainer) {
+                    synonymsEntriesContainer.innerHTML = '';
+                }
+                if (synonymsHiddenInputsContainer) {
+                    synonymsHiddenInputsContainer.innerHTML = '';
+                }
+            }
+
+            function syncSynonymsHiddenInputs() {
+                if (!synonymsHiddenInputsContainer || !synonymsEntriesContainer) return;
+
+                synonymsHiddenInputsContainer.innerHTML = '';
+
+                var entryEls = Array.from(synonymsEntriesContainer.querySelectorAll('.scrywp-synonyms-entry'));
+                entryEls.forEach(function (entryEl) {
+                    var baseInput = entryEl.querySelector('.scrywp-synonyms-base-input');
+                    var base = normalizeTerm(baseInput ? baseInput.value : '');
+                    if (!base) return;
+
+                    var chipEls = Array.from(entryEl.querySelectorAll('.scrywp-synonyms-chip'));
+                    var seen = new Set();
+                    chipEls.forEach(function (chipEl) {
+                        var value = normalizeTerm(chipEl.getAttribute('data-value') || chipEl.textContent);
+                        if (!value) return;
+                        if (seen.has(value)) return;
+                        seen.add(value);
+
+                        var hidden = document.createElement('input');
+                        hidden.type = 'hidden';
+                        hidden.name = 'synonyms[' + base + '][]';
+                        hidden.value = value;
+                        synonymsHiddenInputsContainer.appendChild(hidden);
+                    });
+                });
+            }
+
+            function addChip(entryEl, term) {
+                var value = normalizeTerm(term);
+                if (!value) return;
+
+                var chipsContainer = entryEl.querySelector('.scrywp-synonyms-chips');
+                if (!chipsContainer) return;
+
+                // Prevent duplicates within an entry
+                var existing = Array.from(chipsContainer.querySelectorAll('.scrywp-synonyms-chip')).some(function (chipEl) {
+                    return normalizeTerm(chipEl.getAttribute('data-value')) === value;
+                });
+                if (existing) return;
+
+                var chip = document.createElement('span');
+                chip.className = 'scrywp-synonyms-chip';
+                chip.setAttribute('data-value', value);
+
+                var label = document.createElement('span');
+                label.className = 'scrywp-synonyms-chip-label';
+                label.textContent = value;
+
+                var removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'scrywp-synonyms-chip-remove';
+                removeBtn.setAttribute('aria-label', 'Remove synonym');
+                removeBtn.textContent = '×';
+                removeBtn.addEventListener('click', function () {
+                    chip.remove();
+                    syncSynonymsHiddenInputs();
+                });
+
+                chip.appendChild(label);
+                chip.appendChild(removeBtn);
+                chipsContainer.appendChild(chip);
+                syncSynonymsHiddenInputs();
+            }
+
+            function addSynonymsEntry(baseValue, synonymsArray) {
+                if (!synonymsEntriesContainer) return;
+
+                var entry = document.createElement('div');
+                entry.className = 'scrywp-synonyms-entry';
+
+                var baseRow = document.createElement('div');
+                baseRow.className = 'scrywp-synonyms-base-row';
+
+                var baseLabel = document.createElement('label');
+                baseLabel.className = 'scrywp-synonyms-base-label';
+                baseLabel.textContent = 'Base term';
+
+                var baseInput = document.createElement('input');
+                baseInput.type = 'text';
+                baseInput.className = 'regular-text scrywp-synonyms-base-input';
+                baseInput.placeholder = 'e.g. car';
+                if (baseValue) {
+                    baseInput.value = baseValue;
+                }
+                baseInput.addEventListener('input', function () {
+                    syncSynonymsHiddenInputs();
+                });
+
+                var removeEntryBtn = document.createElement('button');
+                removeEntryBtn.type = 'button';
+                removeEntryBtn.className = 'button-link-delete scrywp-synonyms-remove-entry';
+                removeEntryBtn.textContent = 'Remove';
+                removeEntryBtn.addEventListener('click', function () {
+                    entry.remove();
+                    syncSynonymsHiddenInputs();
+                });
+
+                baseRow.appendChild(baseLabel);
+                baseRow.appendChild(baseInput);
+                baseRow.appendChild(removeEntryBtn);
+
+                var synonymsRow = document.createElement('div');
+                synonymsRow.className = 'scrywp-synonyms-synonyms-row';
+
+                var chipsContainer = document.createElement('div');
+                chipsContainer.className = 'scrywp-synonyms-chips';
+
+                var synonymInput = document.createElement('input');
+                synonymInput.type = 'text';
+                synonymInput.className = 'regular-text scrywp-synonyms-chip-input';
+                synonymInput.placeholder = 'Type a synonym and press Enter';
+
+                synonymInput.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' || e.key === ',') {
+                        e.preventDefault();
+                        addChip(entry, synonymInput.value);
+                        synonymInput.value = '';
+                        return;
+                    }
+
+                    if (e.key === 'Backspace' && normalizeTerm(synonymInput.value) === '') {
+                        var chips = chipsContainer.querySelectorAll('.scrywp-synonyms-chip');
+                        if (chips.length > 0) {
+                            chips[chips.length - 1].remove();
+                            syncSynonymsHiddenInputs();
+                        }
+                    }
+                });
+
+                synonymsRow.appendChild(chipsContainer);
+                synonymsRow.appendChild(synonymInput);
+
+                entry.appendChild(baseRow);
+                entry.appendChild(synonymsRow);
+
+                synonymsEntriesContainer.appendChild(entry);
+
+                if (Array.isArray(synonymsArray)) {
+                    synonymsArray.forEach(function (term) {
+                        addChip(entry, term);
+                    });
+                }
+
+                syncSynonymsHiddenInputs();
+            }
+
+            function setupSynonymsInteractions() {
+                if (!synonymsEditor) return;
+                if (synonymsEditor.dataset.synonymsListenersAttached === '1') return;
+                synonymsEditor.dataset.synonymsListenersAttached = '1';
+
+                var addEntryBtn = synonymsEditor.querySelector('.scrywp-synonyms-add-entry');
+                if (addEntryBtn) {
+                    addEntryBtn.addEventListener('click', function () {
+                        addSynonymsEntry('', []);
+                    });
+                }
+            }
+
+            function hydrateSynonymsFromObject(synonymsObj) {
+                clearSynonymsUi();
+                setupSynonymsInteractions();
+
+                if (!synonymsObj || typeof synonymsObj !== 'object') {
+                    syncSynonymsHiddenInputs();
+                    return;
+                }
+
+                Object.keys(synonymsObj).forEach(function (base) {
+                    var list = synonymsObj[base];
+                    if (!Array.isArray(list)) {
+                        list = [];
+                    }
+                    addSynonymsEntry(base, list);
+                });
+
+                syncSynonymsHiddenInputs();
+            }
+
             // Function to initialize settings from server-rendered form controls
             function loadIndexSettings(indexName) {
                 loadingDiv.style.display = 'block';
@@ -467,12 +663,44 @@
                     syncRankingRulesInputs();
                     setupDragAndDrop();
                     setupSearchableFieldsInteractions();
+                    setupSynonymsInteractions();
 
-                    loadingDiv.style.display = 'none';
-                    loadedDiv.style.display = 'block';
+                    // Fetch latest settings (including synonyms) from server/Meilisearch.
+                    var settingsFormData = new FormData();
+                    settingsFormData.set('action', scrywpIndexes.actions.getIndexSettings);
+                    settingsFormData.set('nonce', scrywpIndexes.nonces.getIndexSettings);
+                    settingsFormData.set('index_name', indexName);
 
-                    // Reset button state after successful load
-                    resetSaveButton();
+                    fetch(scrywpIndexes.ajaxUrl, {
+                        method: 'POST',
+                        body: settingsFormData
+                    })
+                        .then(function (response) {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .then(function (data) {
+                            if (!data.success) {
+                                var msg = data.data && data.data.message ? data.data.message : scrywpIndexes.i18n.errorFailedToLoadSettings;
+                                showSettingsError(msg);
+                                return;
+                            }
+
+                            if (data.data && data.data.synonyms) {
+                                hydrateSynonymsFromObject(data.data.synonyms);
+                            } else {
+                                hydrateSynonymsFromObject({});
+                            }
+
+                            loadingDiv.style.display = 'none';
+                            loadedDiv.style.display = 'block';
+                            resetSaveButton();
+                        })
+                        .catch(function () {
+                            showSettingsError(scrywpIndexes.i18n.errorFailedToLoadSettings);
+                        });
                 } catch (error) {
                     showSettingsError(scrywpIndexes.i18n.errorFailedToLoadSettings);
                 }
@@ -652,6 +880,7 @@
                 if (settingsForm) {
                     settingsForm.addEventListener('submit', function (e) {
                         e.preventDefault();
+                        syncSynonymsHiddenInputs();
                         saveButton.click();
                     });
                 }
@@ -668,6 +897,7 @@
                     button.textContent = scrywpIndexes.i18n.saving;
 
                     // Start with full form serialization so hook-injected inputs are included.
+                    syncSynonymsHiddenInputs();
                     var formData = settingsForm ? new FormData(settingsForm) : new FormData();
                     formData.set('action', scrywpIndexes.actions.updateIndexSettings);
                     formData.set('nonce', scrywpIndexes.nonces.updateIndexSettings);

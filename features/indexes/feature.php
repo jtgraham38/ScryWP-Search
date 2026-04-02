@@ -188,6 +188,11 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                         $index->updateSearchableAttributes($index_settings_backup['searchable_attributes']);
                     }
 
+                    //restore synonyms if they are in the backup
+                    if (isset($index_settings_backup['synonyms']) && is_array($index_settings_backup['synonyms'])) {
+                        $index->updateSynonyms($index_settings_backup['synonyms']);
+                    }
+
                     //hook to allow other plugins to act after the index settings are restored
                     do_action($this->config('hook_prefix') . 'index_settings_restore', $index, $index_settings_backup);
 
@@ -889,6 +894,18 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                 $searchable_attributes = $this->get_searchable_attributes();
             }
 
+            // Get current synonyms (mapping: word => [synonyms])
+            $synonyms = array();
+            try {
+                $fetched_synonyms = $index->getSynonyms();
+                if (is_array($fetched_synonyms)) {
+                    $synonyms = $fetched_synonyms;
+                }
+            } catch (\Exception $e) {
+                // If synonyms fetch fails, return empty so UI remains usable.
+                $synonyms = array();
+            }
+
             // Get available fields for this post type
             $available_fields = $this->get_available_fields_for_post_type($post_type);
             
@@ -896,6 +913,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                 'ranking_rules' => $ranking_rules,
                 'searchable_attributes' => $searchable_attributes,
                 'available_fields' => $available_fields,
+                'synonyms' => $synonyms,
             ));
             
         } catch (\Meilisearch\Exceptions\CommunicationException $e) {
@@ -967,11 +985,48 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         // Sanitize searchable attributes
         $searchable_attributes = array_map('sanitize_text_field', $searchable_attributes);
 
+        // Synonyms are submitted as synonyms[base][] = synonym terms (always applied on save; empty clears).
+        $synonyms = array();
+        $raw_synonyms = isset($_POST['synonyms']) ? wp_unslash($_POST['synonyms']) : array();
+        if (is_array($raw_synonyms)) {
+            foreach ($raw_synonyms as $base => $values) {
+                //sanitize the base (key)
+                $base_sanitized = sanitize_text_field((string) $base);
+                $base_sanitized = trim($base_sanitized);
+                if ($base_sanitized === '') {
+                    continue;
+                }
+
+                //ensure the values are an array
+                if (!is_array($values)) {
+                    $values = array($values);
+                }
+
+                //sanitize the values
+                $sanitized_values = array();
+                foreach ($values as $value) {
+                    //sanitize the value
+                    $term = is_string($value) ? trim(sanitize_text_field($value)) : '';
+                    if ($term === '') {
+                        continue;
+                    }
+                    $sanitized_values[] = $term;
+                }
+
+                //ensure the values are unique
+                $sanitized_values = array_values(array_unique($sanitized_values));
+
+                //add the synonyms to the array
+                $synonyms[$base_sanitized] = $sanitized_values;
+            }
+        }
+
         //backup the settings to the database
         $index_settings_backup_key = $this->prefixed('index_settings_backup_') . $index_name;
         $index_settings_backup = array(
             'ranking_rules' => $ranking_rules,
             'searchable_attributes' => $searchable_attributes,
+            'synonyms' => $synonyms,
         );
 
         //hook to allow other plugins to modify the index settings backup
@@ -1003,6 +1058,9 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             if (!empty($searchable_attributes)) {
                 $index->updateSearchableAttributes($searchable_attributes);
             }
+
+            // Synonyms: always sync from POST (empty array clears Meilisearch synonyms for this index).
+            $index->updateSynonyms($synonyms);
             
             //let other plugins take action using the index and the settings
             do_action($this->config('hook_prefix') . 'index_update_settings', $index);

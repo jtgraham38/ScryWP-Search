@@ -701,3 +701,81 @@ details[open] .scrywp-index-dialog-result-json-toggle::before {
     font-size: 13px;
     line-height: 1.5;
 }
+
+/* Synonyms editor */
+.scrywp-synonyms-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.scrywp-synonyms-entry {
+    padding: 12px;
+    border: 1px solid #ccd0d4;
+    border-radius: 6px;
+    background: #fff;
+}
+
+.scrywp-synonyms-base-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.scrywp-synonyms-base-label {
+    font-weight: 600;
+    color: #23282d;
+    min-width: 90px;
+}
+
+.scrywp-synonyms-synonyms-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.scrywp-synonyms-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    background: #f6f7f7;
+    min-height: 42px;
+}
+
+.scrywp-synonyms-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #e7f5ff;
+    border: 1px solid #b6d7f2;
+    color: #0a4b78;
+    font-size: 13px;
+}
+
+.scrywp-synonyms-chip-remove {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    font-size: 16px;
+    color: #0a4b78;
+}
+
+.scrywp-synonyms-chip-remove:hover {
+    color: #dc3232;
+}
+
+.scrywp-synonyms-chip-input {
+    max-width: 420px;
+}
+
+.scrywp-synonyms-remove-entry {
+    margin-left: auto;
+}
