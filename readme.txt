@@ -1,6 +1,6 @@
 === Scry Search: Meilisearch for WordPress ===
 Contributors: jtgraham38
-Tags: meilisearch, search, typo-tolerant search, custom search, facet search
+Tags: meilisearch, search, woocommerce, typo-tolerant search, custom search, facet search
 Requires at least: 5.2
 Tested up to: 6.9
 Stable tag: 1.0.2
@@ -8,7 +8,7 @@ Requires PHP: 8.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-The ultimate Meilisearch for WordPress integration. Lightning-fast, typo-tolerant search with zero frontend changes required.
+The ultimate Meilisearch for WordPress integration. Lightning-fast, typo-tolerant search with zero frontend changes required. **100% WooCommerce compatible**, highly customizable alongside your theme and page builder, powered by Meilisearch **federated multi-search**, and **fully self-service**—you can set everything up yourself from the WordPress admin.
 
 == Get Managed Hosting from ScryWP ==
 
@@ -16,11 +16,11 @@ The ultimate Meilisearch for WordPress integration. Lightning-fast, typo-toleran
 
 == Description ==
 
-**Scry Search for Meilisearch** is the most seamless way to add **Meilisearch for WordPress** to your site. Replace WordPress's slow, limited default search with the blazing-fast, typo-tolerant power of Meilisearch—without touching a single line of theme code or modifying your frontend.
+**Scry Search for Meilisearch** is the most seamless way to add **Meilisearch for WordPress** to your site. Replace WordPress's slow, limited default search with the blazing-fast, typo-tolerant power of Meilisearch—without touching a single line of theme code or modifying your frontend. It is **100% compatible with WooCommerce** (products, catalog search, and product meta), **deeply customizable** from the admin, and **fully self-service**: you can connect Meilisearch, configure indexes, and go live **without a developer**.
 
 = The Best Meilisearch for WordPress Integration =
 
-Whether you're running a blog, an eCommerce store, a membership site, or a complex multi-post-type WordPress installation, Scry Search delivers enterprise-grade search performance with minimal setup. Use **[ScryWP Search](https://scrywp.com)** for a fully managed cloud experience, or **self-host Meilisearch** on your own infrastructure—the choice is yours.
+Whether you're running a blog, an eCommerce store, a membership site, or a complex multi-post-type WordPress installation, Scry Search delivers enterprise-grade search performance. **WooCommerce stores** get first-class support—index products like any post type and tune what shoppers search. Use **[ScryWP Search](https://scrywp.com)** for a fully managed cloud experience, or **self-host Meilisearch** on your own infrastructure—the choice is yours. Every step is guided in WordPress so **you** stay in control of setup and tuning.
 
 = Zero Frontend Changes Required =
 
@@ -34,7 +34,7 @@ Index **any WordPress post type** independently—posts, pages, WooCommerce prod
 * **Ranking Rules**: Drag-and-drop interface to reorder Meilisearch's ranking rules (words, typo, proximity, attribute, sort, exactness) per index
 * **Search Weights**: Assign different importance weights to different post types so products can rank higher than blog posts, or vice versa
 
-When users search, Scry Search uses **federated multi-search** to query all relevant indexes simultaneously and merge results intelligently based on your configured weights.
+When users search, Scry Search uses Meilisearch's **federated multi-search**—a superior approach to searching across indexes at once: all relevant indexes are queried in parallel and results are **merged and re-ranked** using Meilisearch's federation with **per post-type weights** you define, so the merged list reflects your business priorities (not a naive blend).
 
 = Customizable Relevancy & Ranking =
 
@@ -75,7 +75,11 @@ Getting started with Meilisearch for WordPress has never been easier:
 2. **Self-Hosted**: Run Meilisearch on your own server with full control over your data
 3. **Local Development**: Spin up Meilisearch locally for development and testing
 
-Simply enter your Meilisearch URL and API keys, select which post types to index, and you're live in minutes.
+Simply enter your Meilisearch URL and API keys, select which post types to index, and you're live in minutes. **No agency required**—connection, indexing, ranking, synonyms, stopwords, and search weights are all configured in wp-admin.
+
+= Highly Customizable & Page-Builder Friendly =
+
+Your storefront and landing pages stay as flexible as your **page builder** allows: Scry Search does not lock you into a proprietary search widget. Because it replaces **native WordPress search**, whatever search box or block your theme or **Elementor, Divi, Beaver Builder**, or similar tools output continues to drive Meilisearch under the hood. **Customize search behavior** (fields, ranking, weights, synonyms, stopwords) in the plugin as richly as you customize layout in your builder—two layers that work together, not against each other.
 
 = Works With Your Existing WordPress Setup =
 
@@ -84,8 +88,8 @@ Scry Search respects WordPress conventions and integrates seamlessly with:
 * **Theme Search Templates**: Your `search.php` and `searchform.php` templates work unchanged
 * **Search Widgets**: Standard WordPress search widgets continue functioning
 * **Block Editor Search Blocks**: Gutenberg search blocks work out of the box
-* **Page Builders**: Elementor, Divi, Beaver Builder search elements work seamlessly
-* **WooCommerce**: Index and search products with full support for product meta
+* **Page Builders**: Elementor, Divi, Beaver Builder, and other builders' search elements work seamlessly—same front-end, Meilisearch-powered results
+* **WooCommerce (100% compatible)**: Products, product search, and product meta—index and search the catalog with the same per-index controls as any post type
 * **Custom Post Types**: Any registered post type can be indexed and searched
 
 == Installation ==
@@ -105,11 +109,13 @@ Scry Search respects WordPress conventions and integrates seamlessly with:
 
 6. **Search!**: Your WordPress search is now powered by Meilisearch. No frontend changes needed.
 
+**You can complete this entire flow yourself** (hosting choice, keys, indexes, reindexing)—no custom code or deployment pipeline required for the WordPress side.
+
 == Frequently Asked Questions ==
 
 = What makes this the best Meilisearch for WordPress plugin? =
 
-Scry Search offers the most complete integration: per-post-type indexes with independent settings, federated search with configurable weights, full control over ranking rules and searchable fields, synonyms and stopwords from the dashboard, a built-in task monitor for debugging, and zero frontend modifications required.
+Scry Search offers the most complete integration: **100% WooCommerce compatibility**, per-post-type indexes with independent settings, **Meilisearch federated multi-search** with configurable weights, full control over ranking rules and searchable fields, synonyms and stopwords from the dashboard, a built-in task monitor for debugging, **page-builder-friendly** drop-in behavior, and zero frontend modifications required. It can all be **set up entirely by you** from the admin.
 
 = Do I need to modify my theme? =
 
@@ -133,7 +139,7 @@ Yes! When configuring searchable fields for an index, you can select from all av
 
 = How does federated search work? =
 
-When searching across multiple post types, Scry Search queries all relevant indexes simultaneously using Meilisearch's federated multi-search. Results are merged and ranked according to the weights you've assigned to each post type.
+When searching across multiple post types, Scry Search queries all relevant indexes simultaneously using Meilisearch's **federated multi-search** API: parallel queries, merged hit lists, and **per-index weights** so Meilisearch—not ad-hoc PHP—handles cross-index relevancy. That is stronger and more maintainable than stitching separate searches by hand.
 
 = How do I debug indexing issues? =
 
@@ -141,7 +147,11 @@ Use the built-in Task Drawer (accessible from any plugin admin page) to view all
 
 = Will this work with WooCommerce? =
 
-Yes! WooCommerce products are just another post type. Select "product" in your Index Settings, configure which product fields and meta to search, and your product search is instantly upgraded.
+**Yes—fully (100%).** WooCommerce products are a first-class post type in Scry Search. Select **product** in Index Settings, choose which product fields and meta are searchable, set weights in Search Settings if you federate with pages or posts, and catalog search is upgraded while your theme and checkout flow stay unchanged.
+
+= Can I set everything up without a developer? =
+
+**Yes.** If you can install a plugin and paste API keys, you can run the full setup: Connection Settings, Index Settings (including synonyms and stopwords), Search Settings for federated weights, and bulk indexing—all from wp-admin.  You can even provision your own Meilisearch instance over on [scrywp.com](https://scrywp.com). Developers are optional for advanced hooks or custom infrastructure only.
 
 = Is this plugin secure? =
 
