@@ -280,9 +280,6 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
                                                 </div>
                                             </div>
 
-                                            <!-- here, we need to add a section that lets other plugins inject their own settings -->
-                                            <?php do_action($this->config('hook_prefix') . 'index_settings_sections_ui', $index); ?>
-
                                             <div class="scrywp-index-settings-section scrywp-synonyms-section" data-index-name="<?php echo esc_attr($index['index_name']); ?>">
                                                 <div class="scrywp-index-settings-section-header">
                                                     <h4><?php esc_html_e('Synonyms', "scry-search"); ?></h4>
@@ -323,6 +320,10 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
 
                                                 <div class="scrywp-stopwords-hidden-inputs" aria-hidden="true"></div>
                                             </div>
+
+                                            <!-- this is where other plugins can insert their index settings section -->
+                                            <?php do_action($this->config('hook_prefix') . 'index_settings_sections_ui', $index); ?>
+
                                             
                                             <div class="scrywp-index-settings-actions">
                                                 <div class="scrywp-index-settings-save-error" style="display: none;">

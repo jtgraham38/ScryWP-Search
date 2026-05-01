@@ -14,7 +14,6 @@ if (!defined('ABSPATH')) {
             settings_fields($this->prefixed('search_settings_group'));
             do_settings_sections($this->prefixed('search_settings_group'));
         ?>
-        <br>
         <?php submit_button(); ?>
     </form>
 </div>

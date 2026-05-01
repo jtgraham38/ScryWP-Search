@@ -67,5 +67,9 @@ require_once plugin_dir_path(__FILE__) . '/features/upgrades/feature.php';
 $upgrades_feature = new ScrySearch_UpgradesFeature();
 $plugin->register_feature("scry_ms_upgrades", $upgrades_feature);
 
+require_once plugin_dir_path(__FILE__) . '/features/autosuggest/feature.php';
+$autosuggest_feature = new ScrySearch_AutoSuggestFeature();
+$plugin->register_feature("scry_ms_autosuggest", $autosuggest_feature);
+
 //init the plugin
 $plugin->init();
