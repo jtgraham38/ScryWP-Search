@@ -58,7 +58,7 @@ class ScrySearch_AutoSuggestFeature extends PluginFeature {
         wp_enqueue_script(
             $this->prefixed('autosuggest-script'),
             plugin_dir_url(__FILE__) . 'assets/js/autosuggest.js',
-            array(),
+            array($this->prefixed('window-script')),
             '1.0.0',
             true
         );
@@ -100,6 +100,7 @@ class ScrySearch_AutoSuggestFeature extends PluginFeature {
         $search_query = new WP_Query(array(
             's' => $query,
             'post_type' => $post_type,
+            'limit' => 5,
         ));
 
         //keep the title, url, and excerpt of the results

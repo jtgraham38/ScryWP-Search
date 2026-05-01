@@ -4,77 +4,66 @@
 console.log('restApiUrl: ' + localized.restApiUrl);
 console.log('classSelector: ' + localized.classSelector);
 //wait for the document to be ready
-document.addEventListener('DOMContentLoaded', function () {
-    console.log('document is ready');
-
-    //first, load all search forms on the page that match the class selector
-    //or just load them all if class selector is blank
-    var candidateForms;
-    var rawSelector = (localized.classSelector) ? String(localized.classSelector) : '';
-    var classSelector = rawSelector.trim();
-    if (classSelector) {
-        try {
-            candidateForms = document.querySelectorAll(classSelector);
-        } catch (err) {
-            console.warn('Scry Search autosuggest: invalid classSelector, falling back to all forms.', classSelector, err);
-            candidateForms = document.querySelectorAll('form');
-        }
+document.addEventListener('scrySearchReady', function () {
+    //get all search forms with the class selector
+    if (localized.classSelector) {
+        var searchForms = window.scrySearch.getSearchFormsByClass(localized.classSelector);
     } else {
-        candidateForms = document.querySelectorAll('form');
+        var searchForms = window.scrySearch.getSearchForms();
     }
-
-    //determine which of the candidate forms are search forms
-    var searchForms = Array.prototype.filter.call(candidateForms, isSearchForm);
 
     //then, for each search form, load the autosuggest script
     searchForms.forEach(function (searchForm) {
-        autosuggest(searchForm);
+        scrySearch_autosuggest(searchForm);
     });
 });
 
 //main function implementing autosuggest on a form
-var autosuggest = function (searchForm) {
+var scrySearch_autosuggest = function (searchForm) {
     //locate the search input (type will be text or search)
-    var searchInput = searchForm.querySelector('input[type="text"][name="s"], input[type="search"][name="s"]');
+    var searchInput = searchForm.formElement.querySelector('input[type="text"][name="s"], input[type="search"][name="s"]');
     if (!searchInput) {
-        console.error('No search input found for search form: ' + searchForm.id);
+        console.error('No search input found for search form: ' + searchForm.formElement.id);
         return;
     }
 
     //attach an event listener to the search input
     searchInput.addEventListener('input', async function (e) {
-        //get the value of each input from the form data
-        var formData = {};
-        searchForm.querySelectorAll('input').forEach(function (input) {
-            var value = input.value;
-            var key = input.name;
-            formData[key] = value;
-        });
 
-        //send a request to the rest api
-        var searchResults = await fetch(localized.restApiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            credentials: 'same-origin',
-            body: JSON.stringify(formData),
-        });
-        var data = await searchResults.json();
+        //exit if the value is less than 3 characters
+        if (e.target.value.length < 3) {
+            return;
+        }
 
-
-        //render the autosuggest results under the search input
-        renderAutosuggestResults(searchForm, data);
-        //TODO: right now, we jsut contnuously appen new results objects.  this is bad!  Circle back around and fix this
+        //send a debounced request to the rest api (returns undefined if superseded by a newer keystroke)
+        try {
+            var data = await scrySearch_debouncedAutoSuggest(searchForm);
+            console.log('autosuggest data: ' + JSON.stringify(data));
+            if (!data) {
+                return;
+            }
+            searchForm.autosuggestResults = data.hits || [];
+            scrySearch_renderAutosuggestResults(searchForm);
+        } catch (err) {
+            console.error('Scry Search autosuggest request failed', err);
+        }
+        //TODO: right now, we just contnuously appen new results objects.  this is bad!  Circle back around and fix this
     });
 };
 
 //render the autosuggest results under the search input
-var renderAutosuggestResults = function (searchForm, data) {
+var scrySearch_renderAutosuggestResults = function (searchForm) {
+
+    //first, check if the autosuggest results container already exists, and if so, remove it
+    if (searchForm.autoSuggestElement) {
+        searchForm.autoSuggestElement.remove();
+        searchForm.autoSuggestElement = null;
+    }
+
     //make the absolutely-positioned container for the autosuggest results
     var autosuggestResults = document.createElement('div');
     autosuggestResults.classList.add('scry-search-autosuggest-results');
-    autosuggestResults.style.width = searchForm.offsetWidth + 'px';     //width should match the width of the form
+    autosuggestResults.style.width = searchForm.formElement.offsetWidth + 'px';     //width should match the width of the form
 
     //make a list inside the container
     var autosuggestResultsList = document.createElement('ul');
@@ -82,7 +71,8 @@ var renderAutosuggestResults = function (searchForm, data) {
     autosuggestResults.appendChild(autosuggestResultsList);
 
     //make a list item for each result
-    data.forEach(function (result) {
+    var results = searchForm.autosuggestResults || [];
+    results.forEach(function (result) {
         var resultItem = document.createElement('li');
         resultItem.classList.add('scry-search-autosuggest-result-item');
         resultItem.innerHTML = '<a href="' + result.url + '">' + result.title + '</a>';
@@ -90,20 +80,68 @@ var renderAutosuggestResults = function (searchForm, data) {
     });
 
     //once the results are fully created, add the container to the search input
-    searchForm.appendChild(autosuggestResults);
-
+    searchForm.formElement.appendChild(autosuggestResults);
+    searchForm.autoSuggestElement = autosuggestResults;
 }
 // ============================================= HELPERS ============================================ \\
 
-//test if a form is a search form
-var isSearchForm = function (form) {
-    if (!form) return false;
 
-    var role = form.getAttribute('role');
-    if (role && role.toLowerCase() === 'search') {
-        return true;
-    }
+/**
+ * Debounce an async function and return a Promise that resolves with its result
+ * (or undefined if a newer call replaced this one before the timer fired).
+ */
+function scrySearch_debounceAsync(fn, timeout) {
+    var timer = null;
+    var seq = 0;
+    return function () {
+        var args = arguments;
+        var mySeq = ++seq;
+        clearTimeout(timer);
+        return new Promise(function (resolve, reject) {
+            timer = setTimeout(function () {
+                timer = null;
+                Promise.resolve(fn.apply(null, args))
+                    .then(function (result) {
+                        if (mySeq === seq) {
+                            resolve(result);
+                        } else {
+                            resolve(undefined);
+                        }
+                    })
+                    .catch(function (err) {
+                        if (mySeq === seq) {
+                            reject(err);
+                        } else {
+                            resolve(undefined);
+                        }
+                    });
+            }, timeout);
+        });
+    };
+}
 
-    return !!form.querySelector('input[type="text"][name="s"], input[type="search"][name="s"]');
-};
+//function that actually sends the autosuggest request to the rest api
+var scrySearch_sendAutoSuggestRequest = async function (searchForm) {
+    //get the value of each input from the form data
+    var formData = {};
+    searchForm.formElement.querySelectorAll('input').forEach(function (input) {
+        var value = input.value;
+        var key = input.name;
+        formData[key] = value;
+    });
+    //send a request to the rest api
+    var searchResults = await fetch(localized.restApiUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify(formData),
+    });
+    var data = await searchResults.json();
 
+    return data;
+}
+
+// debounced autosuggest: await waits until typing pauses, then returns API JSON (or undefined if superseded)
+var scrySearch_debouncedAutoSuggest = scrySearch_debounceAsync(scrySearch_sendAutoSuggestRequest, 400);
