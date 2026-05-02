@@ -1,7 +1,9 @@
 .scry-search-autosuggest-results {
     margin-top: 2px;
     position: absolute;
-    background-color: #fff;
+    /* Match page background / text: block themes expose these on :root/body */
+    background-color: var(--wp--preset--color--background, Canvas);
+    color: var(--wp--preset--color--foreground, CanvasText);
     border: 1px solid #e0e0e0;
     border-radius: 4px;
     padding: 10px;

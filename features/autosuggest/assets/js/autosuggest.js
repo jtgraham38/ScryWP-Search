@@ -60,6 +60,11 @@ var scrySearch_renderAutosuggestResults = function (searchForm) {
         searchForm.autoSuggestElement = null;
     }
 
+    //return early if no autosuggest results
+    if (searchForm.autosuggestResults.length === 0) {
+        return;
+    }
+
     //make the absolutely-positioned container for the autosuggest results
     var autosuggestResults = document.createElement('div');
     autosuggestResults.classList.add('scry-search-autosuggest-results');
