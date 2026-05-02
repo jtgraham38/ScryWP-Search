@@ -35,12 +35,12 @@ class ScrySearch_SearchFeature extends PluginFeature {
         if (!$query || !($query instanceof WP_Query)) {
             return $posts;
         }
-        //ensure this is a search query (frontend, url contains "?s=...")
-        if (!$query->is_search) {
-            return $posts; // Return null or existing posts to let WordPress handle it normally
-        }
-        if (!$query->get('s')){
-            return $posts; // Return null or existing posts to let WordPress handle it normally
+        // Any query with a search string should use Meilisearch — not only the main
+        // front-end is_search view. Programmatic WP_Query (e.g. REST autosuggest) sets
+        // 's' but WordPress often leaves is_search false for those requests.
+        $search_term = $query->get('s');
+        if (!is_string($search_term) || '' === $search_term) {
+            return $posts;
         }
 
         //get all the post types we are searching, that overlap with
@@ -76,7 +76,7 @@ class ScrySearch_SearchFeature extends PluginFeature {
         //get the search query, and all other query params that should be passed to the meilisearch search
         $query_params = array();
 
-        if ($query->get('s')) $query_params['q'] = $query->get('s');
+        $query_params['q'] = $search_term;
         
         // Handle pagination
         $posts_per_page = $query->get('posts_per_page');

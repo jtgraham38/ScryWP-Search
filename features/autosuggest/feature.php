@@ -92,15 +92,27 @@ class ScrySearch_AutoSuggestFeature extends PluginFeature {
      * Handle the autosuggest request
      */
     public function handle_autosuggest_request( $request ) {
-        //laod the query and the post type from the request body
-        $query = sanitize_text_field($request->get_param('query'));
-        $post_type = sanitize_text_field($request->get_param('post_type'));
+        // Search term: JS mirrors form fields (input name="s"); keep "query" for manual/API callers.
+        $raw_search = $request->get_param('s');
+        if ($raw_search === null || $raw_search === '') {
+            $raw_search = $request->get_param('query');
+        }
+        $query = sanitize_text_field(is_scalar($raw_search) ? (string) $raw_search : '');
+        if (is_array($request->get_param('post_type'))){
+            $post_type = array_map('sanitize_text_field', $request->get_param('post_type'));
+        } else {
+            $post_type = sanitize_text_field($request->get_param('post_type'));
+        }
 
-        //use wp_query to run a search query with the same vars as a natural search query
+        //run a search query to retrieve the 5 most relevant results, reusing the search logic in the search feature
+        if ($query === '') {
+            return rest_ensure_response(array());
+        }
         $search_query = new WP_Query(array(
             's' => $query,
-            'post_type' => $post_type,
-            'limit' => 5,
+            'post_type' => ((is_string($post_type) && $post_type !== '') || is_array($post_type)) ? $post_type : 'post',
+            'posts_per_page' => 5,
+            'no_found_rows' => true,
         ));
 
         //keep the title, url, and excerpt of the results

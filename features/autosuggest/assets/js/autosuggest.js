@@ -42,7 +42,7 @@ var scrySearch_autosuggest = function (searchForm) {
             if (!data) {
                 return;
             }
-            searchForm.autosuggestResults = data.hits || [];
+            searchForm.autosuggestResults = data || [];
             scrySearch_renderAutosuggestResults(searchForm);
         } catch (err) {
             console.error('Scry Search autosuggest request failed', err);
