@@ -50,6 +50,7 @@ class ScrySearch_SearchFeature extends PluginFeature {
             $indexed_post_types = array();
         }
         $post_types_values = $query->get('post_type');
+
         if (empty($post_types_values)) {
             return $posts;
         }

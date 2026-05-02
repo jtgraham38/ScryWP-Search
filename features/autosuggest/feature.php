@@ -108,9 +108,14 @@ class ScrySearch_AutoSuggestFeature extends PluginFeature {
         if ($query === '') {
             return rest_ensure_response(array());
         }
+
+        //get all indexed post types as a fallback default
+        $indexed_post_types = $this->get_feature('scry_ms_indexes')->get_index_names();
+        $indexed_post_types = array_keys($indexed_post_types);
+
         $search_query = new WP_Query(array(
             's' => $query,
-            'post_type' => ((is_string($post_type) && $post_type !== '') || is_array($post_type)) ? $post_type : 'post',
+            'post_type' => ((is_string($post_type) && $post_type !== '') || is_array($post_type)) ? $post_type : $indexed_post_types,
             'posts_per_page' => 5,
             'no_found_rows' => true,
         ));
@@ -122,6 +127,7 @@ class ScrySearch_AutoSuggestFeature extends PluginFeature {
                 'title' => $post->post_title,
                 'url' => get_permalink($post->ID),
                 'excerpt' => $post->post_excerpt,
+                'post_type' => $post->post_type,
             );
         }
 
