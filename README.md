@@ -16,6 +16,8 @@ WordPress's default search is notoriously slow, inaccurate, and frustrating for 
 
 The result? **Instant, relevant search results** that help your visitors find exactly what they're looking for, even when they make typos or use imprecise queries.
 
+The plugin is **100% WooCommerce compatible**, works alongside your theme and **page builder** search UI, and is **fully self-service** in wp-admin—connection, indexes, ranking, synonyms, stopwords, weights, and **optional AJAX autosuggest** (one switch in Search Settings) without hiring a developer.
+
 ## Key Features
 
 ### 🔌 Easy Integration with Any Meilisearch Instance
@@ -26,7 +28,7 @@ Connect to Meilisearch in minutes with flexible hosting options:
 - **Self-Hosted** — Run Meilisearch on your own servers with Docker, binaries, or package managers
 - **Local Development** — Spin up Meilisearch locally for testing and development
 
-Simply enter your Meilisearch URL and API keys in the Connection Settings, and you're ready to go.
+Simply enter your Meilisearch URL and API keys in the Connection Settings, and you're ready to go. **No agency required**—hosting choice, keys, indexing, ranking, synonyms, stopwords, search weights, and **optional autosuggest** are all configured from the dashboard.
 
 ### 🎯 Zero Frontend Changes Required
 
@@ -37,8 +39,13 @@ Unlike other search plugins that require theme modifications, shortcode replacem
 - ✅ WordPress search widgets function normally
 - ✅ Block Editor search blocks work out of the box
 - ✅ Page builder search elements (Elementor, Divi, Beaver Builder) work seamlessly
+- ✅ Optional **AJAX autosuggest** — turn it on under **Search Settings**; same Meilisearch engine as full search, optional CSS class to target specific forms
 
 The plugin intercepts WordPress search queries, routes them through Meilisearch, and returns results in the format WordPress expects. **Activate, configure, done.**
+
+### 🧩 Page-Builder Friendly (Search + Autosuggest)
+
+Scry Search does not lock you into a proprietary search widget. Because it replaces **native WordPress search**, whatever search box or block your theme or **Elementor, Divi, Beaver Builder**, or similar outputs continues to drive Meilisearch—including **optional autosuggest** once you enable it. Tune **fields, ranking, weights, synonyms, stopwords, and autosuggest** in the plugin while your builder handles layout—two layers that work together.
 
 ### ✨ AJAX Autosuggest & Predictive Search (One Switch)
 
@@ -177,10 +184,17 @@ curl -L https://install.meilisearch.com | sh
 
 1. Go to **Scry Search → Search Settings**
 2. Adjust search weights for each indexed post type
-3. (Optional) Enable **Autosuggest** for AJAX predictive search as visitors type; add a **class selector** if you want to limit which search forms receive suggestions
-4. Save settings
+3. Save settings
 
-**That's it!** Your WordPress search is now powered by Meilisearch.
+### 6. Search!
+
+Your WordPress search is now powered by Meilisearch. No theme or widget swaps required.
+
+### 7. Autosuggest (optional)
+
+Under **Scry Search → Search Settings**, enable **Autosuggest** for predictive suggestions as visitors type. Optionally set a **CSS class selector** so suggestions attach only to the search forms you want.
+
+**That's it!** Full search plus optional type-ahead, all from wp-admin.
 
 ## Configuration Guide
 
@@ -262,6 +276,16 @@ Higher weights mean results from that post type rank higher when searching acros
 | Custom meta field search | ✅ | ⚠️ Limited |
 | Managed cloud & self-hosted | ✅ | ⚠️ Limited options |
 
+## FAQ
+
+### Does the plugin support predictive search or autosuggest?
+
+**Yes.** Enable **Autosuggest** in **Scry Search → Search Settings** and the plugin loads a lightweight script that calls a **REST endpoint** as visitors type (debounced so it stays fast). Suggestions use the **same Meilisearch-backed search** as your results pages—flip the switch, optionally set a **CSS class** to target specific forms, and you are done.
+
+### Do I need to modify my theme?
+
+**No** for core search or autosuggest. Existing search forms, templates, and widgets keep working; autosuggest hooks the same fields via settings (and optional class selector), not theme edits.
+
 ## Support
 
 - **Documentation**: [GitHub Wiki](https://github.com/jtgraham38/ScryWP-Search/wiki)
@@ -271,7 +295,7 @@ Higher weights mean results from that post type rank higher when searching acros
 
 ## Changelog
 
-### 1.0.3
+### 1.1.0
 
 - **AJAX autosuggest / predictive search** — Enable under **Search Settings** with one toggle; optional CSS class selector scopes which search forms receive suggestions.
 - Autosuggest uses the same Meilisearch-backed search path as full-site search for consistent, typo-tolerant matches.
