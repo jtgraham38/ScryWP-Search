@@ -1,6 +1,6 @@
 # Scry Search for Meilisearch
 
-**The ultimate Meilisearch for WordPress integration. Lightning-fast, typo-tolerant search with zero frontend changes required.**
+**The ultimate Meilisearch for WordPress integration. Lightning-fast, typo-tolerant search with zero frontend changes required—plus optional AJAX autosuggest you enable with one switch in Search Settings.**
 
 ## Host with ScryWP
 
@@ -39,6 +39,10 @@ Unlike other search plugins that require theme modifications, shortcode replacem
 - ✅ Page builder search elements (Elementor, Divi, Beaver Builder) work seamlessly
 
 The plugin intercepts WordPress search queries, routes them through Meilisearch, and returns results in the format WordPress expects. **Activate, configure, done.**
+
+### ✨ AJAX Autosuggest & Predictive Search (One Switch)
+
+Turn **type-ahead suggestions** on without touching theme JavaScript: in **Scry Search → Search Settings**, enable **Autosuggest** and the plugin enqueues a small front-end script that calls a **REST API** as visitors type (requests are **debounced** so typing stays smooth). Suggestions run through the **same Meilisearch search pipeline** as your full results pages—typo-tolerant, federated, and consistent with how you indexed content. Optionally set a **CSS class selector** so only the search forms you care about get predictive dropdowns. **No custom build step, no widget swap**—flip the switch and you are live.
 
 ### 📊 Per-Post-Type Indexes with Federated Search
 
@@ -173,7 +177,8 @@ curl -L https://install.meilisearch.com | sh
 
 1. Go to **Scry Search → Search Settings**
 2. Adjust search weights for each indexed post type
-3. Save settings
+3. (Optional) Enable **Autosuggest** for AJAX predictive search as visitors type; add a **class selector** if you want to limit which search forms receive suggestions
+4. Save settings
 
 **That's it!** Your WordPress search is now powered by Meilisearch.
 
@@ -202,6 +207,8 @@ For each post type index, you can configure:
 | Setting | Description |
 |---------|-------------|
 | Post Type Weights | Numeric weight (0.0+) for each post type in federated search |
+| Autosuggest | When enabled, loads debounced AJAX suggestions for your front-end search fields via the same Meilisearch-backed search |
+| Class selector | Optional CSS class (e.g. on the search form) to scope autosuggest to specific forms instead of all detected search forms |
 
 Higher weights mean results from that post type rank higher when searching across multiple types.
 
@@ -232,6 +239,7 @@ Higher weights mean results from that post type rank higher when searching acros
 - ✅ Search widget
 - ✅ Search block (Gutenberg)
 - ✅ Search REST API endpoints
+- ✅ Optional AJAX autosuggest / predictive search (toggle in Search Settings)
 - ✅ Multisite (per-site configuration)
 
 ## Requirements
@@ -249,6 +257,7 @@ Higher weights mean results from that post type rank higher when searching acros
 | Federated search with weights | ✅ | ❌ Rare |
 | Custom ranking rules per index | ✅ | ❌ Usually global only |
 | Synonyms & stopwords per index (admin UI) | ✅ | ⚠️ Limited |
+| One-switch AJAX autosuggest (same Meilisearch engine) | ✅ | ⚠️ Rare |
 | Built-in task monitoring | ✅ | ❌ Rare |
 | Custom meta field search | ✅ | ⚠️ Limited |
 | Managed cloud & self-hosted | ✅ | ⚠️ Limited options |
@@ -260,10 +269,21 @@ Higher weights mean results from that post type rank higher when searching acros
 - **Feature Requests**: [GitHub Discussions](https://github.com/jtgraham38/ScryWP-Search/discussions)
 - **Contact**: [JG Web Development](https://jacob-t-graham.com)
 
+## Changelog
+
+### 1.0.3
+
+- **AJAX autosuggest / predictive search** — Enable under **Search Settings** with one toggle; optional CSS class selector scopes which search forms receive suggestions.
+- Autosuggest uses the same Meilisearch-backed search path as full-site search for consistent, typo-tolerant matches.
+
+### 1.0.2
+
+- Synonyms and stopwords configurable per index from the WordPress admin.
+
 ## License
 
 Scry Search for Meilisearch is open source software licensed under the [GPL v3](https://www.gnu.org/licenses/gpl-3.0.html).
 
 ---
 
-**Transform your WordPress search today.** Install Scry Search for Meilisearch and give your users the instant, accurate search experience they deserve.
+**Transform your WordPress search today.** Install Scry Search for Meilisearch and give your users the instant, accurate search experience they deserve—including optional predictive suggestions at the flip of a switch.
