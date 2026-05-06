@@ -84,6 +84,16 @@ var scrySearch_renderAutosuggestResults = function (searchForm) {
         autosuggestResultsList.appendChild(resultItem);
     });
 
+    //add a close button to the top left of the container
+    var closeButton = document.createElement('button');
+    closeButton.classList.add('scry-search-autosuggest-results-close-button');
+    closeButton.innerHTML = '<span class="dashicons dashicons-no-alt"></span>';
+    closeButton.addEventListener('click', function () {
+        searchForm.autoSuggestElement.remove();
+        searchForm.autoSuggestElement = null;
+    });
+    autosuggestResults.appendChild(closeButton);
+
     //once the results are fully created, add the container to the search input
     searchForm.formElement.appendChild(autosuggestResults);
     searchForm.autoSuggestElement = autosuggestResults;
