@@ -1,8 +1,4 @@
 
-
-// //log out the localized settings
-console.log('restApiUrl: ' + localized.restApiUrl);
-console.log('classSelector: ' + localized.classSelector);
 //wait for the document to be ready
 document.addEventListener('scrySearchReady', function () {
     //get all search forms with the class selector
@@ -38,7 +34,6 @@ var scrySearch_autosuggest = function (searchForm) {
         //send a debounced request to the rest api (returns undefined if superseded by a newer keystroke)
         try {
             var data = await scrySearch_debouncedAutoSuggest(searchForm);
-            console.log('autosuggest data: ' + JSON.stringify(data));
             if (!data) {
                 return;
             }
