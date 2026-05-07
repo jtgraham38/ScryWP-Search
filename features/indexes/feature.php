@@ -925,14 +925,20 @@ class ScrySearch_IndexesFeature extends PluginFeature {
 
             // Get available fields for this post type
             $available_fields = $this->get_available_fields_for_post_type($post_type);
-            
-            wp_send_json_success(array(
+
+            //create the return array
+            $return_array = array(
                 'ranking_rules' => $ranking_rules,
                 'searchable_attributes' => $searchable_attributes,
                 'available_fields' => $available_fields,
                 'synonyms' => $synonyms,
                 'stop_words' => $stop_words,
-            ));
+            );
+
+            //let other plugins add entries to the return array
+            $return_array = apply_filters($this->config('hook_prefix') . 'index_settings_ajax', $return_array, $index_name);
+            
+            wp_send_json_success($return_array);
             
         } catch (\Meilisearch\Exceptions\CommunicationException $e) {
             wp_send_json_error(array(
