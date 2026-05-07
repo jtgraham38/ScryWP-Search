@@ -60,6 +60,7 @@ window.scrySearch = {
 
 }
 
+//an object that backs a search form in the dom and provides an anchor point for logic
 class ScrySearch_SearchForm {
     constructor(formElement) {
         this.formElement = formElement;
@@ -214,6 +215,7 @@ class ScrySearch_SearchForm {
     }
 }
 
+//a function that is supplied externally that can be used to perform actions before or after a search
 class ScrySearch_SubmitAction {
     constructor(func, order) {
         this.func = func;
@@ -232,8 +234,9 @@ class ScrySearch_SubmitAction {
     }
 }
 
+//an object that represents an external upgrade to the scry search window system
 class ScrySearch_Upgrade {
-    constructor(name, version, min_window_version, init) {
+    constructor(name, version) {
         this.name = name;
         this.version = version;
         this.data = {}; //arbitrary data storage for the upgrade
