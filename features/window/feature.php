@@ -30,8 +30,10 @@ class ScrySearch_WindowFeature extends PluginFeature {
      */
     public function load_assets() {
         
-        //load the script and register the rest api url
+        //load the script and register the localized variables
         $rest_api_url = rest_url('scry-search/v1/search');
+        $auto_suggest_enabled = get_option($this->prefixed('enable_autosuggest'), '0');
+
         wp_register_script(
             $this->prefixed('window-script'),
             plugin_dir_url(__FILE__) . 'assets/js/window.js',
@@ -47,6 +49,7 @@ class ScrySearch_WindowFeature extends PluginFeature {
             'localized',
             array(
                 'restApiUrl' => $rest_api_url,
+                'autoSuggestEnabled' => $auto_suggest_enabled,
             )
         );
 
