@@ -51,7 +51,6 @@ window.scrySearch = {
 
     //add an upgrade to the window object
     registerUpgrade: function (name, version) {
-        console.log('registerUpgrade', name, version);
         if (!this.upgrades[name]) {
             this.upgrades[name] = new ScrySearch_Upgrade(name, version);
         } else {
@@ -112,7 +111,7 @@ class ScrySearch_SearchForm {
         var data = await this._handleAjaxSubmit();
 
         //sort and call the post submit ajax actions
-        this.postSubmitAjaxActions.sort((a, b) => a.order - b.order).forEach(action => action.call(this));
+        this.postSubmitAjaxActions.sort((a, b) => a.order - b.order).forEach(action => action.call(this, data));
 
         //return the data
         return data;
@@ -164,21 +163,41 @@ class ScrySearch_SearchForm {
 
     //add actions to the pre submit actions
     addPreSubmitAction(func, order) {
+        //ensure the function of the submit action is not already in the list
+        if (this.preSubmitActions.some(action => action.func === func)) {
+            console.warn('Submit action already exists, skipping', func);
+            return;
+        }
         this.preSubmitActions.push(new ScrySearch_SubmitAction(func, order));
     }
 
     //add actions to the post submit actions
     addPostSubmitAction(func, order) {
-        this.postSubmitActions.push(action);
+        //ensure the function of the submit action is not already in the list
+        if (this.postSubmitActions.some(action => action.func === func)) {
+            console.warn('Submit action already exists, skipping', func);
+            return;
+        }
+        this.postSubmitActions.push(new ScrySearch_SubmitAction(func, order));
     }
 
     //add actions to the pre submit ajax actions
     addPreSubmitAjaxAction(func, order) {
+        //ensure the function of the submit action is not already in the list
+        if (this.preSubmitAjaxActions.some(action => action.func === func)) {
+            console.warn('Submit action already exists, skipping', func);
+            return;
+        }
         this.preSubmitAjaxActions.push(new ScrySearch_SubmitAction(func, order));
     }
 
     //add actions to the post submit ajax actions
     addPostSubmitAjaxAction(func, order) {
+        //ensure the function of the submit action is not already in the list
+        if (this.postSubmitAjaxActions.some(action => action.func === func)) {
+            console.warn('Submit action already exists, skipping', func);
+            return;
+        }
         this.postSubmitAjaxActions.push(new ScrySearch_SubmitAction(func, order));
     }
 }
@@ -190,7 +209,13 @@ class ScrySearch_SubmitAction {
     }
 
     //call the function
-    call(searchForm) {
+    call(searchForm, data) {
+        // Actions may be written as (searchForm) or (searchForm, data).
+        // We key off argument count so "falsy" data (0, "", null) isn't accidentally dropped.
+        if (arguments.length >= 2) {
+            this.func(searchForm, data);
+            return;
+        }
         this.func(searchForm);
     }
 }
