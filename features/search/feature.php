@@ -35,11 +35,13 @@ class ScrySearch_SearchFeature extends PluginFeature {
         if (!$query || !($query instanceof WP_Query)) {
             return $posts;
         }
+
+        
         // Any query with a search string should use Meilisearch — not only the main
         // front-end is_search view. Programmatic WP_Query (e.g. REST autosuggest) sets
         // 's' but WordPress often leaves is_search false for those requests.
         $search_term = $query->get('s');
-        if (!is_string($search_term) || '' === $search_term) {
+        if ((!is_string($search_term) || '' === $search_term) && !$query->is_search) {
             return $posts;
         }
 
@@ -70,9 +72,10 @@ class ScrySearch_SearchFeature extends PluginFeature {
         $index_feature = $this->get_feature('scry_ms_indexes');
         $index_names = $index_feature->get_index_names();
         $index_names_to_search = array_intersect_key($index_names, array_flip($post_types_to_search));
-
+        
         //allow other plugins to modify the index names to search
         $index_names_to_search = apply_filters($this->config('hook_prefix') . 'multi_search_index_names', $index_names_to_search, $post_types_to_search);
+
 
         //get the search query, and all other query params that should be passed to the meilisearch search
         $query_params = array();
