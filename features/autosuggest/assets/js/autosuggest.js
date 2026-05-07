@@ -17,11 +17,16 @@ document.addEventListener('scrySearchReady', function () {
 //main function implementing autosuggest on a form
 var scrySearch_autosuggest = function (searchForm) {
     //locate the search input (type will be text or search)
-    var searchInput = searchForm.formElement.querySelector('input[type="text"][name="s"], input[type="search"][name="s"]');
+    var searchInput = searchForm.searchInput;
     if (!searchInput) {
         console.error('No search input found for search form: ' + searchForm.formElement.id);
         return;
     }
+
+    //add the save autosuggest results action to the search form, this should run before most everything else
+    searchForm.addPostSubmitAjaxAction(scrySearch_saveAutosuggestResults, 9);
+    //add the render autosuggest results action to the search form, this should run last after all other actions
+    searchForm.addPostSubmitAjaxAction(scrySearch_renderAutosuggestResults, 999);
 
     //attach an event listener to the search input
     searchInput.addEventListener('input', async function (e) {
@@ -33,12 +38,7 @@ var scrySearch_autosuggest = function (searchForm) {
 
         //send a debounced request to the rest api (returns undefined if superseded by a newer keystroke)
         try {
-            var data = await scrySearch_debouncedAutoSuggest(searchForm);
-            if (!data) {
-                return;
-            }
-            searchForm.autosuggestResults = data || [];
-            scrySearch_renderAutosuggestResults(searchForm);
+            await searchForm.submitAjax();
         } catch (err) {
             console.error('Scry Search autosuggest request failed', err);
         }
@@ -46,17 +46,22 @@ var scrySearch_autosuggest = function (searchForm) {
     });
 };
 
+//save the autosuggest results to the search form data, so it can be read by other actions
+var scrySearch_saveAutosuggestResults = function (searchForm, data) {
+    searchForm.data.core.autosuggestResults = data;
+}
+
 //render the autosuggest results under the search input
 var scrySearch_renderAutosuggestResults = function (searchForm) {
 
     //first, check if the autosuggest results container already exists, and if so, remove it
-    if (searchForm.autoSuggestElement) {
-        searchForm.autoSuggestElement.remove();
-        searchForm.autoSuggestElement = null;
+    if (searchForm.data.core?.autoSuggestElement) {
+        searchForm.data.core.autoSuggestElement.remove();
+        searchForm.data.core.autoSuggestElement = null;
     }
 
     //return early if no autosuggest results
-    if (searchForm.autosuggestResults.length === 0) {
+    if (!searchForm.data.core?.autosuggestResults || searchForm.data.core.autosuggestResults.length === 0) {
         return;
     }
 
@@ -71,7 +76,7 @@ var scrySearch_renderAutosuggestResults = function (searchForm) {
     autosuggestResults.appendChild(autosuggestResultsList);
 
     //make a list item for each result
-    var results = searchForm.autosuggestResults || [];
+    var results = searchForm.data.core.autosuggestResults || [];
     results.forEach(function (result) {
         var resultItem = document.createElement('li');
         resultItem.classList.add('scry-search-autosuggest-result-item');
@@ -84,74 +89,12 @@ var scrySearch_renderAutosuggestResults = function (searchForm) {
     closeButton.classList.add('scry-search-autosuggest-results-close-button');
     closeButton.innerHTML = '<span class="dashicons dashicons-no-alt"></span>';
     closeButton.addEventListener('click', function () {
-        searchForm.autoSuggestElement.remove();
-        searchForm.autoSuggestElement = null;
+        searchForm.data.core.autoSuggestElement.remove();
+        searchForm.data.core.autoSuggestElement = null;
     });
     autosuggestResults.appendChild(closeButton);
 
     //once the results are fully created, add the container to the search input
     searchForm.formElement.appendChild(autosuggestResults);
-    searchForm.autoSuggestElement = autosuggestResults;
+    searchForm.data.core.autoSuggestElement = autosuggestResults;
 }
-// ============================================= HELPERS ============================================ \\
-
-
-/**
- * Debounce an async function and return a Promise that resolves with its result
- * (or undefined if a newer call replaced this one before the timer fired).
- */
-function scrySearch_debounceAsync(fn, timeout) {
-    var timer = null;
-    var seq = 0;
-    return function () {
-        var args = arguments;
-        var mySeq = ++seq;
-        clearTimeout(timer);
-        return new Promise(function (resolve, reject) {
-            timer = setTimeout(function () {
-                timer = null;
-                Promise.resolve(fn.apply(null, args))
-                    .then(function (result) {
-                        if (mySeq === seq) {
-                            resolve(result);
-                        } else {
-                            resolve(undefined);
-                        }
-                    })
-                    .catch(function (err) {
-                        if (mySeq === seq) {
-                            reject(err);
-                        } else {
-                            resolve(undefined);
-                        }
-                    });
-            }, timeout);
-        });
-    };
-}
-
-//function that actually sends the autosuggest request to the rest api
-var scrySearch_sendAutoSuggestRequest = async function (searchForm) {
-    //get the value of each input from the form data
-    var formData = {};
-    searchForm.formElement.querySelectorAll('input').forEach(function (input) {
-        var value = input.value;
-        var key = input.name;
-        formData[key] = value;
-    });
-    //send a request to the rest api
-    var searchResults = await fetch(localized.restApiUrl, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        credentials: 'same-origin',
-        body: JSON.stringify(formData),
-    });
-    var data = await searchResults.json();
-
-    return data;
-}
-
-// debounced autosuggest: await waits until typing pauses, then returns API JSON (or undefined if superseded)
-var scrySearch_debouncedAutoSuggest = scrySearch_debounceAsync(scrySearch_sendAutoSuggestRequest, 400);

@@ -1,4 +1,3 @@
-
 //create the scry search window object
 window.scrySearch = {
     version: '1.0.0',   //version of the window object
@@ -46,15 +45,161 @@ window.scrySearch = {
     //get all search forms with a particular class set on the <form> tag
     getSearchFormsByClass: function (className) {
         return this.searchForms.filter(function (form) {
-            return form.classList.contains(className);
+            return form?.formElement?.classList.contains(className) || false;
         });
     },
+
+    //add an upgrade to the window object
+    registerUpgrade: function (name, version) {
+        console.log('registerUpgrade', name, version);
+        if (!this.upgrades[name]) {
+            this.upgrades[name] = new ScrySearch_Upgrade(name, version);
+        } else {
+            console.warn('Upgrade already exists, skipping', name);
+        }
+    },
+
 }
 
 class ScrySearch_SearchForm {
     constructor(formElement) {
         this.formElement = formElement;
-        this.autosuggestResults = {};
+        this.data = {
+            core: {
+                autoSuggestElement: null,    //holds the autosuggest results container element
+                autosuggestResults: [],    //holds the autosuggest results data
+            },
+        }; //arbitrary data storage for the search form
+
+        this.preSubmitActions = []; //a list of ScrySearch_SubmitAction objects to call before the form is submitted
+        this.postSubmitActions = []; //a list of ScrySearch_SubmitAction objects to call after the form is submitted
+
+        this.preSubmitAjaxActions = []; //a list of ScrySearch_SubmitAction objects to call before the form is submitted via AJAX
+        this.postSubmitAjaxActions = []; //a list of ScrySearch_SubmitAction objects to call after the form is submitted via AJAX
+
+        this.searchInput = formElement.querySelector('input[type="text"][name="s"], input[type="search"][name="s"]');
+
+        //ensure when the formElement is submitted, we always call the submit function first
+        this.formElement.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.submit();
+        });
+
+        // Ensure *all* callers hit the debounce (even external code calling form.submitAjax()).
+        this.submitAjax = this.debounceAjaxSubmit(this.submitAjax.bind(this));
+    }
+
+    //submit the search form
+    submit() {
+
+        //sort and call the pre submit handles
+        this.preSubmitActions.sort((a, b) => a.order - b.order).forEach(action => action.call(this));
+
+        //submit the form
+        this.formElement.submit();
+
+        //sort and call the post submit actions
+        //these will likely not be used much due to the page refresh on submit
+        this.postSubmitActions.sort((a, b) => a.order - b.order).forEach(action => action.call(this));
+    }
+
+    //submit the search form via AJAX
+    async submitAjax() {
+        //sort and call the pre submit ajax handles
+        this.preSubmitAjaxActions.sort((a, b) => a.order - b.order).forEach(action => action.call(this));
+
+        //submit the form via AJAX
+        var data = await this._handleAjaxSubmit();
+
+        //sort and call the post submit ajax actions
+        this.postSubmitAjaxActions.sort((a, b) => a.order - b.order).forEach(action => action.call(this));
+
+        //return the data
+        return data;
+    }
+
+    //handle ajax submission
+    async _handleAjaxSubmit() {
+        //get the value of each input from the form data
+        var formData = {};
+        this.formElement.querySelectorAll('input').forEach(function (input) {
+            var value = input.value;
+            var key = input.name;
+            formData[key] = value;
+        });
+        //send a request to the rest api
+        var searchResults = await fetch(localized.restApiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify(formData),
+        });
+        var data = await searchResults.json();
+
+        return data;
+    }
+
+    //debounce the ajax submission
+    debounceAjaxSubmit(fn, waitMs = 250) {
+        // Debounce network submissions so rapid typing can't overwhelm the server.
+        // Returns a promise so callers can still await the eventual AJAX result.
+        let timerId = null;
+        return (...args) => {
+            if (timerId) {
+                clearTimeout(timerId);
+            }
+            return new Promise((resolve, reject) => {
+                timerId = setTimeout(async () => {
+                    try {
+                        resolve(await fn(...args));
+                    } catch (err) {
+                        reject(err);
+                    }
+                }, waitMs);
+            });
+        };
+    }
+
+    //add actions to the pre submit actions
+    addPreSubmitAction(func, order) {
+        this.preSubmitActions.push(new ScrySearch_SubmitAction(func, order));
+    }
+
+    //add actions to the post submit actions
+    addPostSubmitAction(func, order) {
+        this.postSubmitActions.push(action);
+    }
+
+    //add actions to the pre submit ajax actions
+    addPreSubmitAjaxAction(func, order) {
+        this.preSubmitAjaxActions.push(new ScrySearch_SubmitAction(func, order));
+    }
+
+    //add actions to the post submit ajax actions
+    addPostSubmitAjaxAction(func, order) {
+        this.postSubmitAjaxActions.push(new ScrySearch_SubmitAction(func, order));
+    }
+}
+
+class ScrySearch_SubmitAction {
+    constructor(func, order) {
+        this.func = func;
+        this.order = order;
+    }
+
+    //call the function
+    call(searchForm) {
+        this.func(searchForm);
+    }
+}
+
+class ScrySearch_Upgrade {
+    constructor(name, version, min_window_version, init) {
+        this.name = name;
+        this.version = version;
+        this.data = {}; //arbitrary data storage for the upgrade
     }
 }
 

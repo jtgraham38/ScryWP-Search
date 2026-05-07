@@ -30,13 +30,24 @@ class ScrySearch_WindowFeature extends PluginFeature {
      */
     public function load_assets() {
         
-        
-        wp_enqueue_script(
+        //load the script and register the rest api url
+        $rest_api_url = rest_url('scry-search/v1/search');
+        wp_register_script(
             $this->prefixed('window-script'),
             plugin_dir_url(__FILE__) . 'assets/js/window.js',
-            array(),
+            array('jquery'),
             '1.0.0',
             true
+        );
+        wp_enqueue_script($this->prefixed('window-script'));
+
+        //localize the script with the rest api url
+        wp_localize_script(
+            $this->prefixed('window-script'),
+            'localized',
+            array(
+                'restApiUrl' => $rest_api_url,
+            )
         );
 
 
