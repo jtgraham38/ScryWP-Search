@@ -3,7 +3,7 @@ Contributors: jtgraham38
 Tags: meilisearch, search, woocommerce, typo-tolerant search, custom search, facet search, autosuggest, predictive search
 Requires at least: 5.2
 Tested up to: 6.9
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 Requires PHP: 8.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
