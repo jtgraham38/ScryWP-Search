@@ -26,11 +26,23 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
         add_action('admin_menu', array($this, 'add_admin_page'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
 
+        //auto delete old events handlers
+        //register the cron hook
+        add_action( 'init', function(){
+            if (!wp_next_scheduled($this->prefixed('cleanup_analytics_events'))) {
+                wp_schedule_event(time(), 'daily', $this->prefixed('cleanup_analytics_events'));
+            }
+        } );
+
+        //add the action to cleanup the events
+        add_action($this->prefixed('cleanup_analytics_events'), array($this, 'cleanup_analytics_events'));
+
         // AJAX handlers
         add_action('wp_ajax_' . $this->prefixed('get_analytics_searches'), array($this, 'ajax_get_analytics_searches'));
         add_action('wp_ajax_' . $this->prefixed('get_analytics_summary'), array($this, 'ajax_get_analytics_summary'));
         add_action('wp_ajax_' . $this->prefixed('get_analytics_top_terms'), array($this, 'ajax_get_analytics_top_terms'));
         add_action('wp_ajax_' . $this->prefixed('get_analytics_term_trend'), array($this, 'ajax_get_analytics_term_trend'));
+        add_action('wp_ajax_' . $this->prefixed('delete_old_analytics_events'), array($this, 'ajax_delete_old_analytics_events'));
     }
 
     // =========================================================================
@@ -328,6 +340,16 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
             $this->prefixed('analytics_settings_group')
         );
 
+        // Register the retention settings section
+        add_settings_section(
+            $this->prefixed('analytics_retention_section'),
+            __('Data Retention', "scry-search"),
+            function() {
+                echo '<p>' . esc_html__('Configure how long analytics records are kept.', "scry-search") . '</p>';
+            },
+            $this->prefixed('analytics_settings_group')
+        );
+
         // Add the anonymize checkbox field
         add_settings_field(
             $this->prefixed('anonymize_analytics'),
@@ -337,6 +359,17 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
             },
             $this->prefixed('analytics_settings_group'),
             $this->prefixed('analytics_anonymization_section')
+        );
+
+        //add the retention period field
+        add_settings_field(
+            $this->prefixed('retention_period'),
+            __('Retention Period', "scry-search"),
+            function() {
+                require_once plugin_dir_path(__FILE__) . 'elements/settings/retention_period_input.php';
+            },
+            $this->prefixed('analytics_settings_group'),
+            $this->prefixed('analytics_retention_section')
         );
 
         // Register the anonymize setting
@@ -351,6 +384,21 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
                 },
                 'default'           => '0',
                 'show_in_rest'      => false,
+            )
+        );
+
+        // Register the retention period setting
+        register_setting(
+            $this->prefixed('analytics_settings_group'),
+            $this->prefixed('retention_period'),
+            array(
+                'type'              => 'string',
+                'description'       => 'The retention period for search analytics data (days). 0 means keep indefinitely.',
+                'sanitize_callback' => function($input) {
+                    $v = absint($input);
+                    return (string) $v;
+                },
+                'default'           => '0',
             )
         );
     }
@@ -432,12 +480,14 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
                     'getSummary'   => $this->prefixed('get_analytics_summary'),
                     'getTopTerms'  => $this->prefixed('get_analytics_top_terms'),
                     'getTermTrend' => $this->prefixed('get_analytics_term_trend'),
+                    'deleteOldEvents' => $this->prefixed('delete_old_analytics_events'),
                 ),
                 'nonces' => array(
                     'getSearches'  => wp_create_nonce($this->prefixed('get_analytics_searches')),
                     'getSummary'   => wp_create_nonce($this->prefixed('get_analytics_summary')),
                     'getTopTerms'  => wp_create_nonce($this->prefixed('get_analytics_top_terms')),
                     'getTermTrend' => wp_create_nonce($this->prefixed('get_analytics_term_trend')),
+                    'deleteOldEvents' => wp_create_nonce($this->prefixed('delete_old_analytics_events')),
                 ),
                 'i18n' => array(
                     'loading'       => __('Loading...', "scry-search"),
@@ -453,9 +503,88 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
                     'allTerms'      => __('All search terms', "scry-search"),
                     'searchVolume'  => __('Search Volume', "scry-search"),
                     'topTerms'      => __('Top Search Terms', "scry-search"),
+                    'deleteOldEventsConfirm' => __('Delete analytics events older than the retention period?', "scry-search"),
+                    'deleteOldEventsNothingToDelete' => __('No events matched the current retention period.', "scry-search"),
+                    'deleteOldEventsDeleted' => __('Deleted %d event(s).', "scry-search"),
                 ),
             )
         );
+    }
+
+    /**
+     * Cleanup old analytics events
+     */
+    public function cleanup_analytics_events() {
+        //get data retention period
+        $retention_period = get_option($this->prefixed('retention_period'), '0');
+        $retention_period = absint($retention_period);
+
+        //if retention period is 0, return
+        if ($retention_period === 0) {
+            return;
+        }
+
+        //subtract the number of days entered from the current date to get the date to delete
+        $cutoff_date = new DateTimeImmutable();
+        $cutoff_date = $cutoff_date->sub(new DateInterval('P' . $retention_period . 'D'));
+        $cutoff_date_str = $cutoff_date->format('Y-m-d H:i:s');
+
+        //get the number of events created before the date
+        global $wpdb;
+        $table_name = $this->get_table_name();
+        $count = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table_name WHERE created_at < %s",
+            $cutoff_date_str
+        ));
+
+        //log the number of events found for deletion
+        error_log('Found ' . $count . ' events for deletion');
+
+        //if no events were created before the date, return
+        if ($count === 0) {
+            return;
+        }
+
+        //log the number of events deleted
+        error_log('Deleted ' . $count . ' events');
+
+        //delete the events created before the date
+        global $wpdb;
+        $table_name = $this->get_table_name();
+        $result = $wpdb->query($wpdb->prepare(
+            "DELETE FROM $table_name WHERE created_at < %s",
+            $cutoff_date_str
+        ));
+
+        //return the number of events deleted
+        return $result;
+    }
+
+    /**
+     * AJAX: Manually delete analytics events older than retention period.
+     */
+    public function ajax_delete_old_analytics_events() {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('delete_old_analytics_events'))) {
+            wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
+            return;
+        }
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
+            return;
+        }
+
+        $deleted = $this->cleanup_analytics_events();
+        if ($deleted === null) {
+            wp_send_json_success(array('deleted' => 0));
+            return;
+        }
+        if ($deleted === false) {
+            wp_send_json_error(array('message' => __('Failed to delete events.', "scry-search")));
+            return;
+        }
+
+        wp_send_json_success(array('deleted' => (int) $deleted));
     }
 
     // =========================================================================

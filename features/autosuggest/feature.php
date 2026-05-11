@@ -84,7 +84,8 @@ class ScrySearch_AutoSuggestFeature extends PluginFeature {
             array(
                 'methods' => 'POST',
                 'callback' => array($this, 'handle_autosuggest_request'),
-            )
+                'permission_callback' => '__return_true',
+            ),
         );
     }
 

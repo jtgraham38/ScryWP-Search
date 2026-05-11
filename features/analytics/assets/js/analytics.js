@@ -224,6 +224,40 @@
         $('#scry-trend-term-filter').on('change', function () {
             loadTrendChart();
         });
+
+        // Manual retention cleanup.
+        $(document).on('click', '.scrywp-delete-old-analytics-events', function () {
+            if (!config.actions || !config.actions.deleteOldEvents) return;
+            if (!window.confirm(config.i18n.deleteOldEventsConfirm || 'Are you sure?')) return;
+
+            var $btn = $(this);
+            var $result = $btn.siblings('.scrywp-delete-old-analytics-events-result').first();
+            $btn.prop('disabled', true);
+            if ($result.length) $result.text(config.i18n.loading || 'Loading...');
+
+            $.post(config.ajaxUrl, {
+                action: config.actions.deleteOldEvents,
+                nonce: config.nonces.deleteOldEvents
+            }, function (response) {
+                if (!response || !response.success) {
+                    var msg = (response && response.data && response.data.message) ? response.data.message : (config.i18n.error || 'Error');
+                    if ($result.length) $result.text(msg);
+                    return;
+                }
+
+                var deleted = response.data && typeof response.data.deleted === 'number' ? response.data.deleted : 0;
+                if (deleted === 0) {
+                    if ($result.length) $result.text(config.i18n.deleteOldEventsNothingToDelete || 'Nothing to delete.');
+                    return;
+                }
+                var tpl = config.i18n.deleteOldEventsDeleted || 'Deleted %d event(s).';
+                if ($result.length) $result.text(tpl.replace('%d', String(deleted)));
+            }).fail(function () {
+                if ($result.length) $result.text(config.i18n.error || 'Error');
+            }).always(function () {
+                $btn.prop('disabled', false);
+            });
+        });
     });
 
 })(jQuery);
