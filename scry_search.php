@@ -3,7 +3,7 @@
  * Plugin Name:	Scry Search: Meilisearch for WordPress
  * Plugin URI:	https://scrywp.com
  * Description:	Bringing all the power of Meilisearch to WordPress.
- * Version:	1.1.1
+ * Version:	1.1.2
  * Requires at least: 5.2
  * Requires PHP:      8.1
  * Author:	JG Web Development

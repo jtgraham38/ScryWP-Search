@@ -1,9 +1,9 @@
 === Scry Search: Meilisearch for WordPress ===
 Contributors: jtgraham38
-Tags: meilisearch, search, woocommerce, typo-tolerant search, custom search, facet search, autosuggest, predictive search
+Tags: meilisearch, search, typo-tolerant search, autosuggest, ajax search
 Requires at least: 5.2
 Tested up to: 6.9
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 Requires PHP: 8.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -54,6 +54,16 @@ Fine-tune vocabulary **per index** from the WordPress admin (no code or Meilisea
 
 * **Synonyms**: Treat different words as the same for search—product nicknames, abbreviations, UK/US spelling, or brand aliases—so visitors find the right results whichever term they use.
 * **Stopwords**: Ignore words that add noise to ranking (common filler words or domain-specific terms you do not want to influence scores) so Meilisearch emphasizes meaningful matches.
+
+= Search Analytics & Data Export =
+
+The **Search Analytics** screen (under **Scry Search → Search Analytics**) helps you understand what visitors search for:
+
+* **Dashboard**: Summary metrics, charts, and a recent-searches table
+* **Privacy**: Optional anonymization of IPs and omission of user-identifying fields
+* **Retention**: Set how many days of analytics rows to keep; a **daily WP-Cron** job removes rows older than that cutoff
+* **Manual cleanup**: Button to run the same retention delete immediately (without waiting for cron)
+* **CSV export**: Download the full contents of the analytics database table as a `.csv` file for spreadsheets or external analytics tools (admin-only, nonce-protected AJAX)
 
 = Built-In Task Monitor & Debugging =
 
@@ -168,6 +178,10 @@ Yes. Scry Search follows WordPress security best practices: all AJAX requests us
 
 **Yes.** Enable **Autosuggest** in **Scry Search → Search Settings** and the plugin loads a lightweight script that calls a **REST endpoint** as visitors type (debounced so it stays fast). Suggestions use the **same Meilisearch-backed search** as your results pages—flip the switch, optionally set a **CSS class** to target specific forms, and you are done.
 
+= Can I export or purge stored search analytics? =
+
+**Yes.** On **Scry Search → Search Analytics**, use **Download analytics as CSV** to export the full analytics table. Set a **retention period** (days) to enable automatic daily cleanup, or use **Delete old events now** to apply the same rule immediately.
+
 == Screenshots ==
 
 1. Index Settings Dashboard - Manage post type indexes, view document counts, and trigger indexing operations
@@ -176,8 +190,14 @@ Yes. Scry Search follows WordPress security best practices: all AJAX requests us
 4. Search Settings - Configure post type search weights for federated search, enable AJAX autosuggest, and set the class selector for which forms receive predictive search
 5. Task Drawer - Monitor Meilisearch tasks with status, timing, and error details
 6. Live Search Preview - Test search queries directly from the admin panel
+7. Search Analytics - Dashboard, privacy/retention settings, CSV export of analytics data
 
 == Changelog ==
+
+= 1.1.2 =
+* **Search Analytics — CSV export**: Download all rows from the search analytics table as a UTF-8 CSV (chunked export for large datasets; requires **manage_options**).
+* **Search Analytics — retention & cleanup**: Configure a retention period in days; a **daily scheduled event** deletes rows older than the cutoff. Use **Delete old events now** to run the same cleanup on demand.
+* **Search Analytics — privacy settings**: Existing anonymization options remain under the same screen; retention and export live alongside them.
 
 = 1.0.0 =
 * Initial release
@@ -204,6 +224,9 @@ Yes. Scry Search follows WordPress security best practices: all AJAX requests us
 * Autosuggest queries reuse the same Meilisearch search path as full-site search for consistent, typo-tolerant suggestions
 
 == Upgrade Notice ==
+
+= 1.1.2 =
+**Search Analytics** adds CSV export, configurable retention with scheduled cleanup, and a one-click manual delete for rows past retention—all from **Scry Search → Search Analytics**.
 
 = 1.0.3 =
 Optional **AJAX autosuggest** is here: enable it under **Scry Search → Search Settings**, optionally set a class selector for your search forms, and visitors get Meilisearch-powered suggestions as they type.
