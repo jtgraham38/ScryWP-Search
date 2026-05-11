@@ -15,4 +15,6 @@ require_once plugin_dir_path(__FILE__) . 'analytics/charts.php';
 
 require_once plugin_dir_path(__FILE__) . 'analytics/recent_searches.php';
 
+require_once plugin_dir_path(__FILE__) . 'analytics/export_csv.php';
+
 require_once plugin_dir_path(__FILE__) . '_inputs.php';

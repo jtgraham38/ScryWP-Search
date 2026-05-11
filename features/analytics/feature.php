@@ -43,6 +43,7 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
         add_action('wp_ajax_' . $this->prefixed('get_analytics_top_terms'), array($this, 'ajax_get_analytics_top_terms'));
         add_action('wp_ajax_' . $this->prefixed('get_analytics_term_trend'), array($this, 'ajax_get_analytics_term_trend'));
         add_action('wp_ajax_' . $this->prefixed('delete_old_analytics_events'), array($this, 'ajax_delete_old_analytics_events'));
+        add_action('wp_ajax_' . $this->prefixed('export_analytics_csv'), array($this, 'ajax_export_analytics_csv'));
     }
 
     // =========================================================================
@@ -481,6 +482,7 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
                     'getTopTerms'  => $this->prefixed('get_analytics_top_terms'),
                     'getTermTrend' => $this->prefixed('get_analytics_term_trend'),
                     'deleteOldEvents' => $this->prefixed('delete_old_analytics_events'),
+                    'exportCsv'       => $this->prefixed('export_analytics_csv'),
                 ),
                 'nonces' => array(
                     'getSearches'  => wp_create_nonce($this->prefixed('get_analytics_searches')),
@@ -488,6 +490,7 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
                     'getTopTerms'  => wp_create_nonce($this->prefixed('get_analytics_top_terms')),
                     'getTermTrend' => wp_create_nonce($this->prefixed('get_analytics_term_trend')),
                     'deleteOldEvents' => wp_create_nonce($this->prefixed('delete_old_analytics_events')),
+                    'exportCsv'       => wp_create_nonce($this->prefixed('export_analytics_csv')),
                 ),
                 'i18n' => array(
                     'loading'       => __('Loading...', "scry-search"),
@@ -506,6 +509,7 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
                     'deleteOldEventsConfirm' => __('Delete analytics events older than the retention period?', "scry-search"),
                     'deleteOldEventsNothingToDelete' => __('No events matched the current retention period.', "scry-search"),
                     'deleteOldEventsDeleted' => __('Deleted %d event(s).', "scry-search"),
+                    'exportCsvError'        => __('Could not download the export. Please try again.', "scry-search"),
                 ),
             )
         );
@@ -585,6 +589,100 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
         }
 
         wp_send_json_success(array('deleted' => (int) $deleted));
+    }
+
+    /**
+     * AJAX: Stream full analytics table as CSV (chunked for memory).
+     */
+    public function ajax_export_analytics_csv() {
+        //security check
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('export_analytics_csv'))) {
+            wp_die(esc_html__('Security check failed', "scry-search"), esc_html__('Forbidden', "scry-search"), array('response' => 403));
+        }
+
+        //permission check
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('Permission denied', "scry-search"), esc_html__('Forbidden', "scry-search"), array('response' => 403));
+        }
+
+        //clear output buffer
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
+        //set headers
+        nocache_headers();
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="scry-search-analytics-' . gmdate('Y-m-d') . '.csv"');
+
+        //open output stream
+        $out = fopen('php://output', 'wb');
+        if ($out === false) {
+            wp_die(esc_html__('Could not open output stream.', "scry-search"), esc_html__('Error', "scry-search"), array('response' => 500));
+        }
+
+        //write UTF-8 BOM helps Excel recognize encoding.
+        fwrite($out, "\xEF\xBB\xBF");
+
+        //get columns
+        $columns = array(
+            'id',
+            'search_term',
+            'user_id',
+            'user_ip',
+            'user_agent',
+            'referrer',
+            'result_count',
+            'result_ids',
+            'result_titles',
+            'post_types_searched',
+            'created_at',
+        );
+        fputcsv($out, $columns);
+
+        //get table name
+        global $wpdb;
+        $table_name = $this->get_table_name();
+        $batch_size = 2000;
+
+        //set offset
+        $offset     = 0;
+
+        //get column SQL
+        $col_sql = '`' . implode('`, `', $columns) . '`';
+
+        while (true) {
+            //get SQL
+            $sql    = "SELECT {$col_sql} FROM `{$table_name}` ORDER BY id ASC LIMIT %d OFFSET %d";
+            $sql    = $wpdb->prepare($sql, $batch_size, $offset);
+            $rows   = $wpdb->get_results($sql, ARRAY_A);
+
+            //if no rows, break
+            if (empty($rows)) {
+                break;
+            }
+
+            //write rows to CSV
+            foreach ($rows as $row) {
+                //create a new line
+                $line = array();
+                //foreach column, add the value to the line
+                foreach ($columns as $col) {
+                    $line[] = isset($row[$col]) ? $row[$col] : '';
+                }
+                fputcsv($out, $line);
+            }
+            //if the number of rows is less than the batch size, break
+            if (count($rows) < $batch_size) {
+                break;
+            }
+            //increment the offset
+            $offset += $batch_size;
+        }
+
+        //close the output stream
+        fclose($out);
+        exit;
     }
 
     // =========================================================================

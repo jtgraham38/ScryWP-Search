@@ -225,6 +225,44 @@
             loadTrendChart();
         });
 
+        // Export full analytics table as CSV (binary response from admin-ajax).
+        $(document).on('click', '.scrywp-export-analytics-csv', function () {
+            if (!config.actions || !config.actions.exportCsv) return;
+
+            var $btn = $(this);
+            $btn.prop('disabled', true);
+
+            $.ajax({
+                url: config.ajaxUrl,
+                method: 'POST',
+                data: {
+                    action: config.actions.exportCsv,
+                    nonce: config.nonces.exportCsv
+                },
+                xhrFields: { responseType: 'blob' }
+            }).done(function (blob, _status, xhr) {
+                if (!blob || blob.size === 0) {
+                    window.alert(config.i18n.exportCsvError || 'Export failed.');
+                    return;
+                }
+                var disposition = xhr.getResponseHeader('Content-Disposition') || '';
+                var match = disposition.match(/filename="?([^";]+)"?/i);
+                var filename = match && match[1] ? match[1] : 'search-analytics.csv';
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            }).fail(function () {
+                window.alert(config.i18n.exportCsvError || 'Export failed.');
+            }).always(function () {
+                $btn.prop('disabled', false);
+            });
+        });
+
         // Manual retention cleanup.
         $(document).on('click', '.scrywp-delete-old-analytics-events', function () {
             if (!config.actions || !config.actions.deleteOldEvents) return;

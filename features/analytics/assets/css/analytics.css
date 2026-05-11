@@ -5,6 +5,23 @@
  * @since 1.0.0
  */
 
+.scrywp-analytics-export-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    margin: 20px 0;
+    padding: 12px 14px;
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+}
+
+.scrywp-analytics-export-bar .scrywp-export-analytics-csv-hint {
+    margin: 0;
+    max-width: 520px;
+}
+
 /* =========================================================================
    Summary Cards
    ========================================================================= */
