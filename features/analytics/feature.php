@@ -564,6 +564,11 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
         return $result;
     }
 
+    
+    // =========================================================================
+    // AJAX Handlers
+    // =========================================================================
+    
     /**
      * AJAX: Manually delete analytics events older than retention period.
      */
@@ -684,11 +689,6 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
         fclose($out);
         exit;
     }
-
-    // =========================================================================
-    // AJAX Handlers
-    // =========================================================================
-
     /**
      * AJAX: Get paginated recent searches
      */
