@@ -100,7 +100,7 @@ class ScrySearch_LogsFeature extends PluginFeature {
         return $this->config('logs');
     }
 
-    // Method to get the logs directory path
+    // Method to get the logs files directory path
     private function get_log_directory_path() {
         return trailingslashit($this->get_base_dir()) . 'logs/';
     }
