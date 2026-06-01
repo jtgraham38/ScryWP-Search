@@ -1,0 +1,98 @@
+.scrywp-logs-page {
+    max-width: 1200px;
+    margin-top: 24px;
+}
+
+.scrywp-logs-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 20px;
+}
+
+.scrywp-logs-title {
+    margin: 0 0 8px;
+}
+
+.scrywp-logs-description {
+    max-width: 720px;
+    margin: 0;
+    color: #646970;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.scrywp-logs-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px;
+    background: #fff;
+    border: 1px solid #dcdcde;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.scrywp-logs-card {
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #dcdcde;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.scrywp-logs-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 18px;
+    border-bottom: 1px solid #dcdcde;
+    background: #f6f7f7;
+}
+
+.scrywp-logs-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: #f0f0f1;
+    color: #1d2327;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.scrywp-logs-viewer {
+    max-height: 560px;
+    overflow: auto;
+    margin: 0;
+    padding: 18px;
+    background: #101517;
+    color: #d7e4dd;
+    font-size: 13px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+}
+
+.scrywp-logs-viewer code {
+    display: block;
+    color: inherit;
+    background: transparent;
+    padding: 0;
+    font-family: Consolas, Monaco, monospace;
+}
+
+.scrywp-logs-load-more {
+    padding: 12px 18px;
+    border-top: 1px solid #dcdcde;
+    background: #fff;
+    text-align: center;
+}
+
+.scrywp-logs-meta {
+    color: #646970;
+    font-size: 13px;
+}
