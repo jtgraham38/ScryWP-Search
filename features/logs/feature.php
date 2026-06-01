@@ -66,36 +66,76 @@ class ScrySearch_LogsFeature extends PluginFeature {
 
     // logging method for feature
     public function log(string $level, string $message) {
-
-        // check the level
-        $this->check_level($level);
-
+        if (!$this->ensure_log_file($level)) {
+            return false;
+        }
+    
+        $file_path = $this->get_log_file_path($level);
+        $line = sprintf(
+            "%s %s %s - %s\n",
+            $level,
+            current_time('Y-m-d'),
+            current_time('H:i:s'),
+            $message
+        );
+    
+        return error_log($line, 3, $file_path);
     }
 
 
     // Reading logs method for feature
     public function read(string $level, int $start, int $lines) {
         
-        // check the level
-        $this->check_level($level);
+        
     }
 
     // Zipping files method for feature
     public function rotate(string $level) {
 
-        // check the level
-        $this->check_level($level);
-    }
-
-    // Development method to throw an error for bad @level input
-    private function check_level(string $level) {
-        if(($level != "debug") && ($level != "error")) {
-            throw new InvalidArgumentException("Invalid level: " . $level . " must be debug or error");
-        }
+        
     }
 
     // Method to get the logs config
     private function get_log_config() {
         return $this->config('logs');
     }
+
+    // Method to get the logs directory path
+    private function get_log_directory_path() {
+        return trailingslashit($this->get_base_dir()) . 'logs/';
+    }
+
+    // Method to get the log file path
+    private function get_log_file_path(string $level) {
+        if ($level === 'debug') {
+            return $this->get_log_directory_path() . 'debug.log';
+        }
+    
+        if ($level === 'error') {
+            return $this->get_log_directory_path() . 'error.log';
+        }
+    
+        return false;
+    }
+
+    // Method to ensure the log file exists and is writable (returns false otherwise)
+    private function ensure_log_file(string $level): bool {
+        $directory = $this->get_log_directory_path();
+        $file_path = $this->get_log_file_path($level);
+    
+        if (!$file_path) {
+            return false;
+        }
+    
+        if (!file_exists($directory) && !wp_mkdir_p($directory)) {
+            return false;
+        }
+    
+        if (!file_exists($file_path) && !touch($file_path)) {
+            return false;
+        }
+    
+        return is_writable($file_path);
+    }
+
 }
