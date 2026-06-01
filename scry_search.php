@@ -44,7 +44,6 @@ $config = array(
         ),
         'page_size' => 100,
         'max_file_size' => 100 * 1024 * 1024,
-        'asset_version' => '1.0.0',
     ),
 );
 
