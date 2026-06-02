@@ -85,8 +85,36 @@ class ScrySearch_LogsFeature extends PluginFeature {
 
     // Reading logs method for feature
     public function read(string $level, int $start, int $lines) {
-        
-        
+        if (!$this->ensure_log_file($level)) {
+            throw new RuntimeException('Unable to access log file for level: ' . $level);
+        }
+
+        $start = max(0, $start);
+        $lines = max(1, $lines);
+        $file_path = $this->get_log_file_path($level);
+        $log_lines = file($file_path, FILE_IGNORE_NEW_LINES);
+
+        if ($log_lines === false) {
+            throw new RuntimeException('Unable to read log file for level: ' . $level);
+        }
+
+        $log_lines = array_values(array_filter($log_lines, function($line) {
+            return $line !== '';
+        }));
+
+        $total_lines = count($log_lines);
+        $newest_first = array_reverse($log_lines);
+        $selected_lines = array_slice($newest_first, $start, $lines);
+        $selected_lines = array_reverse($selected_lines);
+        $next_start = $start + count($selected_lines);
+
+        return array(
+            'lines' => $selected_lines,
+            'start' => $start,
+            'next_start' => $next_start,
+            'has_more' => $next_start < $total_lines,
+            'total' => $total_lines,
+        );
     }
 
     // Zipping files method for feature
@@ -107,12 +135,10 @@ class ScrySearch_LogsFeature extends PluginFeature {
 
     // Method to get the log file path
     private function get_log_file_path(string $level) {
-        if ($level === 'debug') {
-            return $this->get_log_directory_path() . 'debug.log';
-        }
-    
-        if ($level === 'error') {
-            return $this->get_log_directory_path() . 'error.log';
+        $logs_config = $this->get_log_config();
+
+        if (isset($logs_config['levels'][$level])) {
+            return $this->get_log_directory_path() . $logs_config['levels'][$level];
         }
     
         return false;
