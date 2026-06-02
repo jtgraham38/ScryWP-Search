@@ -20,6 +20,7 @@ class ScrySearch_LogsFeature extends PluginFeature {
         // Register actions for admin page and assets
         add_action('admin_menu', array($this, 'add_admin_page'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
+        add_action('wp_ajax_' . $this->prefixed('load_logs'), array($this, 'ajax_load_logs'));
 
     }
 
@@ -148,6 +149,30 @@ class ScrySearch_LogsFeature extends PluginFeature {
             'has_more' => $next_start < $total_lines,
             'total' => $total_lines,
         );
+    }
+
+    // AJAX handler for loading older log messages
+    public function ajax_load_logs() {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('load_logs'))) {
+            wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
+            return;
+        }
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
+            return;
+        }
+
+        $level = isset($_POST['level']) ? sanitize_text_field(wp_unslash($_POST['level'])) : '';
+        $start = isset($_POST['start']) ? absint(wp_unslash($_POST['start'])) : 0;
+        $lines = isset($_POST['lines']) ? absint(wp_unslash($_POST['lines'])) : 100;
+
+        try {
+            $log_data = $this->read($level, $start, $lines);
+            wp_send_json_success($log_data);
+        } catch (Throwable $e) {
+            wp_send_json_error(array('message' => $e->getMessage()));
+        }
     }
 
     // Zipping files method for feature
