@@ -52,15 +52,48 @@ class ScrySearch_LogsFeature extends PluginFeature {
 
     // Enqueue assets for the logs admin page
     public function enqueue_admin_assets($hook) {
+
+        //exit if not the logs page
         if ($hook !== 'scry-search_page_scry-search-meilisearch-logs') {
             return;
         }
 
+        //enqueue the styles
         wp_enqueue_style(
             $this->prefixed('logs-styles'),
             plugin_dir_url(__FILE__) . 'assets/css/logs.css',
             array(),
             '1.0.0'
+        );
+
+        //enqueue the script
+        wp_enqueue_script(
+            $this->prefixed('logs-script'),
+            plugin_dir_url(__FILE__) . 'assets/js/logs.js',
+            array(),
+            '1.0.0',
+            true
+        );
+
+        //get the log config
+        $logs_config = $this->get_log_config();
+        $page_size = isset($logs_config['page_size']) ? absint($logs_config['page_size']) : 100;
+
+        //localize the script with the log config
+        wp_localize_script(
+            $this->prefixed('logs-script'),
+            'scrywpLogs',
+            array(
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'action' => $this->prefixed('load_logs'),
+                'nonce' => wp_create_nonce($this->prefixed('load_logs')),
+                'pageSize' => $page_size,
+                'i18n' => array(
+                    'loading' => __('Loading...', "scry-search"),
+                    'error' => __('Unable to load logs.', "scry-search"),
+                    'noMore' => __('No older log messages to load.', "scry-search"),
+                ),
+            )
         );
     }
 
