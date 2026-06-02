@@ -4,18 +4,30 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-$allowed_levels = array('error', 'debug');
+$logs_config = $this->config('logs');
+$allowed_levels = isset($logs_config['levels']) ? $logs_config['levels'] : array('error' => 'error.log', 'debug' => 'debug.log');
+$page_size = isset($logs_config['page_size']) ? absint($logs_config['page_size']) : 100;
 $selected_level = isset($_GET['log_level']) ? sanitize_text_field(wp_unslash($_GET['log_level'])) : 'error';
 
-if (!in_array($selected_level, $allowed_levels, true)) {
+if (!array_key_exists($selected_level, $allowed_levels)) {
     $selected_level = 'error';
 }
 
-$placeholder_lines = array(
-    'error 2026-06-01 10:58:21 - Meilisearch connection failed while loading index settings.',
-    'error 2026-06-01 10:59:04 - Index posts request returned an unexpected response.',
-    'error 2026-06-01 11:00:32 - Search request failed and WordPress fallback was used.',
+$selected_log_file = $allowed_levels[$selected_level];
+$logs_feature = $this->get_feature('scry_ms_logs');
+$log_data = array(
+    'lines' => array(),
+    'next_start' => 0,
+    'has_more' => false,
+    'total' => 0,
 );
+$log_read_error = '';
+
+try {
+    $log_data = $logs_feature->read($selected_level, 0, $page_size);
+} catch (Throwable $e) {
+    $log_read_error = $e->getMessage();
+}
 ?>
 
 <div class="scrywp-logs-page">
@@ -35,12 +47,11 @@ $placeholder_lines = array(
             </label>
 
             <select id="scrywp-log-level" name="log_level">
-                <option value="error" <?php selected($selected_level, 'error'); ?>>
-                    <?php esc_html_e('Error log', 'scry-search'); ?>
-                </option>
-                <option value="debug" <?php selected($selected_level, 'debug'); ?>>
-                    <?php esc_html_e('Debug log', 'scry-search'); ?>
-                </option>
+                <?php foreach ($allowed_levels as $level => $file_name): ?>
+                    <option value="<?php echo esc_attr($level); ?>" <?php selected($selected_level, $level); ?>>
+                        <?php echo esc_html(ucfirst($level) . ' log'); ?>
+                    </option>
+                <?php endforeach; ?>
             </select>
 
             <button type="submit" class="button button-primary">
@@ -52,19 +63,33 @@ $placeholder_lines = array(
     <div class="scrywp-logs-card">
         <div class="scrywp-logs-card-header">
             <span class="scrywp-logs-badge">
-                <?php echo esc_html($selected_level); ?>.log
+                <?php echo esc_html($selected_log_file); ?>
             </span>
             <span class="scrywp-logs-meta">
-                <?php esc_html_e('Showing the most recent 100 lines', 'scry-search'); ?>
+                <?php echo esc_html(sprintf(__('Showing the most recent %d lines', 'scry-search'), $page_size)); ?>
             </span>
         </div>
 
-        <pre class="scrywp-logs-viewer"><code><?php echo esc_html(implode("\n", $placeholder_lines)); ?></code></pre>
+        <pre class="scrywp-logs-viewer"><code><?php
+        if (!empty($log_read_error)) {
+            echo esc_html($log_read_error);
+        } elseif (empty($log_data['lines'])) {
+            esc_html_e('No log messages found.', 'scry-search');
+        } else {
+            echo esc_html(implode("\n", $log_data['lines']));
+        }
+        ?></code></pre>
 
         <div class="scrywp-logs-load-more">
-            <a href="#" class="button button-secondary" data-log-level="<?php echo esc_attr($selected_level); ?>" data-next-start="100">
-                <?php esc_html_e('Load 100 more', 'scry-search'); ?>
-            </a>
+            <?php if (!empty($log_data['has_more'])): ?>
+                <a href="#" class="button button-secondary" data-log-level="<?php echo esc_attr($selected_level); ?>" data-next-start="<?php echo esc_attr($log_data['next_start']); ?>">
+                    <?php echo esc_html(sprintf(__('Load %d more', 'scry-search'), $page_size)); ?>
+                </a>
+            <?php else: ?>
+                <span class="scrywp-logs-meta">
+                    <?php esc_html_e('No older log messages to load.', 'scry-search'); ?>
+                </span>
+            <?php endif; ?>
         </div>
     </div>
 </div>
