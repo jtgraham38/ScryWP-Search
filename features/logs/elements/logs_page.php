@@ -17,6 +17,7 @@ $selected_log_file = $allowed_levels[$selected_level];
 $logs_feature = $this->get_feature('scry_ms_logs');
 $log_data = array(
     'lines' => array(),
+    'start' => 0,
     'next_start' => 0,
     'has_more' => false,
     'total' => 0,
