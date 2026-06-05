@@ -10,6 +10,11 @@ require_once plugin_dir_path(__FILE__) . '../../vendor/autoload.php';
 use jtgraham38\jgwordpresskit\PluginFeature;
 
 class ScrySearch_LogsFeature extends PluginFeature {
+
+    /**
+     * Current database schema version
+     */
+    private $db_version = '1.0';
     
     public function add_filters() {
         // No filters needed
@@ -23,9 +28,58 @@ class ScrySearch_LogsFeature extends PluginFeature {
         // admin_enqueue_scripts is where wp-admin CSS/JS files should be loaded.
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
 
+        // Ensure the logs database table exists before admins use the logs screen.
+        add_action('admin_init', array($this, 'maybe_create_table'));
+
         // WordPress AJAX maps POST action=scry_ms_load_logs to this PHP callback.
         add_action('wp_ajax_' . $this->prefixed('load_logs'), array($this, 'ajax_load_logs'));
 
+    }
+
+    // =========================================================================
+    // Database Table
+    // =========================================================================
+
+    /**
+     * Get the full logs table name
+     */
+    public function get_table_name() {
+        global $wpdb;
+        return $wpdb->prefix . $this->prefixed('logs');
+    }
+
+    /**
+     * Check if the logs table needs to be created or updated
+     */
+    public function maybe_create_table() {
+        $installed_version = get_option($this->prefixed('logs_db_version'), '0');
+        if (version_compare($installed_version, $this->db_version, '<')) {
+            $this->create_logs_table();
+            update_option($this->prefixed('logs_db_version'), $this->db_version);
+        }
+    }
+
+    /**
+     * Create the custom table for plugin logs
+     */
+    public function create_logs_table() {
+        global $wpdb;
+
+        $table_name = $this->get_table_name();
+        $charset_collate = $wpdb->get_charset_collate();
+
+        $sql = "CREATE TABLE $table_name (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            type varchar(20) NOT NULL,
+            message longtext NOT NULL,
+            created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            KEY idx_type (type),
+            KEY idx_created_at (created_at)
+        ) $charset_collate;";
+
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($sql);
     }
 
     // Admin Page Method
