@@ -176,14 +176,15 @@ class ScrySearch_LogsFeature extends PluginFeature {
             array(
                 'type' => sanitize_text_field($level),
                 'message' => $message,
+                'created_at' => current_time('mysql'),
             ),
-            array('%s', '%s')
+            array('%s', '%s', '%s')
         );
 
         return $result !== false;
     }
 
-
+    
     // Reading logs method for feature
     public function read(string $level, int $start, int $lines) {
         // read() is allowed to throw because callers need to know when reading fails.
