@@ -277,70 +277,10 @@ class ScrySearch_LogsFeature extends PluginFeature {
         }
     }
 
-    // Zipping files method for feature
-    public function rotate(string $level) {
-        $file_path = $this->get_log_file_path($level);
-
-        // If there is no active log file yet, rotation is already "done."
-        if (!$file_path || !file_exists($file_path)) {
-            return true;
-        }
-
-        $zip_path = $file_path . '.zip';
-
-        // The spec only keeps one zip per level, so remove the previous archive.
-        if (file_exists($zip_path) && !unlink($zip_path)) {
-            return false;
-        }
-
-        // ZipArchive is PHP's built-in class for creating zip files.
-        $zip = new ZipArchive();
-
-        // CREATE opens an existing zip or creates a new one at $zip_path.
-        if ($zip->open($zip_path, ZipArchive::CREATE) !== true) {
-            return false;
-        }
-
-        // Store only "error.log" or "debug.log" inside the zip, not the full path.
-        if (!$zip->addFile($file_path, basename($file_path))) {
-            $zip->close();
-            return false;
-        }
-
-        // close() finalizes the zip file on disk.
-        if (!$zip->close()) {
-            return false;
-        }
-
-        // Empty the active log file so new logs continue writing to the same path.
-        return file_put_contents($file_path, '') !== false;
-    }
-
     // Method to get the logs config
     private function get_log_config() {
         // Pulls the 'logs' array from the plugin config in scry_search.php.
         return $this->config('logs');
-    }
-
-    // Method to get the logs files directory path
-    private function get_log_directory_path() {
-        $logs_config = $this->get_log_config();
-        $directory = isset($logs_config['directory']) ? $logs_config['directory'] : 'logs';
-
-        // get_base_dir() is the plugin root; trailingslashit makes path joining safe.
-        return trailingslashit($this->get_base_dir()) . trailingslashit($directory);
-    }
-
-    // Method to get the log file path
-    private function get_log_file_path(string $level) {
-        $logs_config = $this->get_log_config();
-
-        // Config maps each valid level to its log filename.
-        if (isset($logs_config['levels'][$level])) {
-            return $this->get_log_directory_path() . $logs_config['levels'][$level];
-        }
-    
-        return false;
     }
 
     // Method to keep log messages single-line and remove common secret formats
@@ -353,44 +293,6 @@ class ScrySearch_LogsFeature extends PluginFeature {
         $message = preg_replace('/Bearer\s+[A-Za-z0-9+\/=_-]+/i', 'Bearer [REDACTED]', $message);
 
         return $message;
-    }
-
-    // Method to ensure the log file exists and is writable (returns false otherwise)
-    private function ensure_log_file(string $level): bool {
-        $directory = $this->get_log_directory_path();
-        $file_path = $this->get_log_file_path($level);
-    
-        // Invalid levels do not have a file path.
-        if (!$file_path) {
-            return false;
-        }
-    
-        // wp_mkdir_p creates the directory and any missing parent directories.
-        if (!file_exists($directory) && !wp_mkdir_p($directory)) {
-            return false;
-        }
-    
-        // touch creates the file if it does not exist.
-        if (!file_exists($file_path) && !touch($file_path)) {
-            return false;
-        }
-    
-        // Final guard: PHP must be able to write to the file.
-        return is_writable($file_path);
-    }
-
-    // Method to determine whether a log file is beyond the configured size limit
-    private function should_rotate(string $file_path): bool {
-        $logs_config = $this->get_log_config();
-        $max_file_size = isset($logs_config['max_file_size']) ? absint($logs_config['max_file_size']) : 0;
-
-        // A missing or zero max size disables rotation.
-        if ($max_file_size <= 0 || !file_exists($file_path)) {
-            return false;
-        }
-        
-        // check if the file size is greater than the max file size
-        return filesize($file_path) >= $max_file_size;
     }
 
 }
