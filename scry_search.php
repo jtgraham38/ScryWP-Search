@@ -37,13 +37,11 @@ $config = array(
         'wp_template_part_area',
     ),
     'logs' => array(
-        'directory' => 'logs',
         'levels' => array(
             'debug' => 'debug.log',
             'error' => 'error.log',
         ),
-        'page_size' => 100,
-        'max_file_size' => 100 * 1024 * 1024,
+        'page_size' => 100
     ),
 );
 
