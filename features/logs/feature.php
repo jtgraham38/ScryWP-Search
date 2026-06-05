@@ -161,31 +161,26 @@ class ScrySearch_LogsFeature extends PluginFeature {
 
     // logging method for feature
     public function log(string $level, string $message) {
-        // Make sure /logs/ and the selected .log file exist before writing.
-        if (!$this->ensure_log_file($level)) {
-            return false;
-        }
-    
-        $file_path = $this->get_log_file_path($level);
+        global $wpdb;
 
-        // Rotate before writing so the active file stays under the configured limit.
-        if ($this->should_rotate($file_path) && !$this->rotate($level)) {
+        $logs_config = $this->get_log_config();
+
+        if (!isset($logs_config['levels'][$level])) {
             return false;
         }
 
         $message = $this->sanitize_log_message($message);
 
-        // sprintf fills the %s placeholders with level, date, time, and message.
-        $line = sprintf(
-            "%s %s %s - %s\n",
-            $level,
-            current_time('Y-m-d'),
-            current_time('H:i:s'),
-            $message
+        $result = $wpdb->insert(
+            $this->get_table_name(),
+            array(
+                'type' => sanitize_text_field($level),
+                'message' => $message,
+            ),
+            array('%s', '%s')
         );
-    
-        // error_log with type 3 appends the message to the destination file.
-        return error_log($line, 3, $file_path);
+
+        return $result !== false;
     }
 
 
