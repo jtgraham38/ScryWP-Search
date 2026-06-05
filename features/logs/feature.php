@@ -184,39 +184,57 @@ class ScrySearch_LogsFeature extends PluginFeature {
         return $result !== false;
     }
 
-    
+
     // Reading logs method for feature
     public function read(string $level, int $start, int $lines) {
+        global $wpdb;
+
+        $logs_config = $this->get_log_config();
+
         // read() is allowed to throw because callers need to know when reading fails.
-        if (!$this->ensure_log_file($level)) {
-            throw new RuntimeException('Unable to access log file for level: ' . $level);
+        if (!isset($logs_config['levels'][$level])) {
+            throw new RuntimeException('Invalid log level: ' . $level);
         }
 
-        // Normalize pagination inputs so negative/zero values do not break slicing.
+        // Normalize pagination inputs so negative/zero values do not break queries.
         $start = max(0, $start);
         $lines = max(1, $lines);
-        $file_path = $this->get_log_file_path($level);
 
-        // file() reads the log into an array where each item is one line.
-        $log_lines = file($file_path, FILE_IGNORE_NEW_LINES);
+        $table_name = $this->get_table_name();
 
-        if ($log_lines === false) {
-            throw new RuntimeException('Unable to read log file for level: ' . $level);
+        // Count all rows for this type so the UI knows whether "Load more" is needed.
+        $total_lines = (int) $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM $table_name WHERE type = %s",
+                $level
+            )
+        );
+
+        // Pagination starts from the newest rows, using $start as the offset.
+        $rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT type, message, created_at FROM $table_name WHERE type = %s ORDER BY created_at DESC, id DESC LIMIT %d OFFSET %d",
+                $level,
+                $lines,
+                $start
+            ),
+            ARRAY_A
+        );
+
+        if ($rows === null) {
+            throw new RuntimeException('Unable to read logs from the database: ' . $wpdb->last_error);
         }
 
-        // Remove blank lines and reset array keys to 0, 1, 2...
-        $log_lines = array_values(array_filter($log_lines, function($line) {
-            return $line !== '';
-        }));
-
-        $total_lines = count($log_lines);
-
-        // The file is oldest-first, but pagination starts from the newest entry.
-        $newest_first = array_reverse($log_lines);
-        $selected_lines = array_slice($newest_first, $start, $lines);
-
-        // Display the selected chunk oldest-to-newest so the log reads naturally.
-        $selected_lines = array_reverse($selected_lines);
+        // The query returns newest-first, but the viewer reads naturally oldest-to-newest.
+        $rows = array_reverse($rows);
+        $selected_lines = array_map(function($row) {
+            return sprintf(
+                '[%s] %s: %s',
+                $row['created_at'],
+                strtoupper($row['type']),
+                $row['message']
+            );
+        }, $rows);
         $next_start = $start + count($selected_lines);
 
         return array(
