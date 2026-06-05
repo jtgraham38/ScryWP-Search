@@ -119,8 +119,7 @@ class ScrySearch_LogsFeature extends PluginFeature {
             return false;
         }
 
-        // Collapse newlines/tabs/spaces so one log call cannot forge multiple entries.
-        $message = preg_replace('/\s+/', ' ', trim($message));
+        $message = $this->sanitize_log_message($message);
 
         // sprintf fills the %s placeholders with level, date, time, and message.
         $line = sprintf(
@@ -274,6 +273,18 @@ class ScrySearch_LogsFeature extends PluginFeature {
         }
     
         return false;
+    }
+
+    // Method to keep log messages single-line and remove common secret formats
+    private function sanitize_log_message(string $message): string {
+        // Collapse newlines/tabs/spaces so one log call cannot forge multiple entries.
+        $message = preg_replace('/\s+/', ' ', trim($message));
+
+        // Redact common Authorization bearer token formats from exception dumps.
+        $message = preg_replace('/Authorization:\s*Bearer\s+[^\s\]]+/i', 'Authorization: Bearer [REDACTED]', $message);
+        $message = preg_replace('/Bearer\s+[A-Za-z0-9+\/=_-]+/i', 'Bearer [REDACTED]', $message);
+
+        return $message;
     }
 
     // Method to ensure the log file exists and is writable (returns false otherwise)
