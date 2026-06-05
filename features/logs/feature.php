@@ -197,6 +197,9 @@ class ScrySearch_LogsFeature extends PluginFeature {
         $level = isset($_POST['level']) ? sanitize_text_field(wp_unslash($_POST['level'])) : '';
         $start = isset($_POST['start']) ? absint(wp_unslash($_POST['start'])) : 0;
         $lines = isset($_POST['lines']) ? absint(wp_unslash($_POST['lines'])) : 100;
+        $logs_config = $this->get_log_config();
+        $page_size = isset($logs_config['page_size']) ? absint($logs_config['page_size']) : 100;
+        $lines = max(1, min($lines, $page_size));
 
         try {
             $log_data = $this->read($level, $start, $lines);
