@@ -119,6 +119,9 @@ class ScrySearch_LogsFeature extends PluginFeature {
             return false;
         }
 
+        // Collapse newlines/tabs/spaces so one log call cannot forge multiple entries.
+        $message = preg_replace('/\s+/', ' ', trim($message));
+
         // sprintf fills the %s placeholders with level, date, time, and message.
         $line = sprintf(
             "%s %s %s - %s\n",
