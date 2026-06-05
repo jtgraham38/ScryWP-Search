@@ -251,8 +251,11 @@ class ScrySearch_LogsFeature extends PluginFeature {
 
     // Method to get the logs files directory path
     private function get_log_directory_path() {
+        $logs_config = $this->get_log_config();
+        $directory = isset($logs_config['directory']) ? $logs_config['directory'] : 'logs';
+
         // get_base_dir() is the plugin root; trailingslashit makes path joining safe.
-        return trailingslashit($this->get_base_dir()) . 'logs/';
+        return trailingslashit($this->get_base_dir()) . trailingslashit($directory);
     }
 
     // Method to get the log file path
