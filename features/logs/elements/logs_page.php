@@ -5,7 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 $logs_config = $this->config('logs');
-$allowed_levels = isset($logs_config['levels']) ? $logs_config['levels'] : array('error' => 'error.log', 'debug' => 'debug.log');
+$allowed_levels = isset($logs_config['levels']) ? $logs_config['levels'] : array('error' => 'Error', 'debug' => 'Debug');
 $page_size = isset($logs_config['page_size']) ? absint($logs_config['page_size']) : 100;
 $selected_level = isset($_GET['log_level']) ? sanitize_text_field(wp_unslash($_GET['log_level'])) : 'error';
 
@@ -13,7 +13,7 @@ if (!array_key_exists($selected_level, $allowed_levels)) {
     $selected_level = 'error';
 }
 
-$selected_log_file = $allowed_levels[$selected_level];
+$selected_log_type = $allowed_levels[$selected_level];
 $logs_feature = $this->get_feature('scry_ms_logs');
 $log_data = array(
     'lines' => array(),
@@ -36,7 +36,7 @@ try {
         <div>
             <h1 class="scrywp-logs-title"><?php esc_html_e('Logs', 'scry-search'); ?></h1>
             <p class="scrywp-logs-description">
-                <?php esc_html_e('Review recent Scry Search error and debug messages for troubleshooting. Error logs are shown by default, with the newest entries at the bottom of the viewer.', 'scry-search'); ?>
+                <?php esc_html_e('Review recent Scry Search error and debug messages stored in the database. Error entries are shown by default, with the newest entries at the bottom of the viewer.', 'scry-search'); ?>
             </p>
         </div>
 
@@ -44,19 +44,19 @@ try {
             <input type="hidden" name="page" value="scry-search-meilisearch-logs">
 
             <label for="scrywp-log-level">
-                <?php esc_html_e('Log file', 'scry-search'); ?>
+                <?php esc_html_e('Log type', 'scry-search'); ?>
             </label>
 
             <select id="scrywp-log-level" name="log_level">
-                <?php foreach ($allowed_levels as $level => $file_name): ?>
+                <?php foreach ($allowed_levels as $level => $label): ?>
                     <option value="<?php echo esc_attr($level); ?>" <?php selected($selected_level, $level); ?>>
-                        <?php echo esc_html(ucfirst($level) . ' log'); ?>
+                        <?php echo esc_html($label); ?>
                     </option>
                 <?php endforeach; ?>
             </select>
 
             <button type="submit" class="button button-primary">
-                <?php esc_html_e('View Log', 'scry-search'); ?>
+                <?php esc_html_e('View Entries', 'scry-search'); ?>
             </button>
         </form>
     </div>
@@ -64,10 +64,10 @@ try {
     <div class="scrywp-logs-card">
         <div class="scrywp-logs-card-header">
             <span class="scrywp-logs-badge">
-                <?php echo esc_html($selected_log_file); ?>
+                <?php echo esc_html($selected_log_type); ?>
             </span>
             <span class="scrywp-logs-meta">
-                <?php echo esc_html(sprintf(__('Showing the most recent %d lines', 'scry-search'), $page_size)); ?>
+                <?php echo esc_html(sprintf(__('Showing the most recent %d entries', 'scry-search'), $page_size)); ?>
             </span>
         </div>
 

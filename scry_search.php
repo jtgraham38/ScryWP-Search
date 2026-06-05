@@ -38,8 +38,8 @@ $config = array(
     ),
     'logs' => array(
         'levels' => array(
-            'debug' => 'debug.log',
-            'error' => 'error.log',
+            'debug' => 'Debug',
+            'error' => 'Error',
         ),
         'page_size' => 100
     ),
