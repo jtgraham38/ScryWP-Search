@@ -8,7 +8,7 @@ Requires PHP: 8.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-The ultimate Meilisearch for WordPress integration. Lightning-fast, typo-tolerant search with zero frontend changes required—plus **optional AJAX autosuggest** you can turn on with a single switch. **100% WooCommerce compatible**, highly customizable alongside your theme and page builder, powered by Meilisearch **federated multi-search**, and **fully self-service**—you can set everything up yourself from the WordPress admin.
+The ultimate Meilisearch for WordPress integration. Lightning-fast, typo-tolerant search with zero frontend changes required.
 
 == Get Managed Hosting from ScryWP ==
 
