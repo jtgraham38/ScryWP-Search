@@ -61,7 +61,7 @@ try {
         </form>
     </div>
 
-    <div class="scrywp-logs-card">
+    <div class="wrap p-1 scrywp-logs-settings">
         <form method="post" action="options.php">
             <?php
                 settings_fields($this->prefixed('logs_settings_group'));
