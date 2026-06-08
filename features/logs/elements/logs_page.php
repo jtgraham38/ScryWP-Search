@@ -61,17 +61,6 @@ try {
         </form>
     </div>
 
-    <div class="wrap p-1 scrywp-logs-settings">
-        <form method="post" action="options.php">
-            <?php
-                settings_fields($this->prefixed('logs_settings_group'));
-                do_settings_sections($this->prefixed('logs_settings_group'));
-            ?>
-            <br>
-            <?php submit_button(); ?>
-        </form>
-    </div>
-
     <div class="scrywp-logs-card">
         <div class="scrywp-logs-card-header">
             <span class="scrywp-logs-badge">
@@ -103,5 +92,16 @@ try {
                 </span>
             <?php endif; ?>
         </div>
+    </div>
+
+    <div class="wrap p-1 scrywp-logs-settings">
+        <form method="post" action="options.php">
+            <?php
+                settings_fields($this->prefixed('logs_settings_group'));
+                do_settings_sections($this->prefixed('logs_settings_group'));
+            ?>
+            <br>
+            <?php submit_button(); ?>
+        </form>
     </div>
 </div>
