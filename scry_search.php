@@ -36,6 +36,13 @@ $config = array(
         'wp_theme',
         'wp_template_part_area',
     ),
+    'logs' => array(
+        'levels' => array(
+            'debug' => 'Debug',
+            'error' => 'Error',
+        ),
+        'page_size' => 100
+    ),
 );
 
 //create a new plugin manager
@@ -74,6 +81,10 @@ $plugin->register_feature("scry_ms_window", $window_feature);
 require_once plugin_dir_path(__FILE__) . '/features/autosuggest/feature.php';
 $autosuggest_feature = new ScrySearch_AutoSuggestFeature();
 $plugin->register_feature("scry_ms_autosuggest", $autosuggest_feature);
+
+require_once plugin_dir_path(__FILE__) . '/features/logs/feature.php';
+$logs_feature = new ScrySearch_LogsFeature();
+$plugin->register_feature("scry_ms_logs", $logs_feature);
 
 //init the plugin
 $plugin->init();
