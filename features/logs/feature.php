@@ -28,11 +28,26 @@ class ScrySearch_LogsFeature extends PluginFeature {
         // admin_enqueue_scripts is where wp-admin CSS/JS files should be loaded.
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
 
+        // Register the logs retention setting for the Logs admin page.
+        add_action('admin_init', array($this, 'register_settings'));
+
         // Ensure the logs database table exists before admins use the logs screen.
         add_action('admin_init', array($this, 'maybe_create_table'));
 
+        // Schedule daily cleanup for logs older than the configured retention period.
+        add_action('init', function() {
+            if (!wp_next_scheduled($this->prefixed('cleanup_logs'))) {
+                wp_schedule_event(time(), 'daily', $this->prefixed('cleanup_logs'));
+            }
+        });
+
+        add_action($this->prefixed('cleanup_logs'), array($this, 'cleanup_logs'));
+
         // WordPress AJAX maps POST action=scry_ms_load_logs to this PHP callback.
         add_action('wp_ajax_' . $this->prefixed('load_logs'), array($this, 'ajax_load_logs'));
+
+        // Manual cleanup button for deleting logs older than the retention period.
+        add_action('wp_ajax_' . $this->prefixed('delete_old_logs'), array($this, 'ajax_delete_old_logs'));
 
     }
 
@@ -154,7 +169,58 @@ class ScrySearch_LogsFeature extends PluginFeature {
                     'loading' => __('Loading...', "scry-search"),
                     'error' => __('Unable to load logs.', "scry-search"),
                     'noMore' => __('No older log messages to load.', "scry-search"),
+                    'deleteOldLogsConfirm' => __('Delete log entries older than the retention period?', "scry-search"),
+                    'deleteOldLogsNothingToDelete' => __('No log entries matched the current retention period.', "scry-search"),
+                    'deleteOldLogsDeleted' => __('Deleted %d log entries.', "scry-search"),
                 ),
+                'deleteOldLogsAction' => $this->prefixed('delete_old_logs'),
+                'deleteOldLogsNonce' => wp_create_nonce($this->prefixed('delete_old_logs')),
+            )
+        );
+    }
+
+    // =========================================================================
+    // Settings
+    // =========================================================================
+
+    /**
+     * Register WordPress settings for log retention.
+     */
+    public function register_settings() {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+
+        add_settings_section(
+            $this->prefixed('logs_retention_section'),
+            __('Log Retention', "scry-search"),
+            function() {
+                echo '<p>' . esc_html__('Configure how long log entries are kept in the database.', "scry-search") . '</p>';
+            },
+            $this->prefixed('logs_settings_group')
+        );
+
+        add_settings_field(
+            $this->prefixed('logs_retention_period'),
+            __('Retention Period', "scry-search"),
+            function() {
+                require plugin_dir_path(__FILE__) . 'elements/settings/retention_period_input.php';
+            },
+            $this->prefixed('logs_settings_group'),
+            $this->prefixed('logs_retention_section')
+        );
+
+        register_setting(
+            $this->prefixed('logs_settings_group'),
+            $this->prefixed('logs_retention_period'),
+            array(
+                'type'              => 'string',
+                'description'       => 'The retention period for log entries (days). 0 means keep indefinitely.',
+                'sanitize_callback' => function($input) {
+                    return (string) absint($input);
+                },
+                'default'           => '0',
+                'show_in_rest'      => false,
             )
         );
     }
@@ -275,6 +341,59 @@ class ScrySearch_LogsFeature extends PluginFeature {
         } catch (Throwable $e) {
             wp_send_json_error(array('message' => $e->getMessage()));
         }
+    }
+
+    /**
+     * Delete logs older than the configured retention period.
+     */
+    public function cleanup_logs() {
+        global $wpdb;
+
+        $retention_period = get_option($this->prefixed('logs_retention_period'), '0');
+        $retention_period = absint($retention_period);
+
+        if ($retention_period === 0) {
+            return null;
+        }
+
+        $cutoff_timestamp = current_time('timestamp') - ($retention_period * DAY_IN_SECONDS);
+        $cutoff_date = wp_date('Y-m-d H:i:s', $cutoff_timestamp);
+
+        return $wpdb->query(
+            $wpdb->prepare(
+                "DELETE FROM {$this->get_table_name()} WHERE created_at < %s",
+                $cutoff_date
+            )
+        );
+    }
+
+    /**
+     * AJAX: Manually delete logs older than the configured retention period.
+     */
+    public function ajax_delete_old_logs() {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('delete_old_logs'))) {
+            wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
+            return;
+        }
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
+            return;
+        }
+
+        $deleted = $this->cleanup_logs();
+
+        if ($deleted === null) {
+            wp_send_json_success(array('deleted' => 0));
+            return;
+        }
+
+        if ($deleted === false) {
+            wp_send_json_error(array('message' => __('Failed to delete log entries.', "scry-search")));
+            return;
+        }
+
+        wp_send_json_success(array('deleted' => (int) $deleted));
     }
 
     // Method to get the logs config
