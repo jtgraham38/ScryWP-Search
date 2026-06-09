@@ -654,7 +654,8 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         );
 
         //let other plugins modify the document before it is indexed
-        $document = apply_filters($this->config('hook_prefix') . 'index_prepare_document', $document, $post);
+        //@HOOK: scry_search_index_prepare_document
+        $document = apply_filters($this->config('hook_prefix') . 'index_prepare_document', $document);
         
         // Add author name if available
         $author = get_userdata($post->post_author);
@@ -936,7 +937,8 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             );
 
             //let other plugins add entries to the return array
-            $return_array = apply_filters($this->config('hook_prefix') . 'index_settings_ajax', $return_array, $index_name);
+            //@HOOK: scry_search_index_settings_ajax
+            $return_array = apply_filters($this->config('hook_prefix') . 'index_settings_ajax', $return_array);
             
             wp_send_json_success($return_array);
             
@@ -1068,7 +1070,8 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         );
 
         //hook to allow other plugins to modify the index settings backup
-        $index_settings_backup = apply_filters($this->config('hook_prefix') . 'index_settings_backup', $index_settings_backup, $index_name);
+        //@HOOK: scry_search_index_settings_backup
+        $index_settings_backup = apply_filters($this->config('hook_prefix') . 'index_settings_backup', $index_settings_backup);
 
         //update the settings backup in the database
         update_option($index_settings_backup_key, $index_settings_backup);

@@ -74,6 +74,7 @@ class ScrySearch_SearchFeature extends PluginFeature {
         $index_names_to_search = array_intersect_key($index_names, array_flip($post_types_to_search));
         
         //allow other plugins to modify the index names to search
+        //@HOOK: scry_search_multi_search_index_names
         $index_names_to_search = apply_filters($this->config('hook_prefix') . 'multi_search_index_names', $index_names_to_search, $post_types_to_search);
 
         //get the search query, and all other query params that should be passed to the meilisearch search
@@ -130,7 +131,8 @@ class ScrySearch_SearchFeature extends PluginFeature {
                     ->setQuery($query_params['q']);
                 
 
-                //let tother plugins modify the search query before it is used to search the index
+                //let other plugins modify the search query before it is used to search the index
+                //@HOOK: scry_search_multi_search_query
                 $search_query = apply_filters($this->config('hook_prefix') . 'multi_search_query', $search_query, $index_name);
 
                 //add it to the search queries
