@@ -1,14 +1,14 @@
 === Scry Search: Meilisearch for WordPress ===
 Contributors: jtgraham38
-Tags: meilisearch, search, typo-tolerant search, autosuggest, ajax search
+Tags: meilisearch, search, typo-tolerant search, auto suggest, ajax search
 Requires at least: 5.2
-Tested up to: 6.9
-Stable tag: 1.1.2
+Tested up to: 7.0
+Stable tag: 1.2.0
 Requires PHP: 8.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-The ultimate Meilisearch for WordPress integration. Lightning-fast, typo-tolerant search with zero frontend changes required.
+The premium WordPress/WooCommerce search experience. Blazing quick, customizable fuzzy search powered by Meilisearch, with no theme changes required.
 
 == Get Managed Hosting from ScryWP ==
 
@@ -73,6 +73,15 @@ The fully-featured **Task Drawer** gives you complete visibility into your Meili
 * **Paginated Task History**: Browse through your complete task history with easy navigation
 * **Error Diagnosis**: Quickly identify and troubleshoot failed indexing operations
 * **Performance Monitoring**: Track task durations to optimize your indexing strategy
+
+= Built-In Debug & Error Logs =
+
+A dedicated **Logs** screen (under **Scry Search → Logs**) records what the plugin is doing so you can diagnose issues without digging through server files:
+
+* **Debug & error levels**: Filter the viewer by **Debug** or **Error** to focus on routine activity or real failures
+* **Stored in your database**: Log entries live in a dedicated table and are viewable right inside wp-admin, newest first, with **load more** paging
+* **Secret-safe**: Messages are sanitized before storage—API keys and authorization tokens are automatically redacted so they never leak into the log
+* **Retention & cleanup**: Set how many days of log entries to keep; a **daily WP-Cron** job removes older entries, and a button runs the same cleanup on demand
 
 = Automatic & Manual Indexing =
 
@@ -182,6 +191,14 @@ Yes. Scry Search follows WordPress security best practices: all AJAX requests us
 
 **Yes.** On **Scry Search → Search Analytics**, use **Download analytics as CSV** to export the full analytics table. Set a **retention period** (days) to enable automatic daily cleanup, or use **Delete old events now** to apply the same rule immediately.
 
+= Where can I see what the plugin is doing (debug/error logs)? =
+
+**Scry Search → Logs** shows the plugin's debug and error activity, stored in your database and viewable in wp-admin. Filter by **Debug** or **Error**, and set a **retention period** so old entries are cleaned up automatically. Sensitive values such as API keys are redacted before anything is written to the log.
+
+= Can developers extend or customize the plugin with code? =
+
+**Yes.** Scry Search exposes a full set of **PHP action/filter hooks** (document shaping, index settings, federated search query building, autosuggest, analytics, logging, and more) plus a small front-end **JavaScript API** (`window.scrySearch`) with pre/post submit and AJAX action pipelines for search forms. Every extension point—its type, arguments, return value, and when it fires—is documented in the **DOCS.md** file included with the plugin (see the [plugin repository](https://github.com/jtgraham38/ScryWP-Search)).
+
 == Screenshots ==
 
 1. Index Settings Dashboard - Manage post type indexes, view document counts, and trigger indexing operations
@@ -224,6 +241,9 @@ Yes. Scry Search follows WordPress security best practices: all AJAX requests us
 * Autosuggest queries reuse the same Meilisearch search path as full-site search for consistent, typo-tolerant suggestions
 
 == Upgrade Notice ==
+
+= 1.2.0 =
+Adds a **Logs** screen (debug/error logging with retention and secret redaction) and an expanded developer hook set, now fully documented in **DOCS.md** along with the `window.scrySearch` JavaScript API.
 
 = 1.1.2 =
 **Search Analytics** adds CSV export, configurable retention with scheduled cleanup, and a one-click manual delete for rows past retention—all from **Scry Search → Search Analytics**.

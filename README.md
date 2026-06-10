@@ -2,6 +2,8 @@
 
 This README is aimed at contributors. It explains the plugin’s structure, naming conventions, public hooks, and the front-end `window.scrySearch` runtime used by features like autosuggest.
 
+> **Extending the plugin?** See **[`DOCS.md`](DOCS.md)** for the complete, public extension reference: every PHP action/filter hook (type, arguments, return value, when it fires) and the full `window.scrySearch` JavaScript API. This README covers internal architecture and conventions; `DOCS.md` is the contract third‑party developers build against.
+
 ## Repo layout
 
 - `scry_search.php`: plugin bootstrap (loads features, shared config, vendor/autoload, etc.).
@@ -43,21 +45,23 @@ Conventions:
 
 ## Hooks (actions/filters) you can rely on
 
-This plugin intentionally exposes a few extension points. When adding new ones, follow the “Naming conventions” above and document them here.
+This plugin exposes a broad set of extension points spanning indexing, federated search query building, autosuggest, analytics, logging, and front-end localization.
 
-### Indexing hooks
+> **The full hook reference lives in [`DOCS.md`](DOCS.md).** It lists every hook with its type, arguments, return value, and when it fires — keep it as the single source of truth for the public contract. The notes below are an internal map for contributors.
 
-- **`{$hook_prefix}index_prepare_document`** (filter)  
-  Modify a document *right before* it is sent to Meilisearch.  
-  Located in `features/indexes/feature.php` inside `format_post_for_meilisearch()`.
+All hook names use the runtime prefix `scry_ms_` (i.e. `$this->config('hook_prefix') . '<hook_name>'`). The inline `//@HOOK:` comments at each call site mark every extension point in code.
 
-- **`{$hook_prefix}index_settings_backup`** (filter)  
-  Modify the array persisted to the per-index “settings backup” option before it is saved.  
-  Located in `features/indexes/feature.php` inside `ajax_update_index_settings()`.
+| Area | Source file | Examples |
+|---|---|---|
+| Document/index shaping | `features/indexes/feature.php` | `scry_ms_index_prepare_document`, `scry_ms_index_fields`, `scry_ms_index_meta_keys`, `scry_ms_index_searchable_attributes_before_update` |
+| Index settings flow | `features/indexes/feature.php` | `scry_ms_index_settings_ajax`, `scry_ms_index_settings_backup`, `scry_ms_index_*_before_update`, `scry_ms_index_update_settings` (action) |
+| Federated search | `features/search/feature.php` | `scry_ms_multi_search_index_names`, `scry_ms_multi_search_query_params`, `scry_ms_multi_search_query`, `scry_ms_multi_search_raw_results`, `scry_ms_multi_search_final_results` |
+| Autosuggest | `features/autosuggest/feature.php` | `scry_ms_autosuggest_query` |
+| Analytics | `features/analytics/feature.php` | `scry_ms_analytics_event_to_insert` |
+| Logging | `features/logs/feature.php` | `scry_ms_log_message` |
+| Front-end window | `features/window/feature.php` | `scry_ms_window_localized` |
 
-- **`{$hook_prefix}index_update_settings`** (action)  
-  Fires after index settings are successfully applied in Meilisearch.  
-  Located in `features/indexes/feature.php` inside `ajax_update_index_settings()`.
+> When you add or change a hook, update **`DOCS.md`** (public contract) in the same change, and keep the `//@HOOK:` comment in sync with the real `scry_ms_` name.
 
 ### How to add a new hook safely
 
@@ -65,7 +69,21 @@ This plugin intentionally exposes a few extension points. When adding new ones, 
   - Use a **filter** when callers should be able to change a value (`apply_filters`).
   - Use an **action** for notification / side effects (`do_action`).
 - **Keep the payload stable**: pass structured arrays/objects with explicit keys rather than positional arguments that are easy to break.
-- **Document it** in this README (name, type, when it fires, args).
+- **Document it** in [`DOCS.md`](DOCS.md) (name, type, when it fires, args, return value), and mark the call site with a `//@HOOK: scry_ms_<name>` comment.
+
+## Logging (debug & error)
+
+The logs feature (`features/logs/feature.php`, key `scry_ms_logs`) provides a database-backed log used throughout the plugin and surfaced under **Scry Search → Logs**.
+
+- **Writing logs**: from any feature, call `$this->get_feature('scry_ms_logs')->log($level, $message)`.
+  - `$level` must be one of the configured levels (`debug`, `error`); unknown levels are ignored.
+  - `$message` is a string. Build descriptive, single-line messages (use `sprintf()` for context such as the function name or post ID). Avoid logging secrets — messages are sanitized and common key/token formats are redacted, but don't rely on it as a catch-all.
+  - The call is exception-safe and never throws (so logging can't break the calling code path).
+- **Levels** are defined in the shared config in `scry_search.php` under `logs.levels`.
+- **Reading/retention**: the Logs screen reads paginated entries; a daily WP-Cron event prunes entries older than the configured retention period, with a manual cleanup action available.
+- **Filter**: `scry_ms_log_message` lets other code rewrite a message before it is stored (see [`DOCS.md`](DOCS.md)).
+
+When adding logging to a feature, prefer `error` for genuine failures and `debug` for routine/expected bail-outs, and include the originating function name in the message so entries are easy to triage.
 
 ## Admin-side settings flow (Indexes)
 
