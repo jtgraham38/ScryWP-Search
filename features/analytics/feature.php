@@ -583,14 +583,14 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
     public function ajax_delete_old_analytics_events() {
         if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('delete_old_analytics_events'))) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', __('Error: Security check failed. Exiting ajax_delete_old_analytics_events.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Security check failed. Exiting ajax_delete_old_analytics_events.', "scry-search"));
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
 
         if (!current_user_can('manage_options')) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', __('Error: Permission denied. Exiting ajax_delete_old_analytics_events.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Permission denied. Exiting ajax_delete_old_analytics_events.', "scry-search"));
             wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
             return;
         }
@@ -601,8 +601,8 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
             return;
         }
         if ($deleted === false) {
-            //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', __('Error: Failed to delete events. Exiting ajax_delete_old_analytics_events.', "scry-search")));
+            //log an error message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('error', __('Failed to delete events in ajax_delete_old_analytics_events.', "scry-search"));
             wp_send_json_error(array('message' => __('Failed to delete events.', "scry-search")));
             return;
         }
@@ -709,14 +709,14 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
     public function ajax_get_analytics_searches() {
         if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('get_analytics_searches'))) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', __('Error: Security check failed. Exiting ajax_get_analytics_searches.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Security check failed. Exiting ajax_get_analytics_searches.', "scry-search"));
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
 
         if (!current_user_can('manage_options')) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', __('Error: Permission denied. Exiting ajax_get_analytics_searches.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Permission denied. Exiting ajax_get_analytics_searches.', "scry-search"));
             wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
             return;
         }
@@ -775,14 +775,14 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
     public function ajax_get_analytics_summary() {
         if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('get_analytics_summary'))) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', __('Error: Security check failed. Exiting ajax_get_analytics_summary.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Security check failed. Exiting ajax_get_analytics_summary.', "scry-search"));
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
 
         if (!current_user_can('manage_options')) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', __('Error: Permission denied. Exiting ajax_get_analytics_summary.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Permission denied. Exiting ajax_get_analytics_summary.', "scry-search"));
             wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
             return;
         }
@@ -818,14 +818,14 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
     public function ajax_get_analytics_top_terms() {
         if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('get_analytics_top_terms'))) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', __('Error: Security check failed. Exiting ajax_get_analytics_top_terms.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Security check failed. Exiting ajax_get_analytics_top_terms.', "scry-search"));
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
 
         if (!current_user_can('manage_options')) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', __('Error: Permission denied. Exiting ajax_get_analytics_top_terms.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Permission denied. Exiting ajax_get_analytics_top_terms.', "scry-search"));
             wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
             return;
         }
@@ -866,14 +866,14 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
     public function ajax_get_analytics_term_trend() {
         if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('get_analytics_term_trend'))) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', __('Error: Security check failed. Exiting ajax_get_analytics_term_trend.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Security check failed. Exiting ajax_get_analytics_term_trend.', "scry-search"));
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
 
         if (!current_user_can('manage_options')) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', __('Error: Permission denied. Exiting ajax_get_analytics_term_trend.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Permission denied. Exiting ajax_get_analytics_term_trend.', "scry-search"));
             wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
             return;
         }

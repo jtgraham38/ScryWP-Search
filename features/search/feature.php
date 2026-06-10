@@ -34,7 +34,7 @@ class ScrySearch_SearchFeature extends PluginFeature {
         // If query is not provided or not a WP_Query instance, return early
         if (!$query || !($query instanceof WP_Query)) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', __('Query is not provided or not a WP_Query instance. Exiting Scry Search.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Query is not provided or not a WP_Query instance. Exiting Scry Search.', "scry-search"));
             return $posts;
         }
 
