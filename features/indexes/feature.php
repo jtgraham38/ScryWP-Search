@@ -653,9 +653,6 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             'permalink' => get_permalink($post->ID),
         );
 
-        //let other plugins modify the document before it is indexed
-        //@HOOK: scry_search_index_prepare_document
-        $document = apply_filters($this->config('hook_prefix') . 'index_prepare_document', $document);
         
         // Add author name if available
         $author = get_userdata($post->post_author);
@@ -674,6 +671,10 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         if (!empty($post_meta)) {
             $document['post_meta'] = $post_meta;
         }
+        
+        //let other plugins modify the document before it is indexed
+        //@HOOK: scry_search_index_prepare_document
+        $document = apply_filters($this->config('hook_prefix') . 'index_prepare_document', $document);
         
         return $document;
     }
@@ -937,8 +938,8 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             );
 
             //let other plugins add entries to the return array
-            //@HOOK: scry_search_index_settings_ajax
-            $return_array = apply_filters($this->config('hook_prefix') . 'index_settings_ajax', $return_array);
+            //@HOOK: scry_search_index_settings_ajax — args: $return_array, $index_name
+            $return_array = apply_filters($this->config('hook_prefix') . 'index_settings_ajax', $return_array, $index_name);
             
             wp_send_json_success($return_array);
             
@@ -1070,8 +1071,8 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         );
 
         //hook to allow other plugins to modify the index settings backup
-        //@HOOK: scry_search_index_settings_backup
-        $index_settings_backup = apply_filters($this->config('hook_prefix') . 'index_settings_backup', $index_settings_backup);
+        //@HOOK: scry_search_index_settings_backup — args: $index_settings_backup, $index_name
+        $index_settings_backup = apply_filters($this->config('hook_prefix') . 'index_settings_backup', $index_settings_backup, $index_name);
 
         //update the settings backup in the database
         update_option($index_settings_backup_key, $index_settings_backup);
@@ -1084,7 +1085,17 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             wp_send_json_error(array('message' => __('Connection settings are not configured', "scry-search")));
             return;
         }
-        
+
+        //let other plugins modify the index settings before they are updated
+        //@HOOK: scry_search_index_ranking_rules_before_update — args: $ranking_rules, $index_name
+        $ranking_rules = apply_filters($this->config('hook_prefix') . 'index_ranking_rules_before_update', $ranking_rules, $index_name);
+        //@HOOK: scry_search_index_searchable_attributes_before_update — args: $searchable_attributes, $index_name
+        $searchable_attributes = apply_filters($this->config('hook_prefix') . 'index_searchable_attributes_before_update', $searchable_attributes, $index_name);
+        //@HOOK: scry_search_index_synonyms_before_update — args: $synonyms, $index_name
+        $synonyms = apply_filters($this->config('hook_prefix') . 'index_synonyms_before_update', $synonyms, $index_name);
+        //@HOOK: scry_search_index_stop_words_before_update — args: $stop_words, $index_name
+        $stop_words = apply_filters($this->config('hook_prefix') . 'index_stop_words_before_update', $stop_words, $index_name);
+
         try {
             // Create Meilisearch client
             $client = new Client($meilisearch_url, $meilisearch_admin_key);
@@ -1138,7 +1149,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
      * Get default Meilisearch ranking rules
      */
     public function get_default_ranking_rules() {
-        return array(
+        $ranking_rules = array(
             'words',
             'typo',
             'proximity',
@@ -1146,8 +1157,14 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             'sort',
             'exactness',
         );
+        
+        //let other plugins modify the ranking rules
+        //@HOOK: scry_search_index_ranking_rules
+        $ranking_rules = apply_filters($this->config('hook_prefix') . 'index_ranking_rules', $ranking_rules);
+        
+        return $ranking_rules;
     }
-    
+
     /**
      * Get available fields for a post type, including meta keys
      */
@@ -1194,14 +1211,6 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         // Post Meta - get all unique meta keys for this post type
         $meta_keys = $this->get_post_meta_keys_for_post_type($post_type);
         
-        // Also try to get meta keys from Meilisearch index if available
-        $index_meta_keys = $this->get_meta_keys_from_index($post_type);
-        if (!empty($index_meta_keys)) {
-            // Merge and deduplicate
-            $meta_keys = array_unique(array_merge($meta_keys, $index_meta_keys));
-        }
-
-        
         if (!empty($meta_keys)) {
             $fields['post_meta'] = array(
                 'label' => __('Post Meta', "scry-search"),
@@ -1221,6 +1230,10 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                 );
             }
         }
+
+        //let other plugins modify the fields
+        //@HOOK: scry_search_index_fields
+        $fields = apply_filters($this->config('hook_prefix') . 'index_fields', $fields, $post_type);
         
         return $fields;
     }
@@ -1248,65 +1261,11 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                 $wpdb->esc_like('wp_') . '%'
             )
         );
+
+        //@HOOK: scry_search_index_meta_keys
+        $meta_keys = apply_filters($this->config('hook_prefix') . 'index_meta_keys', $meta_keys, $post_type);
         
         return $meta_keys ? $meta_keys : array();
-    }
-    
-    /**
-     * Get meta keys from Meilisearch index documents
-     * This helps discover meta keys that might not be in published posts
-     */
-    private function get_meta_keys_from_index($post_type) {
-        $meta_keys = array();
-        
-        // Get connection settings
-        $meilisearch_url = get_option($this->prefixed('meilisearch_url'), '');
-        $meilisearch_admin_key = get_option($this->prefixed('meilisearch_admin_key'), '');
-        
-        if (empty($meilisearch_url) || empty($meilisearch_admin_key)) {
-            return $meta_keys;
-        }
-        
-        try {
-            // Get index name
-            $index_names = $this->get_index_names();
-            if (!isset($index_names[$post_type])) {
-                return $meta_keys;
-            }
-            
-            $index_name = $index_names[$post_type];
-            
-            // Create Meilisearch client
-            $client = new Client($meilisearch_url, $meilisearch_admin_key);
-            $index = $client->index($index_name);
-            
-            // Get a few documents to extract meta keys
-            // Use search with wildcard to get documents
-            try {
-                $results = $index->search('*', array('limit' => 20));
-                $hits = $results->getHits();
-                
-                foreach ($hits as $hit) {
-                    if (isset($hit['post_meta']) && is_array($hit['post_meta'])) {
-                        foreach (array_keys($hit['post_meta']) as $meta_key) {
-                            // Exclude private meta keys
-                            if (substr($meta_key, 0, 1) !== '_' && substr($meta_key, 0, 3) !== 'wp_') {
-                                $meta_keys[] = $meta_key;
-                            }
-                        }
-                    }
-                }
-            } catch (Exception $e) {
-                // Silently fail - this is just a helper method
-                error_log('Scry Search for Meilisearch: Failed to get meta keys from index via search: ' . $e->getMessage());
-            }
-            
-        } catch (Exception $e) {
-            // Silently fail - this is just a helper method
-            error_log('Scry Search for Meilisearch: Failed to get meta keys from index: ' . $e->getMessage());
-        }
-        
-        return array_unique($meta_keys);
     }
     
     //  \\  //  \\  //  \\  Helpers  //  \\  //  \\  //  \\ 
@@ -1326,7 +1285,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
      * Excludes: post_status, post_type, author_name, featured_image
      */
     public function get_searchable_attributes() {
-        return array(
+        $searchable_attributes = array(
             'ID',
             'post_title',
             'post_content',
@@ -1342,5 +1301,10 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             'tags',
             'post_meta',
         );
+
+        //@HOOK: scry_search_index_searchable_attributes
+        $searchable_attributes = apply_filters($this->config('hook_prefix') . 'index_searchable_attributes', $searchable_attributes);
+
+        return $searchable_attributes;
     }
 }
