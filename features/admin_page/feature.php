@@ -169,12 +169,16 @@ class ScrySearch_AdminPageFeature extends PluginFeature {
     public function ajax_get_tasks() {
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('get_tasks'))) {
+            //log a debug message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Security check failed. Exiting ajax_get_tasks.', "scry-search")));
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
         
         // Check user permissions
         if (!current_user_can('manage_options')) {
+            //log a debug message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Permission denied. Exiting ajax_get_tasks.', "scry-search")));
             wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
             return;
         }
@@ -185,6 +189,8 @@ class ScrySearch_AdminPageFeature extends PluginFeature {
         
         // Validate limit (max 100 per Meilisearch API)
         if ($limit > 100) {
+            //log a debug message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Limit is greater than 100. Exiting ajax_get_tasks.', "scry-search")));
             $limit = 100;
         }
         
@@ -193,6 +199,8 @@ class ScrySearch_AdminPageFeature extends PluginFeature {
         $meilisearch_admin_key = get_option($this->prefixed('meilisearch_admin_key'), '');
         
         if (empty($meilisearch_url) || empty($meilisearch_admin_key)) {
+            //log a debug message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Connection settings are not configured. Exiting ajax_get_tasks.', "scry-search")));
             wp_send_json_error(array('message' => __('Connection settings are not configured', "scry-search")));
             return;
         }
@@ -268,16 +276,25 @@ class ScrySearch_AdminPageFeature extends PluginFeature {
             
         } catch (CommunicationException $e) {
             // Network/connection error
+            //log an error message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('error', sprintf(__('Connection failed: %s', "scry-search"), $e->getMessage()));
+            //send the error message to the client
             wp_send_json_error(array(
                 'message' => sprintf(__('Connection failed: %s', "scry-search"), $e->getMessage())
             ));
         } catch (ApiException $e) {
             // API error
+            //log an error message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('error', sprintf(__('API error: %s', "scry-search"), $e->getMessage()));
+            //send the error message to the client
             wp_send_json_error(array(
                 'message' => sprintf(__('API error: %s', "scry-search"), $e->getMessage())
             ));
         } catch (\Exception $e) {
             // General error
+            //log an error message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('error', sprintf(__('Error: %s', "scry-search"), $e->getMessage()));
+            //send the error message to the client
             wp_send_json_error(array(
                 'message' => sprintf(__('Error: %s', "scry-search"), $e->getMessage())
             ));

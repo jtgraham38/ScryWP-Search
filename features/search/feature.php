@@ -33,6 +33,8 @@ class ScrySearch_SearchFeature extends PluginFeature {
         
         // If query is not provided or not a WP_Query instance, return early
         if (!$query || !($query instanceof WP_Query)) {
+            //log a debug message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Query is not provided or not a WP_Query instance. Exiting Scry Search.', "scry-search")));
             return $posts;
         }
 
@@ -42,6 +44,8 @@ class ScrySearch_SearchFeature extends PluginFeature {
         // 's' but WordPress often leaves is_search false for those requests.
         $search_term = $query->get('s');
         if ((!is_string($search_term) || '' === $search_term) && !$query->is_search) {
+            //log a debug message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Search term is not provided or not a string. Exiting Scry Search.', "scry-search")));
             return $posts;
         }
 
@@ -54,17 +58,27 @@ class ScrySearch_SearchFeature extends PluginFeature {
         $post_types_values = $query->get('post_type');
 
         if (empty($post_types_values)) {
+            //log a debug message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Post types are not provided. Exiting Scry Search.', "scry-search")));
             return $posts;
         }
         if (!is_array($post_types_values)) {
+            //log a debug message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Post types are not an array.', "scry-search")));
             $post_types_values = array($post_types_values);
         }
         $post_types_to_search = array_intersect($post_types_values, $indexed_post_types);
         //if there are no post types to search, search all indexed post types
         if (empty($post_types_to_search)) {
+            //log a debug message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('No post types to search found.', "scry-search")));
             if (empty($indexed_post_types)) {
+                //log a debug message with the logging feature
+                $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('No post types to search or indexed post types found. Exiting Scry Search.', "scry-search")));
                 return $posts;
             }
+            //log a debug message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('No post types to search found. Searching all indexed post types.', "scry-search")));
             $post_types_to_search = $indexed_post_types;
         }
         
@@ -169,6 +183,8 @@ class ScrySearch_SearchFeature extends PluginFeature {
 
         } catch (Exception $e) {
 
+            //log an error message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('error', sprintf(__('Error in Meilisearch multi search (exiting Scry Search): %s', "scry-search"), $e->getMessage()));
             //fall back to the wordpress search
             return $posts;
         }
@@ -200,6 +216,8 @@ class ScrySearch_SearchFeature extends PluginFeature {
             }
         } catch (Exception $e) {
             // Silently fail - analytics should not break search
+            //log an error message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('error', sprintf(__('Error: %s', "scry-search"), $e->getMessage()));
         }
         
         //get the post ids from the search results

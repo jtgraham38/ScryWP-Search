@@ -153,7 +153,7 @@ class ScrySearch_LogsFeature extends PluginFeature {
         );
 
         // Pass the configured page size into JavaScript for AJAX pagination.
-        $logs_config = $this->get_log_config();
+        $logs_config = $this->config('logs');
         $page_size = isset($logs_config['page_size']) ? absint($logs_config['page_size']) : 100;
 
         // wp_localize_script exposes PHP values to logs.js as window.scrywpLogs.
@@ -229,25 +229,36 @@ class ScrySearch_LogsFeature extends PluginFeature {
     public function log(string $level, string $message) {
         global $wpdb;
 
-        $logs_config = $this->get_log_config();
+        $logs_config = $this->config('logs');
 
         if (!isset($logs_config['levels'][$level])) {
             return false;
         }
 
+        //get the message sanitized
         $message = $this->sanitize_log_message($message);
 
-        $result = $wpdb->insert(
-            $this->get_table_name(),
-            array(
-                'type' => sanitize_text_field($level),
-                'message' => $message,
-                'created_at' => current_time('mysql'),
-            ),
-            array('%s', '%s', '%s')
-        );
+        //let other plugins modify the log message
+        //@HOOK: scry_search_logs_log_message
+        $message = apply_filters($this->config('hook_prefix') . 'log_message', $message, $level);
 
-        return $result !== false;
+        //insert the message into the database
+        try {
+            $result = $wpdb->insert(
+                $this->get_table_name(),
+                array(
+                    'type' => sanitize_text_field($level),
+                    'message' => sanitize_text_field($message),
+                    'created_at' => current_time('mysql'),
+                ),
+                array('%s', '%s', '%s')
+            );
+            return $result !== false;
+        } catch (Throwable $e) {
+            //DO NOT log an error message here, as it will cause a recursive loop
+            //return false to indicate that the log message was not inserted
+            return false;
+        }
     }
 
 
@@ -255,7 +266,7 @@ class ScrySearch_LogsFeature extends PluginFeature {
     public function read(string $level, int $start, int $lines) {
         global $wpdb;
 
-        $logs_config = $this->get_log_config();
+        $logs_config = $this->config('logs');
 
         // read() is allowed to throw because callers need to know when reading fails.
         if (!isset($logs_config['levels'][$level])) {
@@ -316,12 +327,16 @@ class ScrySearch_LogsFeature extends PluginFeature {
     public function ajax_load_logs() {
         // Verify the nonce that was created in wp_localize_script().
         if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('load_logs'))) {
+            //log a debug message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Security check failed. Exiting ajax_load_logs.', "scry-search")));
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
 
         // Only administrators should be able to read plugin log files.
         if (!current_user_can('manage_options')) {
+            //log a debug message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Permission denied. Exiting ajax_load_logs.', "scry-search")));
             wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
             return;
         }
@@ -330,7 +345,7 @@ class ScrySearch_LogsFeature extends PluginFeature {
         $level = isset($_POST['level']) ? sanitize_text_field(wp_unslash($_POST['level'])) : '';
         $start = isset($_POST['start']) ? absint(wp_unslash($_POST['start'])) : 0;
         $lines = isset($_POST['lines']) ? absint(wp_unslash($_POST['lines'])) : 100;
-        $logs_config = $this->get_log_config();
+        $logs_config = $this->config('logs');
         $page_size = isset($logs_config['page_size']) ? absint($logs_config['page_size']) : 100;
         $lines = max(1, min($lines, $page_size));
 
@@ -339,6 +354,8 @@ class ScrySearch_LogsFeature extends PluginFeature {
             // Sends JSON back to fetch() in logs.js.
             wp_send_json_success($log_data);
         } catch (Throwable $e) {
+            //log an error message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: %s. Exiting ajax_load_logs.', "scry-search"), $e->getMessage()));
             wp_send_json_error(array('message' => $e->getMessage()));
         }
     }
@@ -372,11 +389,15 @@ class ScrySearch_LogsFeature extends PluginFeature {
      */
     public function ajax_delete_old_logs() {
         if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('delete_old_logs'))) {
+            //log a debug message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Security check failed. Exiting ajax_delete_old_logs.', "scry-search")));
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
 
         if (!current_user_can('manage_options')) {
+            //log a debug message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Permission denied. Exiting ajax_delete_old_logs.', "scry-search")));
             wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
             return;
         }
@@ -384,22 +405,20 @@ class ScrySearch_LogsFeature extends PluginFeature {
         $deleted = $this->cleanup_logs();
 
         if ($deleted === null) {
+            //log a debug message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: No logs deleted. Exiting ajax_delete_old_logs.', "scry-search")));
             wp_send_json_success(array('deleted' => 0));
             return;
         }
 
         if ($deleted === false) {
+            //log a debug message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Failed to delete logs. Exiting ajax_delete_old_logs.', "scry-search")));
             wp_send_json_error(array('message' => __('Failed to delete log entries.', "scry-search")));
             return;
         }
 
         wp_send_json_success(array('deleted' => (int) $deleted));
-    }
-
-    // Method to get the logs config
-    private function get_log_config() {
-        // Pulls the 'logs' array from the plugin config in scry_search.php.
-        return $this->config('logs');
     }
 
     // Method to keep log messages single-line and remove common secret formats

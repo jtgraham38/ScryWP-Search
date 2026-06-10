@@ -266,12 +266,16 @@ class ScrySearch_ConnectionSettingsFeature extends PluginFeature {
     public function ajax_test_connection() {
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'scry_ms_test_connection')) {
+            //log a debug message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Security check failed. Exiting ajax_test_connection.', "scry-search")));
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
         
         // Check user permissions
         if (!current_user_can('manage_options')) {
+            //log a debug message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Permission denied. Exiting ajax_test_connection.', "scry-search")));
             wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
             return;
         }
@@ -289,6 +293,8 @@ class ScrySearch_ConnectionSettingsFeature extends PluginFeature {
         
         // Validate URL
         if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
+            //log a debug message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Please provide a valid Meilisearch URL. Exiting ajax_test_connection.', "scry-search")));
             wp_send_json_error(array('message' => __('Please provide a valid Meilisearch URL', "scry-search")));
             return;
         }
@@ -318,16 +324,25 @@ class ScrySearch_ConnectionSettingsFeature extends PluginFeature {
             
         } catch (\Meilisearch\Exceptions\CommunicationException $e) {
             // Network/connection error
+            //log an error message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('error', sprintf(__('Connection failed: %s', "scry-search"), $e->getMessage()));
+            //send the error message to the client
             wp_send_json_error(array(
                 'message' => sprintf(__('Connection failed: %s', "scry-search"), $e->getMessage())
             ));
         } catch (\Meilisearch\Exceptions\ApiException $e) {
             // API error (auth, etc.)
+            //log an error message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('error', sprintf(__('Authentication failed: %s', "scry-search"), $e->getMessage()));
+            //send the error message to the client
             wp_send_json_error(array(
                 'message' => sprintf(__('Authentication failed: %s', "scry-search"), $e->getMessage())
             ));
         } catch (\Exception $e) {
             // General error
+            //log an error message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('error', sprintf(__('Error: %s', "scry-search"), $e->getMessage()));
+            //send the error message to the client
             wp_send_json_error(array(
                 'message' => sprintf(__('Error: %s', "scry-search"), $e->getMessage())
             ));

@@ -51,11 +51,17 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
         }
     } catch (CommunicationException $e) {
         $error_message = $e->getMessage();
+        //log an error message with the logging feature
+        $this->get_feature('scry_ms_logs')->log('error', sprintf(__('Connection failed: %s', "scry-search"), $e->getMessage()));
     } catch (Exception $e) {
         $error_message = $e->getMessage();
+        //log an error message with the logging feature
+        $this->get_feature('scry_ms_logs')->log('error', sprintf(__('Error: %s', "scry-search"), $e->getMessage()));
     }
 } else {
     $error_message = __('Connection settings are not configured.', "scry-search");
+    //log an error message with the logging feature
+    $this->get_feature('scry_ms_logs')->log('error', sprintf(__('Connection settings are not configured.', "scry-search")));
 }
 ?>
 <div class="scrywp-indexes-display">
@@ -182,6 +188,8 @@ if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
                                                 }
                                             } catch (Exception $e) {
                                                 // Keep defaults so the form remains usable even if settings fetch fails.
+                                                //log an error message with the logging feature
+                                                $this->get_feature('scry_ms_logs')->log('error', sprintf(__('Settings fetch failed: %s', "scry-search"), $e->getMessage()));
                                             }
                                         ?>
                                         <form class="scrywp-index-settings-form scrywp-index-settings-loaded" data-index-name="<?php echo esc_attr($index['index_name']); ?>" style="display: none;">
