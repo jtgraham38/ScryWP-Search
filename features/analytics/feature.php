@@ -142,9 +142,8 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
             return false;
         }
 
-        $result = $wpdb->insert(
-            $table_name,
-            array(
+        //event to insert
+        $event_to_insert = array(
                 'search_term'        => $search_term,
                 'user_id'            => absint($user_id),
                 'user_ip'            => sanitize_text_field($user_ip),
@@ -154,7 +153,16 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
                 'result_ids'         => wp_json_encode(isset($event['result_ids']) ? array_map('absint', $event['result_ids']) : array()),
                 'result_titles'      => wp_json_encode(isset($event['result_titles']) ? array_map('sanitize_text_field', $event['result_titles']) : array()),
                 'post_types_searched' => wp_json_encode(isset($event['post_types_searched']) ? array_map('sanitize_text_field', $event['post_types_searched']) : array()),
-            ),
+        );
+
+        //let other plugins modify the event to insert
+        //@HOOK: scry_search_analytics_event_to_insert
+        $event_to_insert = apply_filters($this->config('hook_prefix') . 'analytics_event_to_insert', $event_to_insert);
+
+        //insert the event
+        $result = $wpdb->insert(
+            $table_name,
+            $event_to_insert,
             array('%s', '%d', '%s', '%s', '%s', '%d', '%s', '%s', '%s')
         );
 

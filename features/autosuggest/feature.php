@@ -114,12 +114,19 @@ class ScrySearch_AutoSuggestFeature extends PluginFeature {
         $indexed_post_types = $this->get_feature('scry_ms_indexes')->get_index_names();
         $indexed_post_types = array_keys($indexed_post_types);
 
-        $search_query = new WP_Query(array(
+        //autosuggest query
+        $autosuggest_query = array(
             's' => $query,
             'post_type' => ((is_string($post_type) && $post_type !== '') || is_array($post_type)) ? $post_type : $indexed_post_types,
             'posts_per_page' => 5,
             'no_found_rows' => true,
-        ));
+        );
+
+        //let other plugins modify the autosuggest query
+        //@HOOK: scry_search_autosuggest_query
+        $autosuggest_query = apply_filters($this->config('hook_prefix') . 'autosuggest_query', $autosuggest_query);
+
+        $search_query = new WP_Query($autosuggest_query);
 
         //keep the title, url, and excerpt of the results
         $results = array();
