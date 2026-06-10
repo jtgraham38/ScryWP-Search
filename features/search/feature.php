@@ -194,7 +194,8 @@ class ScrySearch_SearchFeature extends PluginFeature {
 
         //allow other plugins to modify the search results + total hits before the db versions are retrieved
         //@HOOK: scry_ms_multi_search_raw_results
-        list($all_results, $total_hits) = apply_filters($this->config('hook_prefix') . 'multi_search_raw_results', $all_results, $total_hits);
+        $all_results = apply_filters($this->config('hook_prefix') . 'multi_search_raw_results', $all_results);
+        $total_hits = count($all_results);
    
         // Track search analytics
         try {
