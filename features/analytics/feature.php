@@ -156,7 +156,7 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
         );
 
         //let other plugins modify the event to insert
-        //@HOOK: scry_search_analytics_event_to_insert
+        //@HOOK: scry_ms_analytics_event_to_insert
         $event_to_insert = apply_filters($this->config('hook_prefix') . 'analytics_event_to_insert', $event_to_insert);
 
         //insert the event

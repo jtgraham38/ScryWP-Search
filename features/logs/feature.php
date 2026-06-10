@@ -239,7 +239,7 @@ class ScrySearch_LogsFeature extends PluginFeature {
         $message = $this->sanitize_log_message($message);
 
         //let other plugins modify the log message
-        //@HOOK: scry_search_logs_log_message
+        //@HOOK: scry_ms_log_message
         $message = apply_filters($this->config('hook_prefix') . 'log_message', $message, $level);
 
         //insert the message into the database

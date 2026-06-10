@@ -123,7 +123,7 @@ class ScrySearch_AutoSuggestFeature extends PluginFeature {
         );
 
         //let other plugins modify the autosuggest query
-        //@HOOK: scry_search_autosuggest_query
+        //@HOOK: scry_ms_autosuggest_query
         $autosuggest_query = apply_filters($this->config('hook_prefix') . 'autosuggest_query', $autosuggest_query);
 
         $search_query = new WP_Query($autosuggest_query);

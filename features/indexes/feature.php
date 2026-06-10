@@ -684,8 +684,8 @@ class ScrySearch_IndexesFeature extends PluginFeature {
      */
     private function format_post_for_meilisearch($post) {
         // Get post content (strip HTML tags and shortcodes)
-        $content = wp_strip_all_tags($post->post_content);
-        $content = do_shortcode($content);
+        $content = do_shortcode($post->post_content);
+        $content = wp_strip_all_tags($content);
         
         // Get post excerpt
         $excerpt = !empty($post->post_excerpt) ? wp_strip_all_tags($post->post_excerpt) : wp_trim_words($content, 55);
@@ -729,7 +729,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         }
         
         //let other plugins modify the document before it is indexed
-        //@HOOK: scry_search_index_prepare_document
+        //@HOOK: scry_ms_index_prepare_document
         $document = apply_filters($this->config('hook_prefix') . 'index_prepare_document', $document);
         
         return $document;
@@ -901,6 +901,12 @@ class ScrySearch_IndexesFeature extends PluginFeature {
     private function configure_index_searchable_attributes($index) {
         try {
             $searchable_attributes = $this->get_searchable_attributes();
+            $index_name = $index->getUid();
+
+            //let other plugins modify the searchable attributes for this index
+            //@HOOK: scry_ms_index_searchable_attributes_before_update — args: $searchable_attributes, $index_name
+            $searchable_attributes = apply_filters($this->config('hook_prefix') . 'index_searchable_attributes_before_update', $searchable_attributes, $index_name);
+
             // Update searchable attributes - Meilisearch PHP SDK v1.x uses updateSearchableAttributes
             $index->updateSearchableAttributes($searchable_attributes);
         } catch (Exception $e) {
@@ -1034,7 +1040,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             );
 
             //let other plugins add entries to the return array
-            //@HOOK: scry_search_index_settings_ajax — args: $return_array, $index_name
+            //@HOOK: scry_ms_index_settings_ajax — args: $return_array, $index_name
             $return_array = apply_filters($this->config('hook_prefix') . 'index_settings_ajax', $return_array, $index_name);
             
             wp_send_json_success($return_array);
@@ -1185,7 +1191,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         );
 
         //hook to allow other plugins to modify the index settings backup
-        //@HOOK: scry_search_index_settings_backup — args: $index_settings_backup, $index_name
+        //@HOOK: scry_ms_index_settings_backup — args: $index_settings_backup, $index_name
         $index_settings_backup = apply_filters($this->config('hook_prefix') . 'index_settings_backup', $index_settings_backup, $index_name);
 
         //update the settings backup in the database
@@ -1201,13 +1207,13 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         }
 
         //let other plugins modify the index settings before they are updated
-        //@HOOK: scry_search_index_ranking_rules_before_update — args: $ranking_rules, $index_name
+        //@HOOK: scry_ms_index_ranking_rules_before_update — args: $ranking_rules, $index_name
         $ranking_rules = apply_filters($this->config('hook_prefix') . 'index_ranking_rules_before_update', $ranking_rules, $index_name);
-        //@HOOK: scry_search_index_searchable_attributes_before_update — args: $searchable_attributes, $index_name
+        //@HOOK: scry_ms_index_searchable_attributes_before_update — args: $searchable_attributes, $index_name
         $searchable_attributes = apply_filters($this->config('hook_prefix') . 'index_searchable_attributes_before_update', $searchable_attributes, $index_name);
-        //@HOOK: scry_search_index_synonyms_before_update — args: $synonyms, $index_name
+        //@HOOK: scry_ms_index_synonyms_before_update — args: $synonyms, $index_name
         $synonyms = apply_filters($this->config('hook_prefix') . 'index_synonyms_before_update', $synonyms, $index_name);
-        //@HOOK: scry_search_index_stop_words_before_update — args: $stop_words, $index_name
+        //@HOOK: scry_ms_index_stop_words_before_update — args: $stop_words, $index_name
         $stop_words = apply_filters($this->config('hook_prefix') . 'index_stop_words_before_update', $stop_words, $index_name);
 
         try {
@@ -1283,7 +1289,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         );
         
         //let other plugins modify the ranking rules
-        //@HOOK: scry_search_index_ranking_rules
+        //@HOOK: scry_ms_index_ranking_rules
         $ranking_rules = apply_filters($this->config('hook_prefix') . 'index_ranking_rules', $ranking_rules);
         
         return $ranking_rules;
@@ -1356,7 +1362,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         }
 
         //let other plugins modify the fields
-        //@HOOK: scry_search_index_fields
+        //@HOOK: scry_ms_index_fields
         $fields = apply_filters($this->config('hook_prefix') . 'index_fields', $fields, $post_type);
         
         return $fields;
@@ -1386,7 +1392,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             )
         );
 
-        //@HOOK: scry_search_index_meta_keys
+        //@HOOK: scry_ms_index_meta_keys
         $meta_keys = apply_filters($this->config('hook_prefix') . 'index_meta_keys', $meta_keys, $post_type);
         
         return $meta_keys ? $meta_keys : array();
@@ -1425,9 +1431,6 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             'tags',
             'post_meta',
         );
-
-        //@HOOK: scry_search_index_searchable_attributes
-        $searchable_attributes = apply_filters($this->config('hook_prefix') . 'index_searchable_attributes', $searchable_attributes);
 
         return $searchable_attributes;
     }

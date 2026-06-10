@@ -82,7 +82,7 @@ class ScrySearch_SearchFeature extends PluginFeature {
         $index_names_to_search = array_intersect_key($index_names, array_flip($post_types_to_search));
         
         //allow other plugins to modify the index names to search
-        //@HOOK: scry_search_multi_search_index_names
+        //@HOOK: scry_ms_multi_search_index_names
         $index_names_to_search = apply_filters($this->config('hook_prefix') . 'multi_search_index_names', $index_names_to_search, $post_types_to_search);
 
         //get the search query, and all other query params that should be passed to the meilisearch search
@@ -107,7 +107,7 @@ class ScrySearch_SearchFeature extends PluginFeature {
         //skip page for now
         //THE ABOVE ARE VITAL, ADD SUPPORT FOR THE REST IN DOCUMENTATION ORDER!.
 
-        //@HOOK: scry_search_multi_search_query_params
+        //@HOOK: scry_ms_multi_search_query_params
         //allow other plugins to modify the query params before they are used to search the indexes
         $query_params = apply_filters($this->config('hook_prefix') . 'multi_search_query_params', $query_params, $query);
 
@@ -140,7 +140,7 @@ class ScrySearch_SearchFeature extends PluginFeature {
                 
 
                 //let other plugins modify the search query before it is used to search the index
-                //@HOOK: scry_search_multi_search_query
+                //@HOOK: scry_ms_multi_search_query
                 $search_query = apply_filters($this->config('hook_prefix') . 'multi_search_query', $search_query, $index_name);
 
                 //add it to the search queries
@@ -148,7 +148,7 @@ class ScrySearch_SearchFeature extends PluginFeature {
             }
 
             //allow other plugins to modify the search queries before they are used to search the indexes
-            //@HOOK: scry_search_multi_search_queries
+            //@HOOK: scry_ms_multi_search_queries
             $search_queries = apply_filters($this->config('hook_prefix') . 'multi_search_queries', $search_queries);
 
             // Set pagination on MultiSearchFederation (handles federated search pagination)
@@ -163,7 +163,7 @@ class ScrySearch_SearchFeature extends PluginFeature {
             }
 
             //allow other plugins to modify the federation object before it is used to search the indexes
-            //@HOOK: scry_search_multi_search_federation
+            //@HOOK: scry_ms_multi_search_federation
             $federation = apply_filters($this->config('hook_prefix') . 'multi_search_federation', $federation);
 
             //use federated multi search to search the indexes
@@ -193,7 +193,7 @@ class ScrySearch_SearchFeature extends PluginFeature {
         }
 
         //allow other plugins to modify the search results + total hits before the db versions are retrieved
-        //@HOOK: scry_search_multi_search_raw_results
+        //@HOOK: scry_ms_multi_search_raw_results
         list($all_results, $total_hits) = apply_filters($this->config('hook_prefix') . 'multi_search_raw_results', $all_results, $total_hits);
    
         // Track search analytics
@@ -236,7 +236,7 @@ class ScrySearch_SearchFeature extends PluginFeature {
             $query->max_num_pages = ceil($query->found_posts / ($posts_per_page ?: 10));
 
             //allow other plugins to modify the posts array before it is returned, after the db versions are retrieved
-            //@HOOK: scry_search_multi_search_final_results
+            //@HOOK: scry_ms_multi_search_final_results
             $posts_array = apply_filters($this->config('hook_prefix') . 'multi_search_final_results', $posts_array);
             
             return $posts_array;

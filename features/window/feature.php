@@ -50,7 +50,7 @@ class ScrySearch_WindowFeature extends PluginFeature {
         );
 
         //let other plugins modify the window localized object
-        //@HOOK: scry_search_window_localized
+        //@HOOK: scry_ms_window_localized
         $window_localized = apply_filters($this->config('hook_prefix') . 'window_localized', $window_localized);
 
         //localize the script with the rest api url
