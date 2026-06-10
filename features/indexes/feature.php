@@ -61,7 +61,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         //ensure the post is published
         if ($post->post_status !== 'publish') {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Post %s is not published. Exiting index_post.', "scry-search"), $post->post_title));
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Post %1$d (%2$s) is not published. Exiting index_post.', "scry-search"), $post->ID, $post->post_type));
             return;
         }
 
@@ -83,7 +83,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             $client->index($index_name)->updateDocuments($post_data);
         } catch (Exception $e) {
             //log an error message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('error', sprintf(__('Error indexing post %s: %s', "scry-search"), $post->post_title, $e->getMessage()));
+            $this->get_feature('scry_ms_logs')->log('error', sprintf(__('Error indexing post %1$d (%2$s): %3$s', "scry-search"), $post->ID, $post->post_type, $e->getMessage()));
             //report the exception with an admin notice, including a summary/details dropdown with the full stack trace
             add_action('admin_notices', function() use ($e) {
                 ?>
@@ -127,7 +127,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             $client->index($index_name)->deleteDocument($post_id);
         } catch (Exception $e) {
             //log an error message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('error', sprintf(__('Error deleting post %s from index: %s', "scry-search"), $post->post_title, $e->getMessage()));
+            $this->get_feature('scry_ms_logs')->log('error', sprintf(__('Error deleting post %1$d (%2$s) from index: %3$s', "scry-search"), $post->ID, $post->post_type, $e->getMessage()));
             //report the exception with an admin notice, including a summary/details dropdown with the full stack trace
             add_action('admin_notices', function() use ($e) {
                 ?>
@@ -150,7 +150,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         //ensure  that the meilisearch url and admin key are set
         if (empty(get_option($this->prefixed('meilisearch_url'))) || empty(get_option($this->prefixed('meilisearch_admin_key')))) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Meilisearch URL or admin key is not set. Exiting ensure_post_indexes_exist.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Meilisearch URL or admin key is not set. Exiting ensure_post_indexes_exist.', "scry-search")));
             return;
         }
 
@@ -232,7 +232,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         }
         catch (CommunicationException $e) {
             //log an error message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('error', sprintf(__('Error: %s', "scry-search"), $e->getMessage()));
+            $this->get_feature('scry_ms_logs')->log('error', sprintf(__('ensure_post_indexes_exist connection failed: %s', "scry-search"), $e->getMessage()));
             //report the exception with an admin notice, including a summary/details dropdown with the full stack trace
             add_action('admin_notices', function() use ($e) {
                 ?>
@@ -248,7 +248,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         }
         catch (Exception $e) {
             //log an error message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('error', sprintf(__('Error: %s', "scry-search"), $e->getMessage()));
+            $this->get_feature('scry_ms_logs')->log('error', sprintf(__('ensure_post_indexes_exist failed: %s', "scry-search"), $e->getMessage()));
             //report the exception with an admin notice, including a summary/details dropdown with the full stack trace
             add_action('admin_notices', function() use ($e) {
                 ?>
@@ -269,7 +269,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         // Only allow administrators to access these settings
         if (!current_user_can('manage_options')) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('User does not have manage_options permission. Exiting register_settings.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('User does not have manage_options permission. Exiting register_settings.', "scry-search")));
             return;
         }
 
@@ -470,7 +470,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('wipe_index'))) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Security check failed. Exiting ajax_wipe_index.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Security check failed. Exiting ajax_wipe_index.', "scry-search")));
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
@@ -478,7 +478,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         // Check user permissions
         if (!current_user_can('manage_options')) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Permission denied. Exiting ajax_wipe_index.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Permission denied. Exiting ajax_wipe_index.', "scry-search")));
             wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
             return;
         }
@@ -489,7 +489,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         // Validate index name
         if (empty($index_name)) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Index name is empty. Exiting ajax_wipe_index.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Index name is empty. Exiting ajax_wipe_index.', "scry-search")));
             wp_send_json_error(array('message' => __('Please provide an index name', "scry-search")));
             return;
         }
@@ -498,7 +498,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         $index_names = $this->get_index_names();
         if (!in_array($index_name, $index_names, true)) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Invalid index name. Exiting ajax_wipe_index.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Invalid index name. Exiting ajax_wipe_index.', "scry-search")));
             wp_send_json_error(array('message' => __('Invalid index name', "scry-search")));
             return;
         }
@@ -509,7 +509,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         
         if (empty($meilisearch_url) || empty($meilisearch_admin_key)) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Connection settings are not configured. Exiting ajax_wipe_index.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Connection settings are not configured. Exiting ajax_wipe_index.', "scry-search")));
             wp_send_json_error(array('message' => __('Connection settings are not configured', "scry-search")));
             return;
         }
@@ -570,7 +570,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('index_posts'))) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Security check failed. Exiting ajax_index_posts.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Security check failed. Exiting ajax_index_posts.', "scry-search")));
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
@@ -578,7 +578,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         // Check user permissions
         if (!current_user_can('manage_options')) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Permission denied. Exiting ajax_index_posts.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Permission denied. Exiting ajax_index_posts.', "scry-search")));
             wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
             return;
         }
@@ -589,7 +589,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         // Validate post type
         if (empty($post_type)) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Post type is empty. Exiting ajax_index_posts.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Post type is empty. Exiting ajax_index_posts.', "scry-search")));
             wp_send_json_error(array('message' => __('Please provide a post type', "scry-search")));
             return;
         }
@@ -598,7 +598,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         $index_names = $this->get_index_names();
         if (!isset($index_names[$post_type])) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Invalid post type. Exiting ajax_index_posts.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Invalid post type. Exiting ajax_index_posts.', "scry-search")));
             wp_send_json_error(array('message' => __('Invalid post type', "scry-search")));
             return;
         }
@@ -611,7 +611,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         
         if (empty($meilisearch_url) || empty($meilisearch_admin_key)) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Connection settings are not configured. Exiting ajax_index_posts.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Connection settings are not configured. Exiting ajax_index_posts.', "scry-search")));
             wp_send_json_error(array('message' => __('Connection settings are not configured', "scry-search")));
             return;
         }
@@ -742,7 +742,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('search_index'))) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Security check failed. Exiting ajax_search_index.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Security check failed. Exiting ajax_search_index.', "scry-search"));
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
@@ -750,7 +750,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         // Check user permissions
         if (!current_user_can('manage_options')) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Permission denied. Exiting ajax_search_index.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Permission denied. Exiting ajax_search_index.', "scry-search"));
             wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
             return;
         }
@@ -762,14 +762,14 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         // Validate inputs
         if (empty($search_query)) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Search query is empty. Exiting ajax_search_index.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Search query is empty. Exiting ajax_search_index.', "scry-search"));
             wp_send_json_error(array('message' => __('Please provide a search query', "scry-search")));
             return;
         }
         
         if (empty($index_name)) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Index name is empty. Exiting ajax_search_index.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Index name is empty. Exiting ajax_search_index.', "scry-search"));
             wp_send_json_error(array('message' => __('Please provide an index name', "scry-search")));
             return;
         }
@@ -778,7 +778,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         $index_names = $this->get_index_names();
         if (!in_array($index_name, $index_names, true)) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Invalid index name. Exiting ajax_search_index.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Invalid index name. Exiting ajax_search_index.', "scry-search"));
             wp_send_json_error(array('message' => __('Invalid index name', "scry-search")));
             return;
         }
@@ -790,7 +790,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         
         if (empty($meilisearch_url)) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Connection settings are not configured. Exiting ajax_search_index.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Connection settings are not configured. Exiting ajax_search_index.', "scry-search"));
             wp_send_json_error(array('message' => __('Connection settings are not configured', "scry-search")));
             return;
         }
@@ -800,7 +800,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         
         if (empty($api_key)) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: API key not configured. Exiting ajax_search_index.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('API key not configured. Exiting ajax_search_index.', "scry-search"));
             wp_send_json_error(array('message' => __('API key not configured', "scry-search")));
             return;
         }
@@ -820,7 +820,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
 
             if (empty($hits)) {
                 //log a debug message with the logging feature
-                $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('No results found. Exiting ajax_search_index.', "scry-search")));
+                $this->get_feature('scry_ms_logs')->log('debug', __('No results found. Exiting ajax_search_index.', "scry-search")));
                 wp_send_json_success(array(
                     'results' => array(),
                     'message' => __('No results found', "scry-search")
@@ -906,7 +906,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         } catch (Exception $e) {
             // Log error but don't fail the entire operation
             //log an error message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('error', sprintf(__('Error: %s', "scry-search"), $e->getMessage()));
+            $this->get_feature('scry_ms_logs')->log('error', sprintf(__('configure_index_searchable_attributes failed: %s', "scry-search"), $e->getMessage()));
             error_log('Scry Search for Meilisearch: Failed to configure searchable attributes: ' . $e->getMessage());
         }
     }
@@ -918,7 +918,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('get_index_settings'))) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Security check failed. Exiting ajax_get_index_settings.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Error: Security check failed. Exiting ajax_get_index_settings.', "scry-search")));
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
@@ -926,7 +926,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         // Check user permissions
         if (!current_user_can('manage_options')) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Permission denied. Exiting ajax_get_index_settings.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Error: Permission denied. Exiting ajax_get_index_settings.', "scry-search")));
             wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
             return;
         }
@@ -937,7 +937,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         // Validate index name
         if (empty($index_name)) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Index name is empty. Exiting ajax_get_index_settings.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Error: Index name is empty. Exiting ajax_get_index_settings.', "scry-search")));
             wp_send_json_error(array('message' => __('Please provide an index name', "scry-search")));
             return;
         }
@@ -946,7 +946,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         $index_names = $this->get_index_names();
         if (!in_array($index_name, $index_names, true)) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Invalid index name. Exiting ajax_get_index_settings.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Error: Invalid index name. Exiting ajax_get_index_settings.', "scry-search")));
             wp_send_json_error(array('message' => __('Invalid index name', "scry-search")));
             return;
         }
@@ -957,7 +957,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         
         if (!$post_type) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Could not determine post type for index. Exiting ajax_get_index_settings.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Could not determine post type for index. Exiting ajax_get_index_settings.', "scry-search")));
             wp_send_json_error(array('message' => __('Could not determine post type for index', "scry-search")));
             return;
         }
@@ -968,7 +968,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         
         if (empty($meilisearch_url) || empty($meilisearch_admin_key)) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Connection settings are not configured. Exiting ajax_get_index_settings.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Connection settings are not configured. Exiting ajax_get_index_settings.', "scry-search")));
             wp_send_json_error(array('message' => __('Connection settings are not configured', "scry-search")));
             return;
         }
@@ -1077,7 +1077,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('update_index_settings'))) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Security check failed. Exiting ajax_update_index_settings.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Security check failed. Exiting ajax_update_index_settings.', "scry-search")));
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
@@ -1085,7 +1085,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         // Check user permissions
         if (!current_user_can('manage_options')) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Permission denied. Exiting ajax_update_index_settings.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Permission denied. Exiting ajax_update_index_settings.', "scry-search")));
             wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
             return;
         }
@@ -1096,7 +1096,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         // Validate index name
         if (empty($index_name)) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Index name is empty. Exiting ajax_update_index_settings.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Index name is empty. Exiting ajax_update_index_settings.', "scry-search")));
             wp_send_json_error(array('message' => __('Please provide an index name', "scry-search")));
             return;
         }
@@ -1105,7 +1105,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         $index_names = $this->get_index_names();
         if (!in_array($index_name, $index_names, true)) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Invalid index name. Exiting ajax_update_index_settings.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Invalid index name. Exiting ajax_update_index_settings.', "scry-search")));
             wp_send_json_error(array('message' => __('Invalid index name', "scry-search")));
             return;
         }

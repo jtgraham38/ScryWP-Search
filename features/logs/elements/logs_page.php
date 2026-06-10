@@ -28,7 +28,7 @@ try {
     $log_data = $logs_feature->read($selected_level, 0, $page_size);
 } catch (Throwable $e) {
     //log an error message with the logging feature
-    $this->get_feature('scry_ms_logs')->log('error', sprintf(__('Error: %s', "scry-search"), $e->getMessage()));
+    $this->get_feature('scry_ms_logs')->log('error', sprintf(__('Failed to read logs on logs admin page: %s', "scry-search"), $e->getMessage()));
     $log_read_error = $e->getMessage();
 }
 ?>

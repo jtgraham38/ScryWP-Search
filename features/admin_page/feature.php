@@ -170,7 +170,7 @@ class ScrySearch_AdminPageFeature extends PluginFeature {
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('get_tasks'))) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Security check failed. Exiting ajax_get_tasks.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Security check failed. Exiting ajax_get_tasks.', "scry-search")));
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
@@ -178,7 +178,7 @@ class ScrySearch_AdminPageFeature extends PluginFeature {
         // Check user permissions
         if (!current_user_can('manage_options')) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Permission denied. Exiting ajax_get_tasks.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Permission denied. Exiting ajax_get_tasks.', "scry-search")));
             wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
             return;
         }
@@ -190,7 +190,7 @@ class ScrySearch_AdminPageFeature extends PluginFeature {
         // Validate limit (max 100 per Meilisearch API)
         if ($limit > 100) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Limit is greater than 100. Exiting ajax_get_tasks.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Limit is greater than 100. Clamping to 100 in ajax_get_tasks.', "scry-search"));
             $limit = 100;
         }
         
@@ -200,7 +200,7 @@ class ScrySearch_AdminPageFeature extends PluginFeature {
         
         if (empty($meilisearch_url) || empty($meilisearch_admin_key)) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Connection settings are not configured. Exiting ajax_get_tasks.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Connection settings are not configured. Exiting ajax_get_tasks.', "scry-search")));
             wp_send_json_error(array('message' => __('Connection settings are not configured', "scry-search")));
             return;
         }

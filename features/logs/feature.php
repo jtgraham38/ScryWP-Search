@@ -328,7 +328,7 @@ class ScrySearch_LogsFeature extends PluginFeature {
         // Verify the nonce that was created in wp_localize_script().
         if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('load_logs'))) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Security check failed. Exiting ajax_load_logs.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Security check failed. Exiting ajax_load_logs.', "scry-search"));
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
@@ -336,7 +336,7 @@ class ScrySearch_LogsFeature extends PluginFeature {
         // Only administrators should be able to read plugin log files.
         if (!current_user_can('manage_options')) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Permission denied. Exiting ajax_load_logs.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Permission denied. Exiting ajax_load_logs.', "scry-search"));
             wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
             return;
         }
@@ -355,7 +355,7 @@ class ScrySearch_LogsFeature extends PluginFeature {
             wp_send_json_success($log_data);
         } catch (Throwable $e) {
             //log an error message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: %s. Exiting ajax_load_logs.', "scry-search"), $e->getMessage()));
+            $this->get_feature('scry_ms_logs')->log('error', sprintf(__('Failed to read logs in ajax_load_logs: %s', "scry-search"), $e->getMessage()));
             wp_send_json_error(array('message' => $e->getMessage()));
         }
     }
@@ -390,14 +390,14 @@ class ScrySearch_LogsFeature extends PluginFeature {
     public function ajax_delete_old_logs() {
         if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('delete_old_logs'))) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Security check failed. Exiting ajax_delete_old_logs.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Security check failed. Exiting ajax_delete_old_logs.', "scry-search"));
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
 
         if (!current_user_can('manage_options')) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Permission denied. Exiting ajax_delete_old_logs.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Permission denied. Exiting ajax_delete_old_logs.', "scry-search"));
             wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
             return;
         }
@@ -405,15 +405,13 @@ class ScrySearch_LogsFeature extends PluginFeature {
         $deleted = $this->cleanup_logs();
 
         if ($deleted === null) {
-            //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: No logs deleted. Exiting ajax_delete_old_logs.', "scry-search")));
             wp_send_json_success(array('deleted' => 0));
             return;
         }
 
         if ($deleted === false) {
-            //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Failed to delete logs. Exiting ajax_delete_old_logs.', "scry-search")));
+            //log an error message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('error', __('Failed to delete logs in ajax_delete_old_logs.', "scry-search"));
             wp_send_json_error(array('message' => __('Failed to delete log entries.', "scry-search")));
             return;
         }
@@ -426,9 +424,18 @@ class ScrySearch_LogsFeature extends PluginFeature {
         // Collapse newlines/tabs/spaces so one log call cannot forge multiple entries.
         $message = preg_replace('/\s+/', ' ', trim($message));
 
-        // Redact common Authorization bearer token formats from exception dumps.
+        // Authorization and bearer tokens.
         $message = preg_replace('/Authorization:\s*Bearer\s+[^\s\]]+/i', 'Authorization: Bearer [REDACTED]', $message);
-        $message = preg_replace('/Bearer\s+[A-Za-z0-9+\/=_-]+/i', 'Bearer [REDACTED]', $message);
+        $message = preg_replace('/Bearer\s+[A-Za-z0-9+\/=_-]{8,}/i', 'Bearer [REDACTED]', $message);
+
+        // Meilisearch and common API key headers (colon or whitespace separated).
+        $message = preg_replace('/X-Meili(?:search)?-API-Key[:\s]+[^\s\]]+/i', 'X-Meili-API-Key: [REDACTED]', $message);
+
+        // Query-string secrets.
+        $message = preg_replace('/([?&])(api[_-]?key|master[_-]?key|search[_-]?key)=([^&\s]+)/i', '$1$2=[REDACTED]', $message);
+
+        // JSON/object-style key fields in exception dumps.
+        $message = preg_replace('/"(apiKey|masterKey|searchKey|api_key|admin_key|search_key)"\s*:\s*"[^"]*"/i', '"$1":"[REDACTED]"', $message);
 
         return $message;
     }

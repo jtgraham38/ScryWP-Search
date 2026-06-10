@@ -267,7 +267,7 @@ class ScrySearch_ConnectionSettingsFeature extends PluginFeature {
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'scry_ms_test_connection')) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Security check failed. Exiting ajax_test_connection.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Error: Security check failed. Exiting ajax_test_connection.', "scry-search")));
             wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
             return;
         }
@@ -275,7 +275,7 @@ class ScrySearch_ConnectionSettingsFeature extends PluginFeature {
         // Check user permissions
         if (!current_user_can('manage_options')) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Permission denied. Exiting ajax_test_connection.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Error: Permission denied. Exiting ajax_test_connection.', "scry-search")));
             wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
             return;
         }
@@ -294,7 +294,7 @@ class ScrySearch_ConnectionSettingsFeature extends PluginFeature {
         // Validate URL
         if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
             //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Error: Please provide a valid Meilisearch URL. Exiting ajax_test_connection.', "scry-search")));
+            $this->get_feature('scry_ms_logs')->log('debug', __('Error: Please provide a valid Meilisearch URL. Exiting ajax_test_connection.', "scry-search")));
             wp_send_json_error(array('message' => __('Please provide a valid Meilisearch URL', "scry-search")));
             return;
         }
