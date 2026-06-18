@@ -20,14 +20,19 @@ if (!function_exists('is_plugin_active')) {
 
 // Placeholder for future premium upgrade metadata.
 $premium_upgrades = array(
-    // array(
-    //     'name' => 'ScryWP Premium Add-on',
-    //     'slug' => 'scrywp-premium',
-    //     'description' => 'Advanced premium upgrade features.',
-    //     'purchase_url' => 'https://scrywp.com',
-    //     'plugin_file' => 'scrywp-premium/scrywp-premium.php',
-    // ),
+    array(
+        'name' => 'Scry Search Filters: Filtered Search for WordPress & WooCommerce',
+        'slug' => 'scry-search-filters',
+        'description' => 'Add support for filtered, facetted search to your WordPress & WooCommerce site.',
+        'purchase_url' => 'https://scrywp.com/premium-plugins/scry-search-filters/',
+        'active' => false,
+    ),
 );
+
+// Premium plugins set `active` to true via this filter when installed on the site.
+// @HOOK: scry_ms_premium_upgrades_display — args: $premium_upgrades
+$premium_upgrades = apply_filters($this->prefixed('premium_upgrades_display'), $premium_upgrades);
+
 ?>
 
 <div class="wrap">
@@ -44,27 +49,71 @@ $premium_upgrades = array(
     <?php else : ?>
         <?php foreach ($premium_upgrades as $upgrade) : ?>
             <?php
-            $plugin_file = isset($upgrade['plugin_file']) ? $upgrade['plugin_file'] : '';
-            $is_installed = !empty($plugin_file) && is_plugin_active($plugin_file);
+            $is_active = !empty($upgrade['active']);
+            $purchase_url = isset($upgrade['purchase_url']) ? $upgrade['purchase_url'] : '';
+            $upgrade_slug = isset($upgrade['slug']) ? sanitize_key($upgrade['slug']) : '';
+            $settings_dialog_id = $upgrade_slug !== '' ? 'scrywp-upgrade-settings-' . $upgrade_slug : '';
             ?>
-            <div class="card" style="max-width: 900px;">
+            <div class="card scrywp-upgrade-card" style="max-width: 900px;">
                 <h3><?php echo esc_html($upgrade['name']); ?></h3>
                 <p><?php echo esc_html($upgrade['description']); ?></p>
 
-                <?php if ($is_installed) : ?>
-                    <p>
-                        <strong><?php esc_html_e('Installed:', "scry-search"); ?></strong>
-                        <?php esc_html_e('This premium upgrade is active and ready to use.', "scry-search"); ?>
-                    </p>
-                <?php else : ?>
-                    <p>
+                <p class="scrywp-upgrade-card-actions">
+                    <?php if ($is_active) : ?>
+                        <span class="button button-primary disabled" aria-disabled="true">
+                            <?php esc_html_e('Already Active', "scry-search"); ?>
+                        </span>
+                    <?php elseif ($purchase_url !== '') : ?>
                         <a class="button button-primary"
-                           href="<?php echo esc_url($upgrade['purchase_url']); ?>"
-                           target="_blank"
-                           rel="noopener noreferrer">
+                        href="<?php echo esc_url($purchase_url); ?>"
+                        target="_blank"
+                        rel="noopener noreferrer">
                             <?php esc_html_e('Get Premium Upgrade', "scry-search"); ?>
                         </a>
-                    </p>
+                    <?php endif; ?>
+                    <?php if ($is_active && $settings_dialog_id !== '') : ?>
+                        <button
+                            type="button"
+                            class="button scrywp-upgrade-settings-button"
+                            onclick="document.getElementById('<?php echo esc_attr($settings_dialog_id); ?>').showModal()"
+                            aria-label="<?php echo esc_attr(sprintf(__('Settings for %s', "scry-search"), $upgrade['name'])); ?>"
+                        >
+                            <span class="dashicons dashicons-admin-generic" aria-hidden="true"></span>
+                        </button>
+                    <?php endif; ?>
+                </p>
+
+                <?php if ($is_active && $settings_dialog_id !== '') : ?>
+                    <dialog id="<?php echo esc_attr($settings_dialog_id); ?>" class="scrywp-upgrade-settings-dialog">
+                        <div class="scrywp-upgrade-settings-dialog-header">
+                            <h3><?php echo esc_html(sprintf(__('Settings: %s', "scry-search"), $upgrade['name'])); ?></h3>
+                            <button
+                                type="button"
+                                class="scrywp-upgrade-settings-dialog-close-button"
+                                onclick="document.getElementById('<?php echo esc_attr($settings_dialog_id); ?>').close()"
+                                aria-label="<?php esc_attr_e('Close', "scry-search"); ?>"
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div class="scrywp-upgrade-settings-dialog-content">
+                            <?php
+                            // @HOOK: scry_ms_premium_upgrade_settings_ui
+                            //buffer the plugin output for the settings
+                            ob_start();
+                            do_action($this->config('hook_prefix') . 'premium_upgrade_settings_ui', $upgrade);
+                            $upgrade_settings_ui = ob_get_clean();
+
+                            //if no content was returned, show a default message
+                            if (empty($upgrade_settings_ui)) {
+                                $upgrade_settings_ui = '<p>' . esc_html__('No settings are available for this upgrade.', "scry-search") . '</p>';
+                            }
+
+                            //output the content
+                            echo $upgrade_settings_ui;
+                            ?>
+                        </div>
+                    </dialog>
                 <?php endif; ?>
             </div>
         <?php endforeach; ?>

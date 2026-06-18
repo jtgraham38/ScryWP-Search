@@ -16,6 +16,23 @@ class ScrySearch_UpgradesFeature extends PluginFeature {
 
     public function add_actions() {
         add_action('admin_menu', array($this, 'add_admin_page'));
+        add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
+    }
+
+    /**
+     * Enqueue admin assets for the upgrades page.
+     */
+    public function enqueue_admin_assets($hook) {
+        if ($hook !== 'scry-search_page_scry-search-meilisearch-upgrades') {
+            return;
+        }
+
+        wp_enqueue_style(
+            $this->prefixed('upgrades-page-styles'),
+            plugin_dir_url(__FILE__) . 'assets/css/upgrades_page.css',
+            array(),
+            '1.0.0'
+        );
     }
 
     // Add an admin page for premium upgrades.
