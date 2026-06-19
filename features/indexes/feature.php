@@ -1042,7 +1042,6 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             //let other plugins add entries to the return array
             //@HOOK: scry_ms_index_settings_ajax — args: $return_array, $index_name
             $return_array = apply_filters($this->config('hook_prefix') . 'index_settings_ajax', $return_array, $index_name);
-            
             wp_send_json_success($return_array);
             
         } catch (\Meilisearch\Exceptions\CommunicationException $e) {
