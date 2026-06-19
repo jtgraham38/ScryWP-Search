@@ -3,7 +3,7 @@
  * Plugin Name:	Scry Search: Meilisearch for WordPress
  * Plugin URI:	https://scrywp.com
  * Description:	Bringing all the power of Meilisearch to WordPress.
- * Version:	1.2.0
+ * Version:	1.2.1
  * Requires at least: 5.2
  * Requires PHP:      8.1
  * Author:	JG Web Development
@@ -28,7 +28,7 @@ use jtgraham38\jgwordpresskit\PluginFeature;
 
 //set plugin config
 $config = array(
-    'hook_prefix' => 'scry_ms_',    //set a separte prefix because changing it will break dependent plugins
+    'hook_prefix' => 'scry_ms_',    //set a separate prefix because changing it will break dependent plugins
     'excluded_taxonomies' => array(
         'post_format',
         'nav_menu',

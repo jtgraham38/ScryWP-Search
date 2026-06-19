@@ -204,13 +204,29 @@ class ScrySearch_AdminPageFeature extends PluginFeature {
             wp_send_json_error(array('message' => __('Connection settings are not configured', "scry-search")));
             return;
         }
+
+        $managed_index_uids = array_values($this->get_feature('scry_ms_indexes')->get_index_names());
+
+        if (empty($managed_index_uids)) {
+            wp_send_json_success(array(
+                'tasks' => array(),
+                'total' => 0,
+                'limit' => $limit,
+                'currentPage' => 1,
+                'totalPages' => 1,
+                'hasMore' => false,
+            ));
+            return;
+        }
         
         try {
             // Create Meilisearch client
             $client = new Client($meilisearch_url, $meilisearch_admin_key);
             
             // First, get total count to calculate reverse pagination
-            $count_query = (new TasksQuery())->setLimit(1);
+            $count_query = (new TasksQuery())
+                ->setLimit(1)
+                ->setIndexUids($managed_index_uids);
             $count_response = $client->getTasks($count_query);
             
             // Handle response - could be array or object with getTotal() method
@@ -232,7 +248,9 @@ class ScrySearch_AdminPageFeature extends PluginFeature {
             // Page 1: don't set `from` → returns newest tasks
             // Page N: set `from` to skip the first (N-1)*limit newest tasks
             //   Approximation: from_uid = total - 1 - ((N-1) * limit)
-            $tasks_query = (new TasksQuery())->setLimit($limit);
+            $tasks_query = (new TasksQuery())
+                ->setLimit($limit)
+                ->setIndexUids($managed_index_uids);
 
             if ($current_page > 1) {
                 $from_uid = max(0, $total - 1 - (($current_page - 1) * $limit));

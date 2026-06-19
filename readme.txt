@@ -3,7 +3,7 @@ Contributors: jtgraham38
 Tags: meilisearch, search, typo-tolerant search, auto suggest, ajax search
 Requires at least: 5.2
 Tested up to: 7.0
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 Requires PHP: 8.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -211,6 +211,17 @@ Yes. Scry Search follows WordPress security best practices: all AJAX requests us
 
 == Changelog ==
 
+= 1.2.1 =
+* **Task Drawer**: Restricts the Meilisearch tasks list to indexes managed by this plugin, so shared or multi-tenant Meilisearch instances do not show unrelated tasks.
+* **Premium Upgrades**: Updated page layout and styling; admin assets are now enqueued correctly on the Upgrades screen.
+
+= 1.2.0 =
+* **Logs**: New **Scry Search → Logs** screen with debug/error levels, database-backed storage, load-more paging, configurable retention with daily cleanup, manual delete, and automatic redaction of API keys and tokens.
+* **Developer hooks**: Expanded `scry_ms_` filters and actions across indexing, federated search, autosuggest, analytics, and logging — fully documented in **DOCS.md**.
+* **JavaScript API**: `window.scrySearch` runtime with `scrySearchReady`, per-form pre/post submit and AJAX action pipelines, and upgrade namespaces for add-ons.
+* **Premium Upgrades**: New admin page (**Scry Search → Premium Upgrades**) to browse ScryWP premium add-ons, with the `scry_ms_premium_upgrades_display` filter for companion plugins.
+* **Bug fix — federated search**: Correctly counts total hits after applying search filters.
+
 = 1.1.2 =
 * **Search Analytics — CSV export**: Download all rows from the search analytics table as a UTF-8 CSV (chunked export for large datasets; requires **manage_options**).
 * **Search Analytics — retention & cleanup**: Configure a retention period in days; a **daily scheduled event** deletes rows older than the cutoff. Use **Delete old events now** to run the same cleanup on demand.
@@ -241,6 +252,9 @@ Yes. Scry Search follows WordPress security best practices: all AJAX requests us
 * Autosuggest queries reuse the same Meilisearch search path as full-site search for consistent, typo-tolerant suggestions
 
 == Upgrade Notice ==
+
+= 1.2.1 =
+Updates to the "Upgrades" page, and fixes to the task pane on multi-tenant Meilisearch instances.
 
 = 1.2.0 =
 Adds a **Logs** screen (debug/error logging with retention and secret redaction) and an expanded developer hook set, now fully documented in **DOCS.md** along with the `window.scrySearch` JavaScript API.
