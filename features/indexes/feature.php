@@ -166,67 +166,51 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                 get_option($this->prefixed('meilisearch_admin_key'))
             );
 
-            //now, we will check if an index exists, and if not, we will create it
+            // Ensure each configured post-type index exists. Only restore WP-backed
+            // settings when we just created the index — re-PATCHing on every request
+            // keeps Meilisearch busy (especially with embedders) and leaves the
+            // Indexes UI stuck on "Indexing...".
             foreach ($index_names as $post_type => $index_name) {
                 $index = $client->index($index_name);
-                //determine if the index exists by trying to fetch it
+                $created = false;
+
                 try {
                     $index->fetchRawInfo();
                 } catch (ApiException $e) {
-                    // check that the code is 404
                     if ($e->getCode() === 404) {
-                        // Index doesn't exist, create it
                         $client->createIndex($index_name, ['primaryKey' => 'ID']);
-                        // Configure searchable attributes for the new index
                         $this->configure_index_searchable_attributes($index);
-                        //log a debug message with the logging feature
+                        $created = true;
                         $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Index created: %s', "scry-search"), $index_name));
                     } else {
-                        //rethrow the exception
                         throw $e;
                     }
                 }
 
-                //if the index exists, check if we have a backup of the settings, and if so, restore them
+                if (!$created) {
+                    continue;
+                }
+
                 $index_settings_backup_key = $this->prefixed('index_settings_backup_') . $index_name;
                 $index_settings_backup = get_option($index_settings_backup_key);
 
-                try{
-                    //restore the ranking rules if they are in the backup
+                if (is_array($index_settings_backup)) {
                     if (isset($index_settings_backup['ranking_rules'])) {
                         $index->updateRankingRules($index_settings_backup['ranking_rules']);
                     }
-
-                    //restore the searchable attributes if they are in the backup
                     if (isset($index_settings_backup['searchable_attributes'])) {
                         $index->updateSearchableAttributes($index_settings_backup['searchable_attributes']);
                     }
-
-                    //restore synonyms if they are in the backup
                     if (isset($index_settings_backup['synonyms']) && is_array($index_settings_backup['synonyms'])) {
                         $index->updateSynonyms($index_settings_backup['synonyms']);
                     }
-
-                    //restore stop words if they are in the backup
                     if (isset($index_settings_backup['stop_words']) && is_array($index_settings_backup['stop_words'])) {
                         $index->updateStopWords($index_settings_backup['stop_words']);
                     }
-
-                    //hook to allow other plugins to act after the index settings are restored
-                    do_action($this->config('hook_prefix') . 'index_settings_restore', $index, $index_settings_backup);
-
-                } catch (Exception $e) {
-                    //throw the exception
-                    throw $e;
                 }
 
-
-                if ($index_settings_backup) {
-                    $index->updateRankingRules($index_settings_backup['ranking_rules']);
-                    $index->updateSearchableAttributes($index_settings_backup['searchable_attributes']);
-                }
-
-                //hook to allow other plugsin to configure the index immediately after it is created
+                // Allow other plugins to restore their Meili settings for a new index.
+                do_action($this->config('hook_prefix') . 'index_settings_restore', $index, $index_settings_backup);
                 do_action($this->config('hook_prefix') . 'after_create_index', $index);
             }
         }
