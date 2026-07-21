@@ -82,6 +82,10 @@ require_once plugin_dir_path(__FILE__) . '/features/autosuggest/feature.php';
 $autosuggest_feature = new ScrySearch_AutoSuggestFeature();
 $plugin->register_feature("scry_ms_autosuggest", $autosuggest_feature);
 
+require_once plugin_dir_path(__FILE__) . '/features/highlighting/feature.php';
+$highlighting_feature = new ScrySearch_HighlightingFeature();
+$plugin->register_feature("scry_ms_highlighting", $highlighting_feature);
+
 require_once plugin_dir_path(__FILE__) . '/features/logs/feature.php';
 $logs_feature = new ScrySearch_LogsFeature();
 $plugin->register_feature("scry_ms_logs", $logs_feature);
