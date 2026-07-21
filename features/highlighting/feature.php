@@ -68,6 +68,16 @@ class ScrySearch_HighlightingFeature extends PluginFeature {
         );
 
         add_settings_field(
+            $this->prefixed('enable_highlighting'),
+            __('Enable Highlighting', "scry-search"),
+            function() {
+                require plugin_dir_path(__FILE__) . 'elements/enable_highlighting_input.php';
+            },
+            $this->prefixed('search_settings_group'),
+            $this->prefixed('highlighting_settings_section')
+        );
+
+        add_settings_field(
             $this->prefixed('highlighting_css'),
             __('Highlight CSS', "scry-search"),
             function() {
@@ -75,6 +85,20 @@ class ScrySearch_HighlightingFeature extends PluginFeature {
             },
             $this->prefixed('search_settings_group'),
             $this->prefixed('highlighting_settings_section')
+        );
+
+        register_setting(
+            $this->prefixed('search_settings_group'),
+            $this->prefixed('enable_highlighting'),
+            array(
+                'type'              => 'string',
+                'description'       => 'Enable matched-term highlighting.',
+                'sanitize_callback' => function($value) {
+                    return $value === '1' ? '1' : '0';
+                },
+                'default'           => '0',
+                'show_in_rest'      => false,
+            )
         );
 
         register_setting(
@@ -94,6 +118,10 @@ class ScrySearch_HighlightingFeature extends PluginFeature {
      * Load the base styles and administrator CSS where highlights can appear.
      */
     public function enqueue_styles() {
+        if (!$this->is_highlighting_enabled()) {
+            return;
+        }
+
         $autosuggest_enabled = (bool) get_option($this->prefixed('enable_autosuggest'), '0');
 
         if (!is_search() && !$autosuggest_enabled) {
@@ -130,6 +158,10 @@ class ScrySearch_HighlightingFeature extends PluginFeature {
      * Ask Meilisearch to return highlighted title and excerpt values.
      */
     public function add_highlight_options(SearchQuery $search_query): SearchQuery {
+        if (!$this->is_highlighting_enabled()) {
+            return $search_query;
+        }
+
         return $search_query
             ->setAttributesToHighlight(array('post_title', 'post_excerpt'))
             ->setHighlightPreTag('<mark class="scry-ms-highlight">')
@@ -142,6 +174,10 @@ class ScrySearch_HighlightingFeature extends PluginFeature {
     public function capture_highlights(array $results): array {
         // Each search replaces the previous request-scoped map.
         $this->highlights = array();
+
+        if (!$this->is_highlighting_enabled()) {
+            return $results;
+        }
 
         foreach ($results as $result) {
             if (!is_array($result) || !isset($result['ID'], $result['_formatted']) || !is_array($result['_formatted'])) {
@@ -176,6 +212,10 @@ class ScrySearch_HighlightingFeature extends PluginFeature {
      * Apply preserved highlights to cloned search-result posts.
      */
     public function apply_highlights(array $posts): array {
+        if (!$this->is_highlighting_enabled()) {
+            return $posts;
+        }
+
         foreach ($posts as $index => $post) {
             if (!($post instanceof WP_Post)) {
                 continue;
@@ -216,5 +256,12 @@ class ScrySearch_HighlightingFeature extends PluginFeature {
                 ),
             )
         );
+    }
+
+    /**
+     * Check the administrator's highlighting setting.
+     */
+    private function is_highlighting_enabled(): bool {
+        return get_option($this->prefixed('enable_highlighting'), '0') === '1';
     }
 }
