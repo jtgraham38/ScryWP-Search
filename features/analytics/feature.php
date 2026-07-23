@@ -12,9 +12,10 @@ use jtgraham38\jgwordpresskit\PluginFeature;
 class ScrySearch_AnalyticsFeature extends PluginFeature {
 
     /**
-     * Current database schema version
+     * Current database schema version.
+     * Bumped to 1.1 when the extras column was added (triggers dbDelta via maybe_create_table).
      */
-    private $db_version = '1.0';
+    private $db_version = '1.1';
     
     public function add_filters() {
         // No filters needed
@@ -78,6 +79,8 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
         $table_name = $this->get_table_name();
         $charset_collate = $wpdb->get_charset_collate();
 
+        // Schema note: `extras` is new in db_version 1.1 — JSON bag for premium plugin payloads
+        // packed after scry_ms_analytics_event_to_insert (see pack_analytics_event_extras).
         $sql = "CREATE TABLE $table_name (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             search_term varchar(255) NOT NULL,
@@ -89,6 +92,7 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
             result_ids longtext DEFAULT '',
             result_titles longtext DEFAULT '',
             post_types_searched text DEFAULT '',
+            extras longtext DEFAULT '',
             created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
             KEY idx_search_term (search_term),
@@ -155,18 +159,91 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
                 'post_types_searched' => wp_json_encode(isset($event['post_types_searched']) ? array_map('sanitize_text_field', $event['post_types_searched']) : array()),
         );
 
-        //let other plugins modify the event to insert
+        // Let other plugins modify the event to insert (add premium keys, anonymize further, etc.)
         //@HOOK: scry_ms_analytics_event_to_insert
         $event_to_insert = apply_filters($this->config('hook_prefix') . 'analytics_event_to_insert', $event_to_insert);
 
-        //insert the event
+        // Guard: a bad callback could return a non-array; fall back so packing/insert stay safe.
+        if (!is_array($event_to_insert)) {
+            $event_to_insert = array();
+        }
+
+        // Pack any non-column keys (e.g. scry_search_filters) into the extras JSON column.
+        $event_to_insert = $this->pack_analytics_event_extras($event_to_insert);
+
+        // Insert the event. Format has 10 placeholders: original 9 columns + extras (%s).
         $result = $wpdb->insert(
             $table_name,
             $event_to_insert,
-            array('%s', '%d', '%s', '%s', '%s', '%d', '%s', '%s', '%s')
+            array('%s', '%d', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s')
         );
 
         return $result !== false;
+    }
+
+    /**
+     * Move non-column keys from the filtered event into the extras JSON column.
+     *
+     * Premium plugins may add top-level keys (e.g. scry_search_filters) via
+     * scry_ms_analytics_event_to_insert. Those are stored under extras as JSON
+     * so we do not need a new DB column per plugin.
+     *
+     * @param array $event_to_insert Filtered event row.
+     * @return array Row ready for $wpdb->insert with an extras string column.
+     */
+    private function pack_analytics_event_extras(array $event_to_insert): array {
+        // Real table columns for this insert (id/created_at are DB-managed).
+        // Anything else left on the event after the filter is treated as plugin extras.
+        $known_columns = array(
+            'search_term',
+            'user_id',
+            'user_ip',
+            'user_agent',
+            'referrer',
+            'result_count',
+            'result_ids',
+            'result_titles',
+            'post_types_searched',
+        );
+
+        // Accumulator for the extras JSON object (plugin bags keyed by plugin name).
+        $extras = array();
+
+        // Allow callers to set extras directly (array or JSON string); merge with packed keys below.
+        if (isset($event_to_insert['extras'])) {
+            if (is_array($event_to_insert['extras'])) {
+                // Already an array — use as the starting extras bag.
+                $extras = $event_to_insert['extras'];
+            } elseif (is_string($event_to_insert['extras']) && $event_to_insert['extras'] !== '') {
+                // JSON string — decode if valid so we can merge other plugin keys into it.
+                $decoded = json_decode($event_to_insert['extras'], true);
+                if (is_array($decoded)) {
+                    $extras = $decoded;
+                }
+            }
+            // Remove raw extras from the event; we re-add it as an encoded string at the end.
+            unset($event_to_insert['extras']);
+        }
+
+        // Pull plugin keys (anything not a known column) into extras.
+        foreach ($event_to_insert as $key => $value) {
+            if (!in_array($key, $known_columns, true)) {
+                // e.g. scry_search_filters / scry_search_hybrid from premium plugins
+                $extras[$key] = $value;
+                unset($event_to_insert[$key]);
+            }
+        }
+
+        // Rebuild a clean insert row: known columns first, then extras as JSON (or empty string).
+        $row = array();
+        foreach ($known_columns as $column) {
+            // Preserve filtered values; default missing columns to empty string for a stable insert shape.
+            $row[$column] = isset($event_to_insert[$column]) ? $event_to_insert[$column] : '';
+        }
+        // Empty string when no premium data — omit storing "{}" for unenriched events.
+        $row['extras'] = !empty($extras) ? wp_json_encode($extras) : '';
+
+        return $row;
     }
 
     /**
@@ -643,7 +720,7 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
         //write UTF-8 BOM helps Excel recognize encoding.
         fwrite($out, "\xEF\xBB\xBF");
 
-        //get columns
+        // get columns (include extras so CSV exports premium-plugin payloads)
         $columns = array(
             'id',
             'search_term',
@@ -655,6 +732,8 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
             'result_ids',
             'result_titles',
             'post_types_searched',
+            // extras: JSON from premium plugins (see pack_analytics_event_extras)
+            'extras',
             'created_at',
         );
         fputcsv($out, $columns);
