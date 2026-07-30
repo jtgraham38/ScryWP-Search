@@ -246,8 +246,11 @@ class ScrySearch_HighlightingFeature extends PluginFeature {
 
     /**
      * Remove all HTML except the mark wrapper configured on the search query.
+     *
+     * Public so other features (eg. autosuggest) can sanitize highlighted values
+     * before returning them to the frontend.
      */
-    private function sanitize_highlighted_text(string $text): string {
+    public function sanitize_highlighted_text(string $text): string {
         return wp_kses(
             $text,
             array(
