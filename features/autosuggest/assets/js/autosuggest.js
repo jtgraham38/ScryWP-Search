@@ -99,7 +99,8 @@ var scrySearch_renderAutosuggestResults = function (searchForm) {
 
         var title = document.createElement('span');
         title.classList.add('scry-search-autosuggest-result-title');
-        title.textContent = result.title || '';
+        //titles are sanitized server side down to plain text plus highlight <mark> tags
+        title.innerHTML = result.title || '';
         link.appendChild(title);
 
         resultItem.appendChild(link);
