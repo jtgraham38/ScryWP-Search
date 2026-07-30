@@ -28,9 +28,9 @@ $premium_upgrades = array(
         'active' => false,
     ),
     array(
-        'name' => 'Scry Search Hybrid: Semantic & Hybrid Search',
+        'name' => 'Scry Search Hybrid: AI-Powered Search for WordPress & WooCommerce',
         'slug' => 'scry-search-hybrid',
-        'description' => 'Add semantic and hybrid search to your WordPress site with Meilisearch embedders.',
+        'description' => 'Add semantic and hybrid search to your WordPress & WooCommerce site with Meilisearch embedders.',
         'purchase_url' => 'https://scrywp.com/premium-plugins/scry-search-hybrid/',
         'active' => false,
     ),
