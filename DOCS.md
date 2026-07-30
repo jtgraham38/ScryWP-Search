@@ -360,7 +360,7 @@ Modify a search analytics record before it is stored.
 
 Keys include: `search_term`, `user_id`, `user_ip`, `user_agent`, `referrer`, `result_count`, `result_ids`, `result_titles`, `post_types_searched`. Use this to further anonymize data, or to attach premium-plugin payloads.
 
-**Premium / extra fields:** add a top-level key named for your plugin (for example `scry_search_filters` or `scry_search_hybrid`). After this filter runs, any keys that are not table columns are packed into the `extras` JSON column and stored with the event. You may also set an `extras` array directly; it is merged with those packed keys. Omit your key when you have nothing to report.
+**Premium / extra fields:** add a top-level key named for your plugin (for example `scry_search_filters` or `scry_search_hybrid`). After this filter runs, any keys that are not table columns are packed into the `search_metadata` JSON column and stored with the event. You may also set a `search_metadata` array directly; it is merged with those packed keys. Omit your key when you have nothing to report.
 
 ---
 
