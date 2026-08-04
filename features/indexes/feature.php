@@ -169,6 +169,8 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             //now, we will check if an index exists, and if not, we will create it
             foreach ($index_names as $post_type => $index_name) {
                 $index = $client->index($index_name);
+                $created = false;
+
                 //determine if the index exists by trying to fetch it
                 try {
                     $index->fetchRawInfo();
@@ -179,6 +181,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                         $client->createIndex($index_name, ['primaryKey' => 'ID']);
                         // Configure searchable attributes for the new index
                         $this->configure_index_searchable_attributes($index);
+                        $created = true;
                         //log a debug message with the logging feature
                         $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Index created: %s', "scry-search"), $index_name));
                     } else {
@@ -187,7 +190,14 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                     }
                 }
 
-                //if the index exists, check if we have a backup of the settings, and if so, restore them
+                //only restore settings on a freshly created index; re-sending them on
+                //every page load keeps meilisearch permanently enqueueing tasks, which
+                //leaves the indexes ui stuck on "indexing..." when embedders are set up
+                if (!$created) {
+                    continue;
+                }
+
+                //if the index was just created, check if we have a backup of the settings, and if so, restore them
                 $index_settings_backup_key = $this->prefixed('index_settings_backup_') . $index_name;
                 $index_settings_backup = get_option($index_settings_backup_key);
 
@@ -218,12 +228,6 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                 } catch (Exception $e) {
                     //throw the exception
                     throw $e;
-                }
-
-
-                if ($index_settings_backup) {
-                    $index->updateRankingRules($index_settings_backup['ranking_rules']);
-                    $index->updateSearchableAttributes($index_settings_backup['searchable_attributes']);
                 }
 
                 //hook to allow other plugsin to configure the index immediately after it is created

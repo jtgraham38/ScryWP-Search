@@ -27,6 +27,13 @@ $premium_upgrades = array(
         'purchase_url' => 'https://scrywp.com/premium-plugins/scry-search-filters/',
         'active' => false,
     ),
+    array(
+        'name' => 'Scry Search Hybrid: Semantic & Hybrid Search',
+        'slug' => 'scry-search-hybrid',
+        'description' => 'Add semantic and hybrid search to your WordPress site with Meilisearch embedders.',
+        'purchase_url' => 'https://scrywp.com/premium-plugins/scry-search-hybrid/',
+        'active' => false,
+    ),
 );
 
 // Premium plugins set `active` to true via this filter when installed on the site.
