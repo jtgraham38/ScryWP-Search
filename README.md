@@ -53,11 +53,13 @@ All hook names use the runtime prefix `scry_ms_` (i.e. `$this->config('hook_pref
 
 | Area | Source file | Examples |
 |---|---|---|
-| Document/index shaping | `features/indexes/feature.php` | `scry_ms_index_prepare_document`, `scry_ms_index_fields`, `scry_ms_index_meta_keys`, `scry_ms_index_searchable_attributes_before_update` |
+| Document/index shaping | `features/indexes/feature.php` | `scry_ms_should_index`, `scry_ms_should_delete`, `scry_ms_index_prepare_document`, `scry_ms_index_names`, `scry_ms_index_searchable_attributes`, `scry_ms_index_fields`, `scry_ms_index_meta_keys`, `scry_ms_bulk_index_query_args`, `scry_ms_after_index_document` / `after_delete_document` / `after_bulk_index` (actions) |
 | Index settings flow | `features/indexes/feature.php` | `scry_ms_index_settings_ajax`, `scry_ms_index_settings_backup`, `scry_ms_index_*_before_update`, `scry_ms_index_update_settings` (action), `scry_ms_index_settings_restore` / `scry_ms_after_create_index` (on new indexes only) |
-| Federated search | `features/search/feature.php` | `scry_ms_multi_search_index_names`, `scry_ms_multi_search_query_params`, `scry_ms_multi_search_query`, `scry_ms_multi_search_raw_results`, `scry_ms_multi_search_final_results` |
+| Federated search | `features/search/feature.php` | `scry_ms_should_search`, `scry_ms_multi_search_index_names`, `scry_ms_multi_search_query_params`, `scry_ms_multi_search_query`, `scry_ms_multi_search_raw_results`, `scry_ms_multi_search_final_results` |
+| Meilisearch client | `features/client/feature.php` | `scry_ms_meilisearch_client` |
 | Highlighting | `features/highlighting/feature.php` | Hooks the federated-search filters above (`multi_search_query` / `raw_results` / `final_results`); no dedicated public hooks |
-| Autosuggest | `features/autosuggest/feature.php` | `scry_ms_autosuggest_query` |
+| Autosuggest | `features/autosuggest/feature.php` | `scry_ms_autosuggest_query`, `scry_ms_autosuggest_results` |
+| Admin shell | `features/admin_page/feature.php` | `scry_ms_admin_pages` |
 | Analytics | `features/analytics/feature.php` | `scry_ms_analytics_event_to_insert` (non-column keys packed into `search_metadata`) |
 | Premium upgrades | `features/upgrades/feature.php` | `scry_ms_premium_upgrades_display` |
 | Logging | `features/logs/feature.php` | `scry_ms_log_message` |

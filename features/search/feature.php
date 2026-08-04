@@ -8,7 +8,6 @@ if (!defined('ABSPATH')) {
 require_once plugin_dir_path(__FILE__) . '../../vendor/autoload.php';
 
 use jtgraham38\jgwordpresskit\PluginFeature;
-use Meilisearch\Client;
 use Meilisearch\Contracts\SearchQuery;
 use Meilisearch\Contracts\MultiSearchFederation;
 use Meilisearch\Contracts\FederationOptions;
@@ -45,6 +44,14 @@ class ScrySearch_SearchFeature extends PluginFeature {
         $search_term = $query->get('s');
         if ((!is_string($search_term) || '' === $search_term) && !$query->is_search) {
             //DO NOT LOG here, since that would result in a flooded log due to all non-search queries
+            return $posts;
+        }
+
+        //allow other plugins to skip Meilisearch and fall back to native WP search
+        //@HOOK: scry_ms_should_search
+        $should_search = apply_filters($this->config('hook_prefix') . 'should_search', true, $query);
+        if (!$should_search) {
+            $this->get_feature('scry_ms_logs')->log('debug', __('Search skipped by should_search filter. Falling back to native WordPress search.', "scry-search"));
             return $posts;
         }
 
@@ -114,7 +121,7 @@ class ScrySearch_SearchFeature extends PluginFeature {
         //ensure we gracefully fall back to the wordpress search if the meilisearch search fails
         try {
             //create a meilisearch client
-            $client = $this->get_feature('scry_ms_client')->get_client();
+            $client = $this->get_feature('scry_ms_client')->get_client('search');
 
             //get the search weights
             $search_weights = get_option($this->prefixed('search_weights'));

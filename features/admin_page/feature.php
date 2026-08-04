@@ -8,7 +8,6 @@ if (!defined('ABSPATH')) {
 require_once plugin_dir_path(__FILE__) . '../../vendor/autoload.php';
 
 use jtgraham38\jgwordpresskit\PluginFeature;
-use Meilisearch\Client;
 use Meilisearch\Exceptions\CommunicationException;
 use Meilisearch\Exceptions\ApiException;
 use Meilisearch\Contracts\TasksQuery;
@@ -66,7 +65,8 @@ class ScrySearch_AdminPageFeature extends PluginFeature {
      * @return array
      */
     public function get_registered_pages() {
-        return self::$registered_pages;
+        //@HOOK: scry_ms_admin_pages
+        return apply_filters($this->config('hook_prefix') . 'admin_pages', self::$registered_pages);
     }
     
     /**

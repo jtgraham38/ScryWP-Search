@@ -148,6 +148,9 @@ class ScrySearch_AutoSuggestFeature extends PluginFeature {
             );
         }
 
+        //@HOOK: scry_ms_autosuggest_results
+        $results = apply_filters($this->config('hook_prefix') . 'autosuggest_results', $results, $search_query, $request);
+
         return rest_ensure_response($results);
     }
 

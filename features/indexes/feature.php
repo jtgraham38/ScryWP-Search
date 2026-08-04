@@ -8,7 +8,6 @@ if (!defined('ABSPATH')) {
 require_once plugin_dir_path(__FILE__) . '../../vendor/autoload.php';
 
 use jtgraham38\jgwordpresskit\PluginFeature;
-use Meilisearch\Client;
 use Meilisearch\Exceptions\CommunicationException;
 use Meilisearch\Exceptions\ApiException;
 
@@ -34,6 +33,8 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         //register hooks to keep indexes in step
         add_action('save_post', array($this, 'index_post'));
         add_action('wp_trash_post', array($this, 'trash_post'));
+        add_action('delete_post', array($this, 'trash_post'));
+        add_action('untrash_post', array($this, 'index_post'));
         
         // Register AJAX handlers
         add_action('wp_ajax_' . $this->prefixed('wipe_index'), array($this, 'ajax_wipe_index'));
@@ -48,6 +49,11 @@ class ScrySearch_IndexesFeature extends PluginFeature {
 
         //get the post
         $post = get_post($post_id);
+
+        if (!$post) {
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Post %d not found. Exiting index_post.', "scry-search"), $post_id));
+            return;
+        }
 
         //ensure this post is of a type that should be indexed
         $indexes = $this->get_index_names();
@@ -65,6 +71,14 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             return;
         }
 
+        //allow other plugins to skip indexing this post
+        //@HOOK: scry_ms_should_index
+        $should_index = apply_filters($this->config('hook_prefix') . 'should_index', true, $post, 'save');
+        if (!$should_index) {
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Post %1$d (%2$s) skipped by should_index filter. Exiting index_post.', "scry-search"), $post->ID, $post->post_type));
+            return;
+        }
+
         //prepare the post for indexing
         $post_data = $this->format_post_for_meilisearch($post);
 
@@ -78,6 +92,9 @@ class ScrySearch_IndexesFeature extends PluginFeature {
 
             //index the post
             $client->index($index_name)->updateDocuments($post_data);
+
+            //@HOOK: scry_ms_after_index_document
+            do_action($this->config('hook_prefix') . 'after_index_document', $post->ID, $index_name, $post_data);
         } catch (Exception $e) {
             //log an error message with the logging feature
             $this->get_feature('scry_ms_logs')->log('error', sprintf(__('Error indexing post %1$d (%2$s): %3$s', "scry-search"), $post->ID, $post->post_type, $e->getMessage()));
@@ -96,10 +113,15 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         }
     }
 
-    //function to delete a post from the index when it is trashed
+    //function to delete a post from the index when it is trashed or permanently deleted
     public function trash_post(int $post_id) {
         //get the post
         $post = get_post($post_id);
+
+        if (!$post) {
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Post %d not found. Exiting trash_post.', "scry-search"), $post_id));
+            return;
+        }
 
         //ensure this post is of a type that should be indexed
         $indexes = $this->get_index_names();
@@ -112,6 +134,14 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         //get the index name for this post type
         $index_name = $indexes[$post->post_type];
 
+        //allow other plugins to skip deleting this document
+        //@HOOK: scry_ms_should_delete
+        $should_delete = apply_filters($this->config('hook_prefix') . 'should_delete', true, $post_id, $index_name);
+        if (!$should_delete) {
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Post %1$d (%2$s) skipped by should_delete filter. Exiting trash_post.', "scry-search"), $post_id, $post->post_type));
+            return;
+        }
+
         //provide success and error handling
         try {
             //init a meilisearch client
@@ -119,6 +149,9 @@ class ScrySearch_IndexesFeature extends PluginFeature {
 
             //delete the post from the index
             $client->index($index_name)->deleteDocument($post_id);
+
+            //@HOOK: scry_ms_after_delete_document
+            do_action($this->config('hook_prefix') . 'after_delete_document', $post_id, $index_name);
         } catch (Exception $e) {
             //log an error message with the logging feature
             $this->get_feature('scry_ms_logs')->log('error', sprintf(__('Error deleting post %1$d (%2$s) from index: %3$s', "scry-search"), $post->ID, $post->post_type, $e->getMessage()));
@@ -613,11 +646,16 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         
         try {
             // Get all posts of this post type that are published
-            $posts = get_posts(array(
+            $query_args = array(
                 'post_type' => $post_type,
                 'posts_per_page' => -1,
                 'post_status' => 'publish',
-            ));
+            );
+
+            //@HOOK: scry_ms_bulk_index_query_args
+            $query_args = apply_filters($this->config('hook_prefix') . 'bulk_index_query_args', $query_args, $post_type, $index_name);
+
+            $posts = get_posts($query_args);
             
             if (empty($posts)) {
                 //log a debug message with the logging feature
@@ -629,7 +667,18 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             // Format posts for Meilisearch
             $documents = array();
             foreach ($posts as $post) {
+                //@HOOK: scry_ms_should_index
+                $should_index = apply_filters($this->config('hook_prefix') . 'should_index', true, $post, 'bulk');
+                if (!$should_index) {
+                    continue;
+                }
                 $documents[] = $this->format_post_for_meilisearch($post);
+            }
+
+            if (empty($documents)) {
+                $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('No documents to index for post type "%s" after should_index filter. Exiting ajax_index_posts.', "scry-search"), $post_type));
+                wp_send_json_error(array('message' => sprintf(__('No documents to index for post type "%s"', "scry-search"), $post_type)));
+                return;
             }
             
             // Create Meilisearch client
@@ -638,6 +687,9 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             // Get the index and add/update documents
             $index = $client->index($index_name);
             $task = $index->updateDocuments($documents);
+
+            //@HOOK: scry_ms_after_bulk_index
+            do_action($this->config('hook_prefix') . 'after_bulk_index', $post_type, $index_name, count($documents), $task);
             
             // Success
             wp_send_json_success(array(
@@ -722,10 +774,33 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         if (!empty($post_meta)) {
             $document['post_meta'] = $post_meta;
         }
+
+        // Add taxonomy term names so searchable attrs (categories/tags) match indexed data
+        $excluded_taxonomies = $this->config('excluded_taxonomies');
+        if (!is_array($excluded_taxonomies)) {
+            $excluded_taxonomies = array();
+        }
+        $taxonomies = get_object_taxonomies($post->post_type, 'objects');
+        foreach ($taxonomies as $taxonomy) {
+            if (!$taxonomy->public || in_array($taxonomy->name, $excluded_taxonomies, true)) {
+                continue;
+            }
+            $terms = wp_get_post_terms($post->ID, $taxonomy->name, array('fields' => 'names'));
+            if (is_wp_error($terms) || empty($terms)) {
+                continue;
+            }
+            if ('category' === $taxonomy->name) {
+                $document['categories'] = $terms;
+            } elseif ('post_tag' === $taxonomy->name) {
+                $document['tags'] = $terms;
+            } else {
+                $document[$taxonomy->name] = $terms;
+            }
+        }
         
         //let other plugins modify the document before it is indexed
         //@HOOK: scry_ms_index_prepare_document
-        $document = apply_filters($this->config('hook_prefix') . 'index_prepare_document', $document);
+        $document = apply_filters($this->config('hook_prefix') . 'index_prepare_document', $document, $post);
         
         return $document;
     }
@@ -802,7 +877,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         
         try {
             // Create Meilisearch client
-            $client = $this->get_feature('scry_ms_client')->get_client();
+            $client = $this->get_feature('scry_ms_client')->get_client('search');
 
             
             // Search the index
@@ -1401,6 +1476,11 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         foreach ($post_types_to_index as $post_type) {
             $index_names[$post_type] = $wpdb->prefix . $this->get_prefix() . get_option($this->prefixed('index_affix')) . $post_type;
         }
+
+        //let other plugins modify the index names
+        //@HOOK: scry_ms_index_names
+        $index_names = apply_filters($this->config('hook_prefix') . 'index_names', $index_names);
+        
         return $index_names;
     }
     
@@ -1425,6 +1505,10 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             'tags',
             'post_meta',
         );
+
+        //let other plugins modify the searchable attributes
+        //@HOOK: scry_ms_index_searchable_attributes
+        $searchable_attributes = apply_filters($this->config('hook_prefix') . 'index_searchable_attributes', $searchable_attributes);
 
         return $searchable_attributes;
     }

@@ -6,42 +6,67 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 require_once plugin_dir_path(__FILE__) . '../../vendor/autoload.php';
 
+use jtgraham38\jgwordpresskit\PluginFeature;
 use Meilisearch\Client as MeilisearchClient;
 
-class ScrySearch_Client_Feature {
+/**
+ * Shared Meilisearch client factory.
+ *
+ * Centralizes Client construction so indexing, search, admin tasks, and add-ons
+ * all go through one path — and so third parties can wrap or replace the client
+ * via scry_ms_meilisearch_client.
+ */
+class ScrySearch_Client_Feature extends PluginFeature {
 
 	public function add_filters() {
+		// No WordPress filters registered by this feature itself.
 	}
 
 	public function add_actions() {
+		// No WordPress actions registered by this feature itself.
 	}
 
-    //  \\  //  \\  //  \\  //  \\
+	//  \\  //  \\  //  \\  Client factory  //  \\  //  \\  //  \\
 
-    public function get_client() {
+	/**
+	 * Build a Meilisearch client for the given key type.
+	 *
+	 * @param string $key_type 'admin' or 'search'. Search falls back to the admin key when unset.
+	 * @return MeilisearchClient
+	 * @throws \Exception When connection settings are missing.
+	 */
+	public function get_client( string $key_type = 'admin' ) {
+		// Resolve the Meilisearch host from plugin options.
+		$meilisearch_url = get_option( $this->prefixed( 'meilisearch_url' ), '' );
 
-        //get the host and api key from the options
-        $meilisearch_url = get_option($this->prefixed('meilisearch_url'), '');
-        $meilisearch_admin_key = get_option($this->prefixed('meilisearch_admin_key'), '');
-        
-        //if the host or api key is not set, log an error and return
-        if (empty($meilisearch_url) || empty($meilisearch_admin_key)) {
-            //log a debug message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('debug', __('Connection settings are not configured. Exiting ajax_get_tasks.', "scry-search"));
-            throw new Exception(__('Connection settings are not configured', "scry-search"));
-        }
+		// Prefer the search key for read paths; fall back to admin when it is not configured.
+		if ( 'search' === $key_type ) {
+			$api_key = get_option( $this->prefixed( 'meilisearch_search_key' ), '' );
+			if ( empty( $api_key ) ) {
+				$api_key = get_option( $this->prefixed( 'meilisearch_admin_key' ), '' );
+			}
+		} else {
+			// Normalize anything other than 'search' to 'admin' for the filter payload.
+			$key_type = 'admin';
+			$api_key  = get_option( $this->prefixed( 'meilisearch_admin_key' ), '' );
+		}
 
-        //get the host and api key from the options, and make a new client
-        $client = new MeilisearchClient(
-            $meilisearch_url,
-            $meilisearch_admin_key
-        );
+		// Bail early when connection settings are incomplete.
+		if ( empty( $meilisearch_url ) || empty( $api_key ) ) {
+			$this->get_feature( 'scry_ms_logs' )->log(
+				'debug',
+				__( 'Connection settings are not configured. Exiting get_client.', 'scry-search' )
+			);
+			throw new \Exception( __( 'Connection settings are not configured', 'scry-search' ) );
+		}
 
-        //let the client modify the client before returning it
-        //@HOOK: scry_ms_client — args: $client
-        $client = apply_filters($this->prefixed('client'), $client);
+		// Construct the official Meilisearch PHP client.
+		$client = new MeilisearchClient( $meilisearch_url, $api_key );
 
-        //return the client
-        return $client;
-    }
+		// Let other plugins wrap or replace the client (e.g. mocks, middleware, custom hosts).
+		//@HOOK: scry_ms_meilisearch_client
+		$client = apply_filters( $this->config( 'hook_prefix' ) . 'meilisearch_client', $client, $key_type );
+
+		return $client;
+	}
 }

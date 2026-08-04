@@ -38,6 +38,45 @@ A quick reminder of the WordPress conventions used throughout:
 
 ### Indexing & document shaping
 
+#### `scry_ms_should_index`
+
+Decide whether a post should be indexed.
+
+
+|               |                                                                                          |
+| ------------- | ---------------------------------------------------------------------------------------- |
+| **Type**      | Filter                                                                                   |
+| **Arguments** | `bool $should_index`, `WP_Post $post`, `string $context` (`'save'` or `'bulk'`)          |
+| **Returns**   | `bool` — `true` to index, `false` to skip                                                |
+| **When**      | After built-in type/publish checks, before the document is formatted (live save and bulk). |
+
+
+```php
+add_filter( 'scry_ms_should_index', function ( $should_index, $post, $context ) {
+    if ( post_password_required( $post ) ) {
+        return false;
+    }
+    return $should_index;
+}, 10, 3 );
+```
+
+---
+
+#### `scry_ms_should_delete`
+
+Decide whether a document should be removed from Meilisearch when a post is trashed or permanently deleted.
+
+
+|               |                                                              |
+| ------------- | ------------------------------------------------------------ |
+| **Type**      | Filter                                                       |
+| **Arguments** | `bool $should_delete`, `int $post_id`, `string $index_name` |
+| **Returns**   | `bool` — `true` to delete, `false` to keep the document      |
+| **When**      | Before `deleteDocument` runs for trash or permanent delete.  |
+
+
+---
+
 #### `scry_ms_index_prepare_document`
 
 Modify a single post's document just before it is sent to Meilisearch.
@@ -46,19 +85,80 @@ Modify a single post's document just before it is sent to Meilisearch.
 |               |                                                                            |
 | ------------- | -------------------------------------------------------------------------- |
 | **Type**      | Filter                                                                     |
-| **Arguments** | `array $document`                                                          |
+| **Arguments** | `array $document`, `WP_Post $post`                                         |
 | **Returns**   | `array` — the (possibly modified) document                                 |
 | **When**      | Each time a post is prepared for indexing (single save and bulk indexing). |
 
 
 ```php
-add_filter( 'scry_ms_index_prepare_document', function ( $document ) {
+add_filter( 'scry_ms_index_prepare_document', function ( $document, $post ) {
     $document['reading_time'] = my_estimate_reading_time( $document['post_content'] ?? '' );
     return $document;
+}, 10, 2 );
+```
+
+A document is an associative array keyed by attribute name (for example `ID`, `post_title`, `post_content`, `post_excerpt`, `post_author`, `permalink`, `post_meta`, `categories`, and `tags`). Public taxonomy term names are included automatically (`category` → `categories`, `post_tag` → `tags`, other public taxonomies under their taxonomy slug). Add, remove, or rewrite keys as needed; whatever you return is what gets indexed.
+
+---
+
+#### `scry_ms_index_names`
+
+Customize the map of post types to Meilisearch index UIDs.
+
+
+|               |                                                                           |
+| ------------- | ------------------------------------------------------------------------- |
+| **Type**      | Filter                                                                    |
+| **Arguments** | `array $index_names` (map of `post_type => index_uid`)                    |
+| **Returns**   | `array` — the index name map                                              |
+| **When**      | Whenever the plugin resolves which indexes exist for configured post types. |
+
+
+```php
+add_filter( 'scry_ms_index_names', function ( $index_names ) {
+    $index_names['product'] = 'shared_products_index';
+    return $index_names;
 } );
 ```
 
-A document is an associative array keyed by attribute name (for example `ID`, `post_title`, `post_content`, `post_excerpt`, `post_author`, `permalink`, and `post_meta`). Add, remove, or rewrite keys as needed; whatever you return is what gets indexed.
+---
+
+#### `scry_ms_index_searchable_attributes`
+
+Change the **default** searchable attributes list used when configuring new indexes.
+
+
+|               |                                                                                          |
+| ------------- | ---------------------------------------------------------------------------------------- |
+| **Type**      | Filter                                                                                   |
+| **Arguments** | `array $searchable_attributes`                                                           |
+| **Returns**   | `array` — attribute name list                                                            |
+| **When**      | When default searchable attributes are resolved (distinct from `*_before_update` hooks). |
+
+
+Prefer this when aligning defaults with custom document fields. Use `scry_ms_index_searchable_attributes_before_update` when mutating attributes at apply-time for a specific index.
+
+---
+
+#### `scry_ms_bulk_index_query_args`
+
+Control the `get_posts` arguments used during a bulk reindex.
+
+
+|               |                                                                        |
+| ------------- | ---------------------------------------------------------------------- |
+| **Type**      | Filter                                                                 |
+| **Arguments** | `array $args`, `string $post_type`, `string $index_name`               |
+| **Returns**   | `array` — `get_posts` / `WP_Query` args                                |
+| **When**      | Immediately before posts are fetched for a bulk index AJAX operation.  |
+
+
+```php
+add_filter( 'scry_ms_bulk_index_query_args', function ( $args, $post_type, $index_name ) {
+    $args['posts_per_page'] = 500;
+    return $args;
+}, 10, 3 );
+```
 
 ---
 
@@ -209,6 +309,47 @@ add_filter( 'scry_ms_index_searchable_attributes_before_update', function ( $att
 
 These filters let you shape how a front‑end search is translated into a federated Meilisearch query.
 
+#### `scry_ms_should_search`
+
+Opt a `WP_Query` out of Meilisearch interception (falls through to native WordPress search).
+
+
+|               |                                                                     |
+| ------------- | ------------------------------------------------------------------- |
+| **Type**      | Filter                                                              |
+| **Arguments** | `bool $should_search`, `WP_Query $query`                            |
+| **Returns**   | `bool` — `true` to use Meilisearch, `false` for native WP search    |
+| **When**      | After the query is confirmed to be a search, before indexes are resolved. |
+
+
+```php
+add_filter( 'scry_ms_should_search', function ( $should_search, $query ) {
+    if ( is_admin() ) {
+        return false;
+    }
+    return $should_search;
+}, 10, 2 );
+```
+
+---
+
+#### `scry_ms_meilisearch_client`
+
+Replace or wrap the Meilisearch PHP client built by the shared factory.
+
+
+|               |                                                                                   |
+| ------------- | --------------------------------------------------------------------------------- |
+| **Type**      | Filter                                                                            |
+| **Arguments** | `Meilisearch\Client $client`, `string $key_type` (`'admin'` or `'search'`)        |
+| **Returns**   | `Meilisearch\Client`                                                              |
+| **When**      | Every time a client is constructed via the client feature.                        |
+
+
+Front-end and admin index search use `'search'` (falling back to the admin key when no search key is set). Indexing, settings, and tasks use `'admin'`.
+
+---
+
 #### `scry_ms_multi_search_index_names`
 
 Choose which indexes a search runs against.
@@ -343,6 +484,51 @@ The array contains standard `WP_Query` arguments such as `s`, `post_type`, `post
 
 ---
 
+#### `scry_ms_autosuggest_results`
+
+Modify the JSON payload returned by the autosuggest REST endpoint.
+
+
+|               |                                                                              |
+| ------------- | ---------------------------------------------------------------------------- |
+| **Type**      | Filter                                                                       |
+| **Arguments** | `array $results`, `WP_Query $search_query`, `WP_REST_Request $request`       |
+| **Returns**   | `array` — list of result objects                                             |
+| **When**      | After default result objects are built, before `rest_ensure_response`.       |
+
+
+Each default result has `title`, `url`, `excerpt`, `post_type`, and `featured_image`. Add fields for themes/add-ons (prices, badges, etc.) as needed.
+
+```php
+add_filter( 'scry_ms_autosuggest_results', function ( $results, $search_query, $request ) {
+    foreach ( $results as &$result ) {
+        $result['badge'] = 'Featured';
+    }
+    return $results;
+}, 10, 3 );
+```
+
+---
+
+### Admin UI
+
+#### `scry_ms_admin_pages`
+
+Inject, remove, or reorder tabs in the Scry Search admin shell.
+
+
+|               |                                                                   |
+| ------------- | ----------------------------------------------------------------- |
+| **Type**      | Filter                                                            |
+| **Arguments** | `array $registered_pages` (map of slug => page data)              |
+| **Returns**   | `array`                                                           |
+| **When**      | Whenever registered admin pages are read for the tab UI / assets. |
+
+
+Each page entry includes `slug`, `label`, `icon`, `description`, and `url`.
+
+---
+
 ### Analytics
 
 #### `scry_ms_analytics_event_to_insert`
@@ -403,6 +589,50 @@ Default keys include `restApiUrl` and `autoSuggestEnabled`. Add keys here to exp
 ---
 
 ## PHP Actions
+
+#### `scry_ms_after_index_document`
+
+Fires after a single post document is successfully written to Meilisearch.
+
+
+|               |                                                                        |
+| ------------- | ---------------------------------------------------------------------- |
+| **Type**      | Action                                                                 |
+| **Arguments** | `int $post_id`, `string $index_name`, `array $document`                |
+| **When**      | After a successful live `updateDocuments` in `index_post`.             |
+
+
+---
+
+#### `scry_ms_after_delete_document`
+
+Fires after a document is successfully deleted from Meilisearch.
+
+
+|               |                                                                  |
+| ------------- | ---------------------------------------------------------------- |
+| **Type**      | Action                                                           |
+| **Arguments** | `int $post_id`, `string $index_name`                             |
+| **When**      | After a successful `deleteDocument` (trash or permanent delete). |
+
+
+---
+
+#### `scry_ms_after_bulk_index`
+
+Fires after a bulk reindex successfully submits documents to Meilisearch.
+
+
+|               |                                                                                   |
+| ------------- | --------------------------------------------------------------------------------- |
+| **Type**      | Action                                                                            |
+| **Arguments** | `string $post_type`, `string $index_name`, `int $count`, `mixed $task`             |
+| **When**      | After `updateDocuments` succeeds in the bulk index AJAX handler (once per batch). |
+
+
+`$task` is the Meilisearch task payload returned by the client (may include `taskUid`).
+
+---
 
 #### `scry_ms_after_create_index`
 
