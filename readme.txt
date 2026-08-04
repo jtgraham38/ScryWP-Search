@@ -1,6 +1,6 @@
 === Scry Search: Meilisearch for WordPress ===
 Contributors: jtgraham38
-Tags: meilisearch, search, typo-tolerant search, auto suggest, ajax search
+Tags: meilisearch, search, developer, hooks, extensible, headless, autosuggest, woocommerce
 Requires at least: 5.2
 Tested up to: 7.0
 Stable tag: 1.3.0
@@ -8,196 +8,280 @@ Requires PHP: 8.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-The premium WordPress/WooCommerce search experience. Blazing quick, customizable fuzzy search powered by Meilisearch, with no theme changes required.
+Meilisearch for WordPress — by developers for developers, usable without writing code. Headless, documented hooks, drop-in WP_Query search.
 
 == Get Managed Hosting from ScryWP ==
 
-**Need a Meilisearch instance fast? [Host with ScryWP Search](https://scrywp.com)** and launch in minutes with a managed deployment built for WordPress.
+Don't want to run Meilisearch yourself? [ScryWP Search](https://scrywp.com) is managed hosting aimed at WordPress.
 
 == Description ==
 
-**Scry Search for Meilisearch** is the most seamless way to add **Meilisearch for WordPress** to your site. Replace WordPress's slow, limited default search with the blazing-fast, typo-tolerant power of Meilisearch—without touching a single line of theme code or modifying your frontend. It is **100% compatible with WooCommerce** (products, catalog search, and product meta), **deeply customizable** from the admin, and **fully self-service**: you can connect Meilisearch, configure indexes, and go live **without a developer**.
+Scry Search is built by developers for developers — but you don't need to be one to run it.
 
-= The Best Meilisearch for WordPress Integration =
+If you can install a plugin and paste API keys, you can connect Meilisearch, pick post types, index content, tune ranking/synonyms/weights, and turn on autosuggest from wp-admin. No theme edits required. Existing search forms keep working. WooCommerce products are a first-class post type.
 
-Whether you're running a blog, an eCommerce store, a membership site, or a complex multi-post-type WordPress installation, Scry Search delivers enterprise-grade search performance. **WooCommerce stores** get first-class support—index products like any post type and tune what shoppers search. Use **[ScryWP Search](https://scrywp.com)** for a fully managed cloud experience, or **self-host Meilisearch** on your own infrastructure—the choice is yours. Every step is guided in WordPress so **you** stay in control of setup and tuning.
+If you *are* a developer, the same plugin is meant to be extended: `scry_ms_*` filters/actions, optional `window.scrySearch`, and a full hook reference in DOCS.md ([GitHub](https://github.com/jtgraham38/ScryWP-Search)). We use this kind of surface on client work and our own products, so the priorities are boring on purpose: stable hook names, easy-to-find call sites, a real docs file, and no forced frontend chrome.
 
-= Zero Frontend Changes Required =
+= Works from the admin (no code) =
 
-Unlike other search plugins, Scry Search is a true **drop-in replacement** for WordPress search. Your existing search forms, search widgets, and theme search templates continue to work exactly as before. The plugin intercepts WordPress search queries and routes them through Meilisearch, then returns results in the format WordPress expects. **No theme modifications, no shortcode replacements, no widget swaps**—just activate, configure, and enjoy instant search.
+* Connection Settings — URL and API keys, with a connection test
+* Index Settings — post types, searchable fields (including meta), ranking rules, synonyms, stop words; bulk index / wipe
+* Search Settings — post-type weights for federated search, optional autosuggest and matched-term highlighting
+* Task drawer, Logs, and Search Analytics for day-to-day ops
 
-= AJAX Autosuggest & Predictive Search (One Switch) =
+Site owners and agencies can go live without custom development. Developers can still hook in when a project needs it.
 
-Want **type-ahead suggestions** without rebuilding your theme? Flip **Autosuggest** on in **Scry Search → Search Settings** and Scry Search attaches **debounced AJAX** to your existing search fields. Suggestions are powered by the **same Meilisearch indexes** as full-site search, so shoppers and readers see consistent, typo-tolerant matches as they type. Optionally scope the behavior with a **CSS class selector** so only the forms you choose get predictive search—**no JavaScript bundles to wire up by hand**, no separate widget, and **no code deployment** to go live.
+= Headless: no frontend UI required =
 
-= Per-Post-Type Indexes with Federated Search =
+This plugin does not force a search UI on you. No required shortcode, widget, or results template.
 
-Index **any WordPress post type** independently—posts, pages, WooCommerce products, custom post types from any plugin, or your own custom content types. Each post type gets its own dedicated Meilisearch index, giving you granular control over:
+What you get by default is indexing and Meilisearch-backed queries. Autosuggest and highlighting are optional and off unless you turn them on. Keep your theme's search, or build your own UI against `WP_Query` / the autosuggest REST endpoint.
 
-* **Searchable Fields**: Choose exactly which fields are searchable for each post type, including custom post meta fields
-* **Ranking Rules**: Drag-and-drop interface to reorder Meilisearch's ranking rules (words, typo, proximity, attribute, sort, exactness) per index
-* **Search Weights**: Assign different importance weights to different post types so products can rank higher than blog posts, or vice versa
+= Drop-in WordPress search =
 
-When users search, Scry Search uses Meilisearch's **federated multi-search**—a superior approach to searching across indexes at once: all relevant indexes are queried in parallel and results are **merged and re-ranked** using Meilisearch's federation with **per post-type weights** you define, so the merged list reflects your business priorities (not a naive blend).
+Scry Search hooks `posts_pre_query`. Any `WP_Query` with a search string can go through Meilisearch (main search, programmatic queries, autosuggest) and still return normal `WP_Post` objects.
 
-= Customizable Relevancy & Ranking =
+* No theme rewrites, no forced shortcodes, no widget lock-in
+* `search.php`, `searchform.php`, core search widgets/blocks, and page-builder search elements keep working if you use them
+* Opt out per query with `scry_ms_should_search` when you need native WP search
 
-Fine-tune how Meilisearch ranks your search results:
+Works with Elementor, Divi, Beaver Builder, and similar tools: whatever search box they output still hits WordPress search, which Scry Search routes to Meilisearch.
 
-* **Reorder Ranking Rules**: Use the intuitive drag-and-drop interface to prioritize typo tolerance over word proximity, or exactness over attribute order
-* **Searchable Attributes Control**: Decide which fields matter for search—include post titles, content, excerpts, categories, tags, author names, and any custom meta fields
-* **Post Type Weighting**: Running a store? Weight products higher than blog posts. Running a knowledge base? Prioritize documentation over news articles.
+= AJAX autosuggest (optional) =
 
-= Synonyms & Stopwords =
+Enable Autosuggest under Scry Search → Search Settings. The plugin attaches debounced AJAX to existing `name="s"` fields. Suggestions use the same Meilisearch indexes as full-site search. Optional CSS class selector so only the forms you choose get typeahead. Thumbnails supported when a featured image exists.
 
-Fine-tune vocabulary **per index** from the WordPress admin (no code or Meilisearch config files required):
+Shape the JSON with `scry_ms_autosuggest_results`, or leave autosuggest off and stay fully headless.
 
-* **Synonyms**: Treat different words as the same for search—product nicknames, abbreviations, UK/US spelling, or brand aliases—so visitors find the right results whichever term they use.
-* **Stopwords**: Ignore words that add noise to ranking (common filler words or domain-specific terms you do not want to influence scores) so Meilisearch emphasizes meaningful matches.
+= Per-post-type indexes and federated search =
 
-= Search Analytics & Data Export =
+Index any registered post type independently — posts, pages, WooCommerce products, CPTs from other plugins. Each type gets its own Meilisearch index:
 
-The **Search Analytics** screen (under **Scry Search → Search Analytics**) helps you understand what visitors search for:
+* Searchable fields — titles, content, excerpts, taxonomies, author, custom meta (ACF, Meta Box, etc.)
+* Ranking rules — drag-and-drop reorder (words, typo, proximity, attribute, sort, exactness) per index
+* Search weights — e.g. weight products above blog posts in the merged results
 
-* **Dashboard**: Summary metrics, charts, and a recent-searches table
-* **Privacy**: Optional anonymization of IPs and omission of user-identifying fields
-* **Retention**: Set how many days of analytics rows to keep; a **daily WP-Cron** job removes rows older than that cutoff
-* **Manual cleanup**: Button to run the same retention delete immediately (without waiting for cron)
-* **CSV export**: Download the full contents of the analytics database table as a `.csv` file for spreadsheets or external analytics tools (admin-only, nonce-protected AJAX)
+Search uses Meilisearch federated multi-search: indexes queried together, results merged and re-ranked with your per–post-type weights (not a hand-stitched PHP merge).
 
-= Built-In Task Monitor & Debugging =
+= Relevancy, synonyms, and stopwords =
 
-The fully-featured **Task Drawer** gives you complete visibility into your Meilisearch operations:
+Per index from wp-admin (or via filters):
 
-* **Real-Time Task Tracking**: View all indexing tasks with status, duration, and error details
-* **Paginated Task History**: Browse through your complete task history with easy navigation
-* **Error Diagnosis**: Quickly identify and troubleshoot failed indexing operations
-* **Performance Monitoring**: Track task durations to optimize your indexing strategy
+* Reorder ranking rules
+* Choose which attributes are searchable
+* Synonyms — nicknames, abbreviations, UK/US spelling, brand aliases
+* Stopwords — drop noise terms that shouldn't affect ranking
 
-= Built-In Debug & Error Logs =
+= WooCommerce =
 
-A dedicated **Logs** screen (under **Scry Search → Logs**) records what the plugin is doing so you can diagnose issues without digging through server files:
+Fully compatible. Select `product` in Index Settings, choose product fields and meta, set federation weights if you also search posts/pages. Catalog search upgrades; theme and checkout stay as they are. Same hooks as any other post type if you need custom product documents or autosuggest rows.
 
-* **Debug & error levels**: Filter the viewer by **Debug** or **Error** to focus on routine activity or real failures
-* **Stored in your database**: Log entries live in a dedicated table and are viewable right inside wp-admin, newest first, with **load more** paging
-* **Secret-safe**: Messages are sanitized before storage—API keys and authorization tokens are automatically redacted so they never leak into the log
-* **Retention & cleanup**: Set how many days of log entries to keep; a **daily WP-Cron** job removes older entries, and a button runs the same cleanup on demand
+= Search analytics =
 
-= Automatic & Manual Indexing =
+Scry Search → Search Analytics:
 
-* **Automatic Indexing**: Posts are automatically indexed when created, updated, or trashed—your search index stays in sync without any manual intervention
-* **One-Click Bulk Indexing**: Re-index all posts of any type with a single click
-* **Wipe & Rebuild**: Clear an index and start fresh when needed
-* **Live Search Preview**: Test your search queries directly from the admin panel before going live
+* Dashboard with summary metrics, charts, and recent searches
+* Optional IP anonymization / omit identifying fields
+* Retention period with daily WP-Cron cleanup, plus a manual “delete old events” button
+* CSV export of the analytics table (admin-only, nonce-protected)
+* Extra fields via `scry_ms_analytics_event_to_insert` (non-column keys go into `search_metadata`)
 
-= Easy Meilisearch Integration =
+= Task monitor =
 
-Getting started with Meilisearch for WordPress has never been easier:
+Task drawer on plugin admin screens:
 
-1. **[ScryWP Search](https://scrywp.com)** (Recommended): Use our fully managed cloud-based Meilisearch hosting designed specifically for WordPress
-2. **Self-Hosted**: Run Meilisearch on your own server with full control over your data
-3. **Local Development**: Spin up Meilisearch locally for development and testing
+* Indexing tasks with status, duration, and errors
+* Paginated history
+* Scoped to indexes this plugin manages (shared Meilisearch instances won't dump unrelated tasks)
 
-Simply enter your Meilisearch URL and API keys, select which post types to index, and you're live in minutes. **No agency required**—connection, indexing, ranking, synonyms, stopwords, search weights, and **optional autosuggest** are all configured in wp-admin.
+= Debug and error logs =
 
-= Highly Customizable & Page-Builder Friendly =
+Scry Search → Logs:
 
-Your storefront and landing pages stay as flexible as your **page builder** allows: Scry Search does not lock you into a proprietary search widget. Because it replaces **native WordPress search**, whatever search box or block your theme or **Elementor, Divi, Beaver Builder**, or similar tools output continues to drive Meilisearch under the hood. **Customize search behavior** (fields, ranking, weights, synonyms, stopwords) in the plugin as richly as you customize layout in your builder—two layers that work together, not against each other.
+* Debug and Error levels, filterable in the viewer
+* Stored in the database, newest first, load-more paging
+* API keys / tokens redacted before storage
+* Retention + daily cleanup, or clean up on demand
 
-= Works With Your Existing WordPress Setup =
+= Automatic and manual indexing =
 
-Scry Search respects WordPress conventions and integrates seamlessly with:
+* Auto-index on create/update; remove on trash/delete; re-index on untrash
+* One-click bulk index per post type
+* Wipe and rebuild when you need a clean slate
+* Live search preview from the indexes UI before you ship ranking changes
 
-* **Theme Search Templates**: Your `search.php` and `searchform.php` templates work unchanged
-* **Search Widgets**: Standard WordPress search widgets continue functioning
-* **Block Editor Search Blocks**: Gutenberg search blocks work out of the box
-* **Page Builders**: Elementor, Divi, Beaver Builder, and other builders' search elements work seamlessly—same front-end, Meilisearch-powered results
-* **WooCommerce (100% compatible)**: Products, product search, and product meta—index and search the catalog with the same per-index controls as any post type
-* **Custom Post Types**: Any registered post type can be indexed and searched
-* **Autosuggest (optional)**: When enabled, your front-end search fields can show live Meilisearch-backed suggestions over AJAX—toggle and class selector in Search Settings
+= For developers: hooks and JS runtime =
+
+Admin covers setup and tuning. When you need custom behavior, use the public `scry_ms_*` PHP hooks and the optional `window.scrySearch` runtime. Call sites are marked `//@HOOK: scry_ms_…` in source.
+
+Full argument lists, return types, timing, and JS examples: [DOCS.md on GitHub](https://github.com/jtgraham38/ScryWP-Search/blob/main/DOCS.md) (also shipped with the plugin).
+
+Code is split into `features/<name>/` packages. Prefer a search-only API key for front-end paths; the shared client factory supports `admin` vs `search`.
+
+**PHP filters**
+
+Indexing and documents:
+
+* `scry_ms_should_index`
+* `scry_ms_should_delete`
+* `scry_ms_index_prepare_document`
+* `scry_ms_index_names`
+* `scry_ms_index_searchable_attributes`
+* `scry_ms_bulk_index_query_args`
+* `scry_ms_index_ranking_rules`
+* `scry_ms_index_fields`
+* `scry_ms_index_meta_keys`
+
+Index settings:
+
+* `scry_ms_index_settings_ajax`
+* `scry_ms_index_settings_backup`
+* `scry_ms_index_ranking_rules_before_update`
+* `scry_ms_index_searchable_attributes_before_update`
+* `scry_ms_index_synonyms_before_update`
+* `scry_ms_index_stop_words_before_update`
+
+Search and client:
+
+* `scry_ms_should_search`
+* `scry_ms_meilisearch_client`
+* `scry_ms_multi_search_index_names`
+* `scry_ms_multi_search_query_params`
+* `scry_ms_multi_search_query`
+* `scry_ms_multi_search_queries`
+* `scry_ms_multi_search_federation`
+* `scry_ms_multi_search_raw_results`
+* `scry_ms_multi_search_final_results`
+
+Autosuggest, admin, analytics, logs, window:
+
+* `scry_ms_autosuggest_query`
+* `scry_ms_autosuggest_results`
+* `scry_ms_admin_pages`
+* `scry_ms_analytics_event_to_insert`
+* `scry_ms_log_message`
+* `scry_ms_window_localized`
+* `scry_ms_premium_upgrades_display`
+
+**PHP actions**
+
+* `scry_ms_after_index_document`
+* `scry_ms_after_delete_document`
+* `scry_ms_after_bulk_index`
+* `scry_ms_after_create_index`
+* `scry_ms_index_settings_restore`
+* `scry_ms_index_update_settings`
+* `scry_ms_index_settings_sections_ui`
+* `scry_ms_premium_upgrade_settings_ui`
+
+**JavaScript runtime (`window.scrySearch`)**
+
+Optional. Enqueued on the front end (script handle `scry_ms_window-script`). Wait for the `scrySearchReady` event on `document` before using it.
+
+* `window.scrySearch.version`
+* `window.scrySearch.getSearchForms()`
+* `window.scrySearch.getSearchFormsByClass(className)`
+* `window.scrySearch.registerUpgrade(name, version)` — namespace for add-ons under `window.scrySearch.upgrades`
+
+Per form (`ScrySearch_SearchForm`):
+
+* `formElement`, `searchInput`, `data`
+* `submit()`, `submitAjax()` (debounced)
+* `addPreSubmitAction(fn, order)` / `addPostSubmitAction(fn, order)`
+* `addPreSubmitAjaxAction(fn, order)` / `addPostSubmitAjaxAction(fn, order)`
+
+A search form is any `<form>` with `role="search"` or a text/search input named `s`. Autosuggest and similar features attach through the AJAX action lists. Details and examples: [DOCS.md](https://github.com/jtgraham38/ScryWP-Search/blob/main/DOCS.md).
+
+= Hosting =
+
+1. [ScryWP Search](https://scrywp.com) — managed Meilisearch for WordPress
+2. Self-hosted — your server, full control
+3. Local — for development and testing
+
+Enter URL + keys under Scry Search → Connection Settings, pick post types, index, done.
+
+= Works with your existing setup =
+
+* Theme search templates (`search.php`, `searchform.php`)
+* Core search widgets and Gutenberg search blocks
+* Page builders (Elementor, Divi, Beaver Builder, etc.)
+* WooCommerce products and product meta
+* Any registered custom post type
+* Optional autosuggest / highlighting when you enable them
 
 == Installation ==
 
-1. **Set Up Meilisearch**: You'll need a running Meilisearch instance:
-   * [ScryWP Search](https://scrywp.com) - Our managed cloud hosting (recommended for production)
-   * Self-host on your server using Docker, binaries, or package managers
-   * Run locally for development
+1. Have a Meilisearch instance running ([ScryWP](https://scrywp.com), self-hosted, or local).
+2. Install and activate the plugin (upload to `wp-content/plugins/` or via Plugins → Add New).
+3. Scry Search → Connection Settings: URL, admin key, optional search key; test connection.
+4. Scry Search → Index Settings: choose post types, save, Index Posts for each.
+5. WordPress search now uses Meilisearch. No theme changes required.
+6. Optional: enable autosuggest or highlighting under Search Settings.
+7. Optional: open DOCS.md and add your first `add_filter( 'scry_ms_…' )`.
 
-2. **Install the Plugin**: Upload the plugin files to `/wp-content/plugins/scry-search-meilisearch/` or install directly through the WordPress plugins screen.
-
-3. **Activate**: Activate the plugin through the 'Plugins' screen in WordPress.
-
-4. **Configure Connection**: Navigate to **Scry Search > Connection Settings** and enter your Meilisearch URL, Admin API Key, and optionally a Search API Key.
-
-5. **Create Indexes**: Go to **Scry Search > Index Settings**, select which post types to index, save, then click "Index Posts" for each post type.
-
-6. **Search!**: Your WordPress search is now powered by Meilisearch. No frontend changes needed.
-
-7. **Autosuggest (optional)**: Under **Scry Search → Search Settings**, enable autosuggest and, if you like, set a **class selector** so predictive suggestions attach only to the search forms you want.
-
-**You can complete this entire flow yourself** (hosting choice, keys, indexes, reindexing)—no custom code or deployment pipeline required for the WordPress side.
+You can complete the whole flow from wp-admin without custom code. Hooks are there when you need them.
 
 == Frequently Asked Questions ==
 
-= What makes this the best Meilisearch for WordPress plugin? =
+= What makes this developer-friendly? =
 
-Scry Search offers the most complete integration: **100% WooCommerce compatibility**, per-post-type indexes with independent settings, **Meilisearch federated multi-search** with configurable weights, full control over ranking rules and searchable fields, synonyms and stopwords from the dashboard, a built-in task monitor for debugging, **page-builder-friendly** drop-in behavior, **optional AJAX autosuggest** you enable with one switch, and zero frontend modifications required. It can all be **set up entirely by you** from the admin.
+It's built by people who write WordPress integrations for a living. Hooks are documented and marked in code, there's a shared client filter, and DOCS.md is the reference. Headless by default if you don't want plugin UI on the front.
 
-= Do I need to modify my theme? =
+= Can non-developers use it? =
 
-No! Scry Search is a true drop-in replacement. Your existing search forms, search templates, and search widgets continue working exactly as before. Just activate, configure, and enjoy.
+Yes. Connect Meilisearch, select post types, index, and adjust ranking, synonyms, weights, and autosuggest from wp-admin. You only need a developer when you want custom behavior beyond the settings screens.
+
+= Do I have to use a frontend UI from the plugin? =
+
+No. Search is `WP_Query` (and optional REST). Autosuggest and highlighting are opt-in. Use your own templates or a separate front.
+
+= Do I need to change my theme? =
+
+No. Existing search forms and templates keep working. If you don't have any, the plugin still doesn't force one on you. Page-builder search elements work the same way.
 
 = What is Meilisearch? =
 
-Meilisearch is an open-source, lightning-fast, typo-tolerant search engine. It's designed for speed and relevance, making it perfect for WordPress sites that need better search than the default. Learn more at [meilisearch.com](https://www.meilisearch.com/).
+Open-source, typo-tolerant search engine: [meilisearch.com](https://www.meilisearch.com/). This plugin assumes you already chose it (or will via ScryWP); we focus on the WordPress integration.
 
-= Should I use ScryWP Search or self-host? =
+= ScryWP or self-host? =
 
-**[ScryWP Search](https://scrywp.com)** is recommended for most users—it's fully managed cloud hosting designed for WordPress, with automatic scaling and zero server maintenance. **Self-hosting** is ideal if you need complete data control, have specific compliance requirements, or want to minimize costs at scale.
+[ScryWP](https://scrywp.com) if you don't want to operate Meilisearch. Self-host for control, compliance, or local/dev. Either way you paste URL and keys into the plugin.
 
-= Can I index custom post types? =
+= Custom post types and meta? =
 
-Absolutely! Scry Search works with any registered WordPress post type. Select the post types you want in Index Settings, and each gets its own dedicated Meilisearch index with independent configuration.
-
-= Can I search custom meta fields? =
-
-Yes! When configuring searchable fields for an index, you can select from all available post meta keys. This includes custom fields from plugins like ACF, Meta Box, and any other custom meta.
+Yes. Each selected post type gets its own index. Meta shows up in searchable fields; tweak via admin or `scry_ms_index_fields` / `scry_ms_index_meta_keys` / `scry_ms_index_prepare_document`.
 
 = How does federated search work? =
 
-When searching across multiple post types, Scry Search queries all relevant indexes simultaneously using Meilisearch's **federated multi-search** API: parallel queries, merged hit lists, and **per-index weights** so Meilisearch—not ad-hoc PHP—handles cross-index relevancy. That is stronger and more maintainable than stitching separate searches by hand.
-
-= How do I debug indexing issues? =
-
-Use the built-in Task Drawer (accessible from any plugin admin page) to view all Meilisearch tasks. You can see status, duration, error details, and browse your complete task history with pagination.
+Meilisearch multi-search with federation across your indexes, using the weights you set in Search Settings. Adjust the request with `scry_ms_multi_search_*`.
 
 = Will this work with WooCommerce? =
 
-**Yes—fully (100%).** WooCommerce products are a first-class post type in Scry Search. Select **product** in Index Settings, choose which product fields and meta are searchable, set weights in Search Settings if you federate with pages or posts, and catalog search is upgraded while your theme and checkout flow stay unchanged.
+Yes. Index `product`, choose fields/meta, set weights if you federate with other types. Theme and checkout stay unchanged.
 
-= Can I set everything up without a developer? =
+= Synonyms and stopwords? =
 
-**Yes.** If you can install a plugin and paste API keys, you can run the full setup: Connection Settings, Index Settings (including synonyms and stopwords), Search Settings for federated weights, and bulk indexing—all from wp-admin.  You can even provision your own Meilisearch instance over on [scrywp.com](https://scrywp.com). Developers are optional for advanced hooks or custom infrastructure only.
+Yes — per index in Index Settings, no Meilisearch config files required. Also filterable from code when you need that.
 
-= Is this plugin secure? =
+= How do I customize with code? =
 
-Yes. Scry Search follows WordPress security best practices: all AJAX requests use nonces, user capabilities are checked on every action, and all input is properly sanitized and escaped.
+See **For developers: hooks and JS runtime** above for the full list. Common starters: `scry_ms_should_index`, `scry_ms_index_prepare_document`, `scry_ms_meilisearch_client`, `scry_ms_autosuggest_results`, `scry_ms_admin_pages`. Signatures and examples: DOCS.md / [GitHub](https://github.com/jtgraham38/ScryWP-Search).
 
-= Does the plugin support predictive search or autosuggest? =
+= JavaScript API? =
 
-**Yes.** Enable **Autosuggest** in **Scry Search → Search Settings** and the plugin loads a lightweight script that calls a **REST endpoint** as visitors type (debounced so it stays fast). Suggestions use the **same Meilisearch-backed search** as your results pages—flip the switch, optionally set a **CSS class** to target specific forms, and you are done.
+Yes — optional. See **For developers: hooks and JS runtime**. Wait for `scrySearchReady`, then use `window.scrySearch` and per-form pre/post submit (and AJAX) action lists. Skip it if you're not attaching front-end behavior. Details in DOCS.md.
 
-= Can I export or purge stored search analytics? =
+= How do I debug indexing? =
 
-**Yes.** On **Scry Search → Search Analytics**, use **Download analytics as CSV** to export the full analytics table. Set a **retention period** (days) to enable automatic daily cleanup, or use **Delete old events now** to apply the same rule immediately.
+Task drawer for Meilisearch tasks on managed indexes; Scry Search → Logs for plugin debug/error lines (secrets redacted, retention available).
 
-= Where can I see what the plugin is doing (debug/error logs)? =
+= Can I export analytics? =
 
-**Scry Search → Logs** shows the plugin's debug and error activity, stored in your database and viewable in wp-admin. Filter by **Debug** or **Error**, and set a **retention period** so old entries are cleaned up automatically. Sensitive values such as API keys are redacted before anything is written to the log.
+Scry Search → Search Analytics: CSV export, retention/cleanup, privacy options, and `scry_ms_analytics_event_to_insert` for extra fields.
 
-= Can developers extend or customize the plugin with code? =
+= Is it secure? =
 
-**Yes.** Scry Search exposes a full set of **PHP action/filter hooks** (document shaping, index settings, federated search query building, autosuggest, analytics, logging, and more) plus a small front-end **JavaScript API** (`window.scrySearch`) with pre/post submit and AJAX action pipelines for search forms. Every extension point—its type, arguments, return value, and when it fires—is documented in the **DOCS.md** file included with the plugin (see the [plugin repository](https://github.com/jtgraham38/ScryWP-Search)).
+AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API key for front-end paths; the client factory supports `admin` vs `search` keys.
 
 == Screenshots ==
 
@@ -211,79 +295,75 @@ Yes. Scry Search follows WordPress security best practices: all AJAX requests us
 
 == Changelog ==
 
+= 1.3.1 =
+* New hooks: `should_index`, `should_delete`, `should_search`, `after_index_document`, `after_delete_document`, `after_bulk_index`
+* New hooks: `index_names`, `index_searchable_attributes`, `bulk_index_query_args`, `meilisearch_client`, `autosuggest_results`, `admin_pages`
+* Documents now include public taxonomy terms; `index_prepare_document` gets `WP_Post` as second arg
+* Sync on `delete_post` and `untrash_post`
+* DOCS.md / README updated
+
 = 1.3.0 =
-* **Matched-term highlighting**: Optional highlight of matching terms in search results and autosuggest (title/excerpt). Enable under **Scry Search → Search Settings**; customize appearance with CSS for `.scry-ms-highlight` (disabled by default).
-* **Autosuggest thumbnails**: Suggestion rows can show the post’s featured-image thumbnail when available.
-* **Analytics `search_metadata`**: Premium plugins can attach extra fields via `scry_ms_analytics_event_to_insert`; non-column keys are stored as JSON in `search_metadata` and included in CSV export.
-* **Premium Upgrades**: Lists **Scry Search Hybrid** (AI-powered semantic/hybrid search with Meilisearch embedders) alongside Filters.
-* **Indexing fix**: Index settings are restored from WordPress only when an index is newly created — avoids re-PATCHing Meilisearch on every admin load (which could leave the UI stuck on “Indexing…” when embedders are configured).
+* Optional matched-term highlighting in results and autosuggest (Search Settings; CSS class `.scry-ms-highlight`)
+* Autosuggest can show featured-image thumbnails
+* Analytics: extra keys on `scry_ms_analytics_event_to_insert` stored in `search_metadata` (CSV too)
+* Premium Upgrades lists Scry Search Hybrid alongside Filters
+* Index settings restored from WP only when an index is newly created (avoids re-PATCHing Meilisearch every admin load when embedders are set)
 
 = 1.2.1 =
-* **Task Drawer**: Restricts the Meilisearch tasks list to indexes managed by this plugin, so shared or multi-tenant Meilisearch instances do not show unrelated tasks.
-* **Premium Upgrades**: Updated page layout and styling; admin assets are now enqueued correctly on the Upgrades screen.
+* Task drawer only lists tasks for indexes this plugin manages
+* Premium Upgrades page layout/assets fix
 
 = 1.2.0 =
-* **Logs**: New **Scry Search → Logs** screen with debug/error levels, database-backed storage, load-more paging, configurable retention with daily cleanup, manual delete, and automatic redaction of API keys and tokens.
-* **Developer hooks**: Expanded `scry_ms_` filters and actions across indexing, federated search, autosuggest, analytics, and logging — fully documented in **DOCS.md**.
-* **JavaScript API**: `window.scrySearch` runtime with `scrySearchReady`, per-form pre/post submit and AJAX action pipelines, and upgrade namespaces for add-ons.
-* **Premium Upgrades**: New admin page (**Scry Search → Premium Upgrades**) to browse ScryWP premium add-ons, with the `scry_ms_premium_upgrades_display` filter for companion plugins.
-* **Bug fix — federated search**: Correctly counts total hits after applying search filters.
+* Logs screen (debug/error, retention, secret redaction)
+* More `scry_ms_*` hooks; documented in DOCS.md
+* `window.scrySearch` JS API
+* Premium Upgrades admin page
+* Federated search hit-count fix
 
 = 1.1.2 =
-* **Search Analytics — CSV export**: Download all rows from the search analytics table as a UTF-8 CSV (chunked export for large datasets; requires **manage_options**).
-* **Search Analytics — retention & cleanup**: Configure a retention period in days; a **daily scheduled event** deletes rows older than the cutoff. Use **Delete old events now** to run the same cleanup on demand.
-* **Search Analytics — privacy settings**: Existing anonymization options remain under the same screen; retention and export live alongside them.
-
-= 1.0.0 =
-* Initial release
-* Full Meilisearch integration with support for managed cloud and self-hosted instances
-* Per-post-type indexing with independent index configuration
-* Federated search across multiple post types with configurable weights
-* Drag-and-drop ranking rule customization per index
-* Searchable fields configuration including custom post meta
-* Automatic indexing on post create, update, and trash
-* One-click bulk indexing and index wipe/rebuild
-* Built-in Task Drawer for monitoring and debugging
-* Live search preview in admin panel
-* Zero frontend modifications required - true drop-in replacement
-* Full compatibility with existing WordPress search forms and templates
-
-= 1.0.1 =
-* Add support for ScryWP-hosted Meilisearch instances
-
-= 1.0.2 =
-* Add support for configuring Meilisearch synonyms and stopwords from the WordPress admin dashboard
+* Analytics CSV export, retention/cleanup, privacy settings on Search Analytics
 
 = 1.0.3 =
-* **AJAX autosuggest / predictive search**: Turn it on from Search Settings with a single toggle; optional CSS class selector targets your existing search forms
-* Autosuggest queries reuse the same Meilisearch search path as full-site search for consistent, typo-tolerant suggestions
+* Optional AJAX autosuggest (Search Settings toggle + optional class selector)
+
+= 1.0.2 =
+* Synonyms and stopwords from the WordPress admin
+
+= 1.0.1 =
+* ScryWP-hosted Meilisearch support
+
+= 1.0.0 =
+* Initial release: per-post-type indexes, federated search, ranking/searchable fields, auto + bulk indexing, task drawer, live preview, drop-in WP search
 
 == Upgrade Notice ==
 
+= 1.3.1 =
+More developer hooks (indexing/search gates, client factory, autosuggest results, admin tabs). See DOCS.md.
+
 = 1.3.0 =
-Optional matched-term highlighting, autosuggest thumbnails, analytics metadata for premium plugins, Hybrid upgrade listing, and an indexing fix for sites using embedders.
+Optional highlighting, autosuggest thumbnails, analytics metadata, Hybrid listing, indexing fix for embedder setups.
 
 = 1.2.1 =
-Updates to the "Upgrades" page, and fixes to the task pane on multi-tenant Meilisearch instances.
+Upgrades page updates; task pane fix for multi-tenant Meilisearch.
 
 = 1.2.0 =
-Adds a **Logs** screen (debug/error logging with retention and secret redaction) and an expanded developer hook set, now fully documented in **DOCS.md** along with the `window.scrySearch` JavaScript API.
+Logs screen and expanded hooks / `window.scrySearch` (see DOCS.md).
 
 = 1.1.2 =
-**Search Analytics** adds CSV export, configurable retention with scheduled cleanup, and a one-click manual delete for rows past retention—all from **Scry Search → Search Analytics**.
+Analytics CSV export and retention cleanup.
 
 = 1.0.3 =
-Optional **AJAX autosuggest** is here: enable it under **Scry Search → Search Settings**, optionally set a class selector for your search forms, and visitors get Meilisearch-powered suggestions as they type.
+Optional AJAX autosuggest under Search Settings.
 
 = 1.0.0 =
-Initial release. Install, connect to your Meilisearch instance, and transform your WordPress search experience.
+Initial release.
 
 == Requirements ==
 
 * WordPress 5.2 or higher
 * PHP 8.1 or higher
-* Meilisearch instance (ScryWP Search managed hosting or self-hosted)
+* A Meilisearch instance (ScryWP or self-hosted)
 
 == Support ==
 
-For support, feature requests, or bug reports, please visit the [plugin repository](https://github.com/jtgraham38/ScryWP-Search) or contact [JG Web Development](https://jacob-t-graham.com).
+Hooks/docs: DOCS.md or [GitHub](https://github.com/jtgraham38/ScryWP-Search). Issues and questions: same repo or [JG Web Development](https://jacob-t-graham.com).
