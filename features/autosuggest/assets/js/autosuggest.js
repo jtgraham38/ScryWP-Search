@@ -80,7 +80,30 @@ var scrySearch_renderAutosuggestResults = function (searchForm) {
     results.forEach(function (result) {
         var resultItem = document.createElement('li');
         resultItem.classList.add('scry-search-autosuggest-result-item');
-        resultItem.innerHTML = '<a href="' + result.url + '">' + result.title + '</a>';
+
+        // One clickable row: optional thumb on the left, title on the right.
+        var link = document.createElement('a');
+        link.href = result.url || '#';
+        link.classList.add('scry-search-autosuggest-result-link');
+
+        // Only add an <img> when the REST payload included a featured_image URL.
+        // No image → leave blank (no grey placeholder box).
+        if (result.featured_image) {
+            var thumb = document.createElement('img');
+            thumb.classList.add('scry-search-autosuggest-result-thumb');
+            thumb.src = result.featured_image;
+            thumb.alt = ''; // decorative beside the title text
+            thumb.loading = 'lazy';
+            link.appendChild(thumb);
+        }
+
+        var title = document.createElement('span');
+        title.classList.add('scry-search-autosuggest-result-title');
+        //titles are sanitized server side down to plain text plus highlight <mark> tags
+        title.innerHTML = result.title || '';
+        link.appendChild(title);
+
+        resultItem.appendChild(link);
         autosuggestResultsList.appendChild(resultItem);
     });
 

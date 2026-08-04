@@ -128,14 +128,23 @@ class ScrySearch_AutoSuggestFeature extends PluginFeature {
 
         $search_query = new WP_Query($autosuggest_query);
 
-        //keep the title, url, and excerpt of the results
+        // Titles and excerpts can carry <mark> wrappers from the highlighting feature,
+        // so strip everything except those before the payload reaches the frontend.
+        $highlighting_feature = $this->get_feature('scry_ms_highlighting');
+
+        // Shape each hit for the frontend dropdown (title + link + optional thumb).
         $results = array();
         foreach ($search_query->posts as $post) {
+            // WP thumbnail size keeps payload small for a 5-result dropdown.
+            // false when the post has no featured image — send '' so JS can skip the <img>.
+            $featured_image = get_the_post_thumbnail_url($post->ID, 'thumbnail');
+
             $results[] = array(
-                'title' => $post->post_title,
+                'title' => $highlighting_feature->sanitize_highlighted_text($post->post_title),
                 'url' => get_permalink($post->ID),
-                'excerpt' => $post->post_excerpt,
+                'excerpt' => $highlighting_feature->sanitize_highlighted_text($post->post_excerpt),
                 'post_type' => $post->post_type,
+                'featured_image' => $featured_image ? $featured_image : '',
             );
         }
 

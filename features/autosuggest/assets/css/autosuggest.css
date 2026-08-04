@@ -22,6 +22,29 @@
     border-bottom: 1px solid #e0e0e0;
 }
 
+/* Row layout: thumb (if any) + title */
+.scry-search-autosuggest-result-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: inherit;
+}
+
+/* Fixed square so titles line up even when some rows have no image */
+.scry-search-autosuggest-result-thumb {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.scry-search-autosuggest-result-title {
+    flex: 1;
+    min-width: 0;
+}
+
 .scry-search-autosuggest-results-close-button {
     position: absolute;
     top: 0;

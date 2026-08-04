@@ -12,9 +12,10 @@ use jtgraham38\jgwordpresskit\PluginFeature;
 class ScrySearch_AnalyticsFeature extends PluginFeature {
 
     /**
-     * Current database schema version
+     * Current database schema version.
+     * 1.1 added the extras column; 1.2 renames it to search_metadata.
      */
-    private $db_version = '1.0';
+    private $db_version = '1.2';
     
     public function add_filters() {
         // No filters needed
@@ -64,8 +65,34 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
     public function maybe_create_table() {
         $installed_version = get_option($this->prefixed('analytics_db_version'), '0');
         if (version_compare($installed_version, $this->db_version, '<')) {
+            // dbDelta can add columns but does not rename them — migrate first.
+            $this->maybe_rename_extras_to_search_metadata();
             $this->create_search_analytics_table();
             update_option($this->prefixed('analytics_db_version'), $this->db_version);
+        }
+    }
+
+    /**
+     * Rename the 1.1 `extras` column to `search_metadata` when upgrading existing tables.
+     */
+    private function maybe_rename_extras_to_search_metadata() {
+        global $wpdb;
+
+        $table_name = $this->get_table_name();
+        $like = $wpdb->esc_like($table_name);
+        $exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $like));
+        if ($exists !== $table_name) {
+            return;
+        }
+
+        $columns = $wpdb->get_col("DESCRIBE `{$table_name}`", 0);
+        if (!is_array($columns)) {
+            return;
+        }
+
+        if (in_array('extras', $columns, true) && !in_array('search_metadata', $columns, true)) {
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is internal.
+            $wpdb->query("ALTER TABLE `{$table_name}` CHANGE `extras` `search_metadata` longtext DEFAULT ''");
         }
     }
 
@@ -78,6 +105,9 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
         $table_name = $this->get_table_name();
         $charset_collate = $wpdb->get_charset_collate();
 
+        // Schema note: `search_metadata` (renamed from extras in 1.2) — JSON bag for
+        // premium plugin payloads packed after scry_ms_analytics_event_to_insert
+        // (see pack_analytics_event_search_metadata).
         $sql = "CREATE TABLE $table_name (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             search_term varchar(255) NOT NULL,
@@ -89,6 +119,7 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
             result_ids longtext DEFAULT '',
             result_titles longtext DEFAULT '',
             post_types_searched text DEFAULT '',
+            search_metadata longtext DEFAULT '',
             created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
             KEY idx_search_term (search_term),
@@ -155,18 +186,91 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
                 'post_types_searched' => wp_json_encode(isset($event['post_types_searched']) ? array_map('sanitize_text_field', $event['post_types_searched']) : array()),
         );
 
-        //let other plugins modify the event to insert
+        // Let other plugins modify the event to insert (add premium keys, anonymize further, etc.)
         //@HOOK: scry_ms_analytics_event_to_insert
         $event_to_insert = apply_filters($this->config('hook_prefix') . 'analytics_event_to_insert', $event_to_insert);
 
-        //insert the event
+        // Guard: a bad callback could return a non-array; fall back so packing/insert stay safe.
+        if (!is_array($event_to_insert)) {
+            $event_to_insert = array();
+        }
+
+        // Pack any non-column keys (e.g. scry_search_filters) into the search_metadata JSON column.
+        $event_to_insert = $this->pack_analytics_event_search_metadata($event_to_insert);
+
+        // Insert the event. Format has 10 placeholders: original 9 columns + search_metadata (%s).
         $result = $wpdb->insert(
             $table_name,
             $event_to_insert,
-            array('%s', '%d', '%s', '%s', '%s', '%d', '%s', '%s', '%s')
+            array('%s', '%d', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s')
         );
 
         return $result !== false;
+    }
+
+    /**
+     * Move non-column keys from the filtered event into the search_metadata JSON column.
+     *
+     * Premium plugins may add top-level keys (e.g. scry_search_filters) via
+     * scry_ms_analytics_event_to_insert. Those are stored under search_metadata as JSON
+     * so we do not need a new DB column per plugin.
+     *
+     * @param array $event_to_insert Filtered event row.
+     * @return array Row ready for $wpdb->insert with a search_metadata string column.
+     */
+    private function pack_analytics_event_search_metadata(array $event_to_insert): array {
+        // Real table columns for this insert (id/created_at are DB-managed).
+        // Anything else left on the event after the filter is treated as search metadata.
+        $known_columns = array(
+            'search_term',
+            'user_id',
+            'user_ip',
+            'user_agent',
+            'referrer',
+            'result_count',
+            'result_ids',
+            'result_titles',
+            'post_types_searched',
+        );
+
+        // Accumulator for the search_metadata JSON object (plugin bags keyed by plugin name).
+        $search_metadata = array();
+
+        // Allow callers to set search_metadata directly (array or JSON string); merge with packed keys below.
+        if (isset($event_to_insert['search_metadata'])) {
+            if (is_array($event_to_insert['search_metadata'])) {
+                // Already an array — use as the starting metadata bag.
+                $search_metadata = $event_to_insert['search_metadata'];
+            } elseif (is_string($event_to_insert['search_metadata']) && $event_to_insert['search_metadata'] !== '') {
+                // JSON string — decode if valid so we can merge other plugin keys into it.
+                $decoded = json_decode($event_to_insert['search_metadata'], true);
+                if (is_array($decoded)) {
+                    $search_metadata = $decoded;
+                }
+            }
+            // Remove raw search_metadata from the event; we re-add it as an encoded string at the end.
+            unset($event_to_insert['search_metadata']);
+        }
+
+        // Pull plugin keys (anything not a known column) into search_metadata.
+        foreach ($event_to_insert as $key => $value) {
+            if (!in_array($key, $known_columns, true)) {
+                // e.g. scry_search_filters / scry_search_hybrid from premium plugins
+                $search_metadata[$key] = $value;
+                unset($event_to_insert[$key]);
+            }
+        }
+
+        // Rebuild a clean insert row: known columns first, then search_metadata as JSON (or empty string).
+        $row = array();
+        foreach ($known_columns as $column) {
+            // Preserve filtered values; default missing columns to empty string for a stable insert shape.
+            $row[$column] = isset($event_to_insert[$column]) ? $event_to_insert[$column] : '';
+        }
+        // Empty string when no premium data — omit storing "{}" for unenriched events.
+        $row['search_metadata'] = !empty($search_metadata) ? wp_json_encode($search_metadata) : '';
+
+        return $row;
     }
 
     /**
@@ -643,7 +747,7 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
         //write UTF-8 BOM helps Excel recognize encoding.
         fwrite($out, "\xEF\xBB\xBF");
 
-        //get columns
+        // get columns (include search_metadata so CSV exports premium-plugin payloads)
         $columns = array(
             'id',
             'search_term',
@@ -655,6 +759,8 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
             'result_ids',
             'result_titles',
             'post_types_searched',
+            // search_metadata: JSON from premium plugins (see pack_analytics_event_search_metadata)
+            'search_metadata',
             'created_at',
         );
         fputcsv($out, $columns);
