@@ -114,10 +114,7 @@ class ScrySearch_SearchFeature extends PluginFeature {
         //ensure we gracefully fall back to the wordpress search if the meilisearch search fails
         try {
             //create a meilisearch client
-            $client = new Client(
-                get_option($this->prefixed('meilisearch_url')), 
-                get_option($this->prefixed('meilisearch_search_key'))
-            );
+            $client = $this->get_feature('scry_ms_client')->get_client();
 
             //get the search weights
             $search_weights = get_option($this->prefixed('search_weights'));

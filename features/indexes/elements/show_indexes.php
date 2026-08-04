@@ -19,7 +19,7 @@ $error_message = '';
 // Try to fetch index information
 if (!empty($meilisearch_url) && !empty($meilisearch_admin_key)) {
     try {
-        $client = new Client($meilisearch_url, $meilisearch_admin_key);
+        $client = $this->get_feature('scry_ms_client')->get_client();
         $indexes_feature = $this->get_feature('scry_ms_indexes');
         $index_names = $indexes_feature->get_index_names();
         

@@ -50,6 +50,10 @@ $plugin = new Plugin("scry_ms_", plugin_dir_path( __FILE__ ), plugin_dir_url( __
 
 
 //register features with the plugin manager here...
+require_once plugin_dir_path(__FILE__) . '/features/client/feature.php';
+$client_feature = new ScrySearch_Client_Feature();
+$plugin->register_feature("scry_ms_client", $client_feature);
+
 require_once plugin_dir_path(__FILE__) . '/features/admin_page/feature.php';
 $feature = new ScrySearch_AdminPageFeature();
 $plugin->register_feature("scry_ms_admin_page", $feature);

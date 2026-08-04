@@ -74,10 +74,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         //provide success and error handling
         try {
             //init a meilisearch client
-            $client = new Client(
-                get_option($this->prefixed('meilisearch_url')), 
-                get_option($this->prefixed('meilisearch_admin_key'))
-            );
+            $client = $this->get_feature('scry_ms_client')->get_client();
 
             //index the post
             $client->index($index_name)->updateDocuments($post_data);
@@ -118,10 +115,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         //provide success and error handling
         try {
             //init a meilisearch client
-            $client = new Client(
-                get_option($this->prefixed('meilisearch_url')), 
-                get_option($this->prefixed('meilisearch_admin_key'))
-            );
+            $client = $this->get_feature('scry_ms_client')->get_client();
 
             //delete the post from the index
             $client->index($index_name)->deleteDocument($post_id);
@@ -161,10 +155,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         //ensure we handle meielisearch errors correctly
         try {
             //create a meilisearch client
-            $client = new Client(
-                get_option($this->prefixed('meilisearch_url')), 
-                get_option($this->prefixed('meilisearch_admin_key'))
-            );
+            $client = $this->get_feature('scry_ms_client')->get_client();
 
             //now, we will check if an index exists, and if not, we will create it
             foreach ($index_names as $post_type => $index_name) {
@@ -520,7 +511,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         
         try {
             // Create Meilisearch client
-            $client = new Client($meilisearch_url, $meilisearch_admin_key);
+            $client = $this->get_feature('scry_ms_client')->get_client();
             
             // Get the index and delete it
             $index = $client->index($index_name);
@@ -642,7 +633,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             }
             
             // Create Meilisearch client
-            $client = new Client($meilisearch_url, $meilisearch_admin_key);
+            $client = $this->get_feature('scry_ms_client')->get_client();
             
             // Get the index and add/update documents
             $index = $client->index($index_name);
@@ -811,7 +802,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         
         try {
             // Create Meilisearch client
-            $client = new Client($meilisearch_url, $api_key);
+            $client = $this->get_feature('scry_ms_client')->get_client();
 
             
             // Search the index
@@ -985,7 +976,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         
         try {
             // Create Meilisearch client
-            $client = new Client($meilisearch_url, $meilisearch_admin_key);
+            $client = $this->get_feature('scry_ms_client')->get_client();
             $index = $client->index($index_name);
             
             // Get current ranking rules
@@ -1221,7 +1212,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
 
         try {
             // Create Meilisearch client
-            $client = new Client($meilisearch_url, $meilisearch_admin_key);
+            $client = $this->get_feature('scry_ms_client')->get_client();
             $index = $client->index($index_name);
             
             // Update ranking rules

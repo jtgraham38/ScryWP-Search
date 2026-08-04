@@ -221,7 +221,7 @@ class ScrySearch_AdminPageFeature extends PluginFeature {
         
         try {
             // Create Meilisearch client
-            $client = new Client($meilisearch_url, $meilisearch_admin_key);
+            $client = $this->get_feature('scry_ms_client')->get_client();
             
             // First, get total count to calculate reverse pagination
             $count_query = (new TasksQuery())

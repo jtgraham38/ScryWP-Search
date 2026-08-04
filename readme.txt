@@ -3,7 +3,7 @@ Contributors: jtgraham38
 Tags: meilisearch, search, typo-tolerant search, auto suggest, ajax search
 Requires at least: 5.2
 Tested up to: 7.0
-Stable tag: 1.2.1
+Stable tag: 1.3.0
 Requires PHP: 8.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -211,6 +211,13 @@ Yes. Scry Search follows WordPress security best practices: all AJAX requests us
 
 == Changelog ==
 
+= 1.3.0 =
+* **Matched-term highlighting**: Optional highlight of matching terms in search results and autosuggest (title/excerpt). Enable under **Scry Search → Search Settings**; customize appearance with CSS for `.scry-ms-highlight` (disabled by default).
+* **Autosuggest thumbnails**: Suggestion rows can show the post’s featured-image thumbnail when available.
+* **Analytics `search_metadata`**: Premium plugins can attach extra fields via `scry_ms_analytics_event_to_insert`; non-column keys are stored as JSON in `search_metadata` and included in CSV export.
+* **Premium Upgrades**: Lists **Scry Search Hybrid** (AI-powered semantic/hybrid search with Meilisearch embedders) alongside Filters.
+* **Indexing fix**: Index settings are restored from WordPress only when an index is newly created — avoids re-PATCHing Meilisearch on every admin load (which could leave the UI stuck on “Indexing…” when embedders are configured).
+
 = 1.2.1 =
 * **Task Drawer**: Restricts the Meilisearch tasks list to indexes managed by this plugin, so shared or multi-tenant Meilisearch instances do not show unrelated tasks.
 * **Premium Upgrades**: Updated page layout and styling; admin assets are now enqueued correctly on the Upgrades screen.
@@ -252,6 +259,9 @@ Yes. Scry Search follows WordPress security best practices: all AJAX requests us
 * Autosuggest queries reuse the same Meilisearch search path as full-site search for consistent, typo-tolerant suggestions
 
 == Upgrade Notice ==
+
+= 1.3.0 =
+Optional matched-term highlighting, autosuggest thumbnails, analytics metadata for premium plugins, Hybrid upgrade listing, and an indexing fix for sites using embedders.
 
 = 1.2.1 =
 Updates to the "Upgrades" page, and fixes to the task pane on multi-tenant Meilisearch instances.
