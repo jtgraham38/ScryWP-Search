@@ -203,8 +203,6 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                     if ($e->getCode() === 404) {
                         // Index doesn't exist, create it
                         $client->createIndex($index_name, ['primaryKey' => 'ID']);
-                        // Configure searchable attributes for the new index
-                        $this->configure_index_searchable_attributes($index);
                         $created = true;
                         //log a debug message with the logging feature
                         $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Index created: %s', "scry-search"), $index_name));
@@ -550,9 +548,8 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             $index = $client->index($index_name);
             $index->delete();
             
-            // Recreate the index immediately with proper configuration
-            $client->createIndex($index_name, ['primaryKey' => 'ID']);
-            $this->configure_index_searchable_attributes($index);
+            // call index init logic
+            $this->ensure_post_indexes_exist();
             
             // Success - the index has been recreated with proper configuration
             wp_send_json_success(array(
@@ -963,29 +960,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             ));
         }
     }
-    
-    /**
-     * Configure searchable attributes for a Meilisearch index
-     * Excludes post_status, post_type, author_name, and featured_image from search
-     */
-    private function configure_index_searchable_attributes($index) {
-        try {
-            $searchable_attributes = $this->get_searchable_attributes();
-            $index_name = $index->getUid();
 
-            //let other plugins modify the searchable attributes for this index
-            //@HOOK: scry_ms_index_searchable_attributes_before_update — args: $searchable_attributes, $index_name
-            $searchable_attributes = apply_filters($this->config('hook_prefix') . 'index_searchable_attributes_before_update', $searchable_attributes, $index_name);
-
-            // Update searchable attributes - Meilisearch PHP SDK v1.x uses updateSearchableAttributes
-            $index->updateSearchableAttributes($searchable_attributes);
-        } catch (Exception $e) {
-            // Log error but don't fail the entire operation
-            //log an error message with the logging feature
-            $this->get_feature('scry_ms_logs')->log('error', sprintf(__('configure_index_searchable_attributes failed: %s', "scry-search"), $e->getMessage()));
-            error_log('Scry Search for Meilisearch: Failed to configure searchable attributes: ' . $e->getMessage());
-        }
-    }
     
     /**
      * AJAX handler for getting index settings (ranking rules and searchable attributes)
