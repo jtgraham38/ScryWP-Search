@@ -51,7 +51,7 @@ Works with Elementor, Divi, Beaver Builder, and similar tools: whatever search b
 
 Enable Autosuggest under Scry Search → Search Settings. The plugin attaches debounced AJAX to existing `name="s"` fields. Suggestions use the same Meilisearch indexes as full-site search. Optional CSS class selector so only the forms you choose get typeahead. Thumbnails supported when a featured image exists.
 
-Shape the JSON with `scry_ms_autosuggest_results`, or leave autosuggest off and stay fully headless.
+Shape the result data with `scry_ms_autosuggest_results`, or the rendered HTML with `scry_ms_autosuggest_results_rendered`. Leave autosuggest off to stay fully headless.
 
 = Per-post-type indexes and federated search =
 
@@ -157,6 +157,7 @@ Autosuggest, admin, analytics, logs, window:
 
 * `scry_ms_autosuggest_query`
 * `scry_ms_autosuggest_results`
+* `scry_ms_autosuggest_results_rendered`
 * `scry_ms_admin_pages`
 * `scry_ms_analytics_event_to_insert`
 * `scry_ms_log_message`
@@ -265,7 +266,7 @@ Yes — per index in Index Settings, no Meilisearch config files required. Also 
 
 = How do I customize with code? =
 
-See **For developers: hooks and JS runtime** above for the full list. Common starters: `scry_ms_should_index`, `scry_ms_index_prepare_document`, `scry_ms_meilisearch_client`, `scry_ms_autosuggest_results`, `scry_ms_admin_pages`. Signatures and examples: DOCS.md / [GitHub](https://github.com/jtgraham38/ScryWP-Search).
+See **For developers: hooks and JS runtime** above for the full list. Common starters: `scry_ms_should_index`, `scry_ms_index_prepare_document`, `scry_ms_meilisearch_client`, `scry_ms_autosuggest_results` / `scry_ms_autosuggest_results_rendered`, `scry_ms_admin_pages`. Signatures and examples: [DOCS.md](https://github.com/jtgraham38/ScryWP-Search/blob/main/DOCS.md).
 
 = JavaScript API? =
 
@@ -296,8 +297,8 @@ AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API 
 == Changelog ==
 
 = 1.3.1 =
-* New hooks: `should_index`, `should_delete`, `should_search`, `after_index_document`, `after_delete_document`, `after_bulk_index`
-* New hooks: `index_names`, `index_searchable_attributes`, `bulk_index_query_args`, `meilisearch_client`, `autosuggest_results`, `admin_pages`
+* New hooks: `should_index`, `should_delete`, `should_search`, `after_index_document`, `after_delete_document`, `after_bulk_index`, `index_names`, `index_searchable_attributes`, `bulk_index_query_args`, `meilisearch_client`, `autosuggest_results`, `autosuggest_results_rendered`, `admin_pages`
+* Customize how your site displays autosuggest results with the `autosuggest_results_rendered` hook
 * Documents now include public taxonomy terms; `index_prepare_document` gets `WP_Post` as second arg
 * Sync on `delete_post` and `untrash_post`
 * DOCS.md / README updated

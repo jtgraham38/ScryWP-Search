@@ -486,18 +486,18 @@ The array contains standard `WP_Query` arguments such as `s`, `post_type`, `post
 
 #### `scry_ms_autosuggest_results`
 
-Modify the JSON payload returned by the autosuggest REST endpoint.
+Modify the structured result list used for autosuggest (before HTML is rendered).
 
 
-|               |                                                                              |
-| ------------- | ---------------------------------------------------------------------------- |
-| **Type**      | Filter                                                                       |
-| **Arguments** | `array $results`, `WP_Query $search_query`, `WP_REST_Request $request`       |
-| **Returns**   | `array` — list of result objects                                             |
-| **When**      | After default result objects are built, before `rest_ensure_response`.       |
+|               |                                                                                          |
+| ------------- | ---------------------------------------------------------------------------------------- |
+| **Type**      | Filter                                                                                   |
+| **Arguments** | `array $results`, `WP_Query $search_query`, `WP_REST_Request $request`                   |
+| **Returns**   | `array` — list of result objects                                                         |
+| **When**      | After default result objects are built, before the HTML template runs.                   |
 
 
-Each default result has `title`, `url`, `excerpt`, `post_type`, and `featured_image`. Add fields for themes/add-ons (prices, badges, etc.) as needed.
+Each default result has `title`, `url`, `excerpt`, `post_type`, and `featured_image`. Add fields for themes/add-ons (prices, badges, etc.) as needed. The filtered array is what feeds `elements/rendered_autosuggest.php` and is returned as `data` in the REST response.
 
 ```php
 add_filter( 'scry_ms_autosuggest_results', function ( $results, $search_query, $request ) {
@@ -507,6 +507,31 @@ add_filter( 'scry_ms_autosuggest_results', function ( $results, $search_query, $
     return $results;
 }, 10, 3 );
 ```
+
+---
+
+#### `scry_ms_autosuggest_results_rendered`
+
+Modify the HTML markup for the autosuggest dropdown after it is rendered from the PHP template.
+
+
+|               |                                                                                                      |
+| ------------- | ---------------------------------------------------------------------------------------------------- |
+| **Type**      | Filter                                                                                               |
+| **Arguments** | `string $output`, `array $results`, `WP_Query $search_query`, `WP_REST_Request $request`             |
+| **Returns**   | `string` — HTML for the dropdown                                                                     |
+| **When**      | After `elements/rendered_autosuggest.php` runs, before the REST response is sent.                    |
+
+
+Use this when you need to change the markup itself (wrap the list, inject extra rows, replace the template output). Prefer `scry_ms_autosuggest_results` when you only need to change the data. The REST response includes both `data` (the result array) and `rendered` (this HTML string).
+
+```php
+add_filter( 'scry_ms_autosuggest_results_rendered', function ( $output, $results, $search_query, $request ) {
+    return '<div class="my-autosuggest-wrap">' . $output . '</div>';
+}, 10, 4 );
+```
+
+Default markup matches the client-built structure: `.scry-search-autosuggest-results` → list → linked rows (optional thumb + title) → close button.
 
 ---
 

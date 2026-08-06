@@ -23,8 +23,12 @@ var scrySearch_autosuggest = function (searchForm) {
         return;
     }
 
+    //add the return type "html" to the search forms for autosuggest
+    searchForm.addPreSubmitAjaxAction(scrySearch_addReturnTypeInput, 1);
+
     //add the save autosuggest results action to the search form, this should run before most everything else
     searchForm.addPostSubmitAjaxAction(scrySearch_saveAutosuggestResults, 9);
+
     //add the render autosuggest results action to the search form, this should run last after all other actions
     searchForm.addPostSubmitAjaxAction(scrySearch_renderAutosuggestResults, 999);
 
@@ -46,6 +50,15 @@ var scrySearch_autosuggest = function (searchForm) {
     });
 };
 
+//add a hidden input with name "return_type" and value "html" to the search form
+var scrySearch_addReturnTypeInput = function (searchForm) {
+    var returnTypeInput = document.createElement('input');
+    returnTypeInput.type = 'hidden';
+    returnTypeInput.name = 'return_type';
+    returnTypeInput.value = 'html';
+    searchForm.formElement.appendChild(returnTypeInput);
+}
+
 //save the autosuggest results to the search form data, so it can be read by other actions
 var scrySearch_saveAutosuggestResults = function (searchForm, data) {
     searchForm.data.core.autosuggestResults = data;
@@ -65,57 +78,24 @@ var scrySearch_renderAutosuggestResults = function (searchForm) {
         return;
     }
 
+    //return early if there are no rendered autosuggest results
+    if (!searchForm.data.core?.autosuggestResults?.rendered) {
+        return;
+    }
+
     //make the absolutely-positioned container for the autosuggest results
     var autosuggestResults = document.createElement('div');
     autosuggestResults.classList.add('scry-search-autosuggest-results');
     autosuggestResults.style.width = searchForm.formElement.offsetWidth + 'px';     //width should match the width of the form
 
-    //make a list inside the container
-    var autosuggestResultsList = document.createElement('ul');
-    autosuggestResultsList.classList.add('scry-search-autosuggest-results-list');
-    autosuggestResults.appendChild(autosuggestResultsList);
+    //use whatever is in the searchForm.data.core?.autosuggestResults as the inner html of the autosuggest results container
+    autosuggestResults.innerHTML = searchForm.data.core.autosuggestResults.rendered;
 
-    //make a list item for each result
-    var results = searchForm.data.core.autosuggestResults || [];
-    results.forEach(function (result) {
-        var resultItem = document.createElement('li');
-        resultItem.classList.add('scry-search-autosuggest-result-item');
-
-        // One clickable row: optional thumb on the left, title on the right.
-        var link = document.createElement('a');
-        link.href = result.url || '#';
-        link.classList.add('scry-search-autosuggest-result-link');
-
-        // Only add an <img> when the REST payload included a featured_image URL.
-        // No image → leave blank (no grey placeholder box).
-        if (result.featured_image) {
-            var thumb = document.createElement('img');
-            thumb.classList.add('scry-search-autosuggest-result-thumb');
-            thumb.src = result.featured_image;
-            thumb.alt = ''; // decorative beside the title text
-            thumb.loading = 'lazy';
-            link.appendChild(thumb);
-        }
-
-        var title = document.createElement('span');
-        title.classList.add('scry-search-autosuggest-result-title');
-        //titles are sanitized server side down to plain text plus highlight <mark> tags
-        title.innerHTML = result.title || '';
-        link.appendChild(title);
-
-        resultItem.appendChild(link);
-        autosuggestResultsList.appendChild(resultItem);
-    });
-
-    //add a close button to the top left of the container
-    var closeButton = document.createElement('button');
-    closeButton.classList.add('scry-search-autosuggest-results-close-button');
-    closeButton.innerHTML = '<span class="dashicons dashicons-no-alt"></span>';
-    closeButton.addEventListener('click', function () {
-        searchForm.data.core.autoSuggestElement.remove();
+    //add an event listener to the close button
+    autosuggestResults.querySelector('.scry-search-autosuggest-results-close-button').addEventListener('click', function () {
+        autosuggestResults.remove();
         searchForm.data.core.autoSuggestElement = null;
     });
-    autosuggestResults.appendChild(closeButton);
 
     //once the results are fully created, add the container to the search input
     searchForm.formElement.appendChild(autosuggestResults);

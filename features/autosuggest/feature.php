@@ -85,6 +85,12 @@ class ScrySearch_AutoSuggestFeature extends PluginFeature {
                 'methods' => 'POST',
                 'callback' => array($this, 'handle_autosuggest_request'),
                 'permission_callback' => '__return_true',
+                'args' => array(
+                    's' => array(
+                        'type' => 'string',
+                        'required' => true,
+                    )
+                ),
             ),
         );
     }
@@ -151,7 +157,19 @@ class ScrySearch_AutoSuggestFeature extends PluginFeature {
         //@HOOK: scry_ms_autosuggest_results
         $results = apply_filters($this->config('hook_prefix') . 'autosuggest_results', $results, $search_query, $request);
 
-        return rest_ensure_response($results);
+        //render the autosuggest results
+        ob_start();
+        require_once plugin_dir_path(__FILE__) . 'elements/rendered_autosuggest.php';
+        $output = ob_get_clean();
+
+        //@HOOK: scry_ms_autosuggest_results_rendered
+        $output = apply_filters($this->config('hook_prefix') . 'autosuggest_results_rendered', $output, $results, $search_query, $request);
+
+        //return the results both as json and html
+        return rest_ensure_response(array(
+            'data' => $results,
+            'rendered' => $output,
+        ));
     }
 
     /**
