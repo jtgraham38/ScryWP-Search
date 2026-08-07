@@ -296,14 +296,12 @@ AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API 
 
 == Changelog ==
 
-= 1.3.1 =
+= 1.3.0 =
 * New hooks: `should_index`, `should_delete`, `should_search`, `after_index_document`, `after_delete_document`, `after_bulk_index`, `index_names`, `index_searchable_attributes`, `bulk_index_query_args`, `meilisearch_client`, `autosuggest_results`, `autosuggest_results_rendered`, `admin_pages`
 * Customize how your site displays autosuggest results with the `autosuggest_results_rendered` hook
 * Documents now include public taxonomy terms; `index_prepare_document` gets `WP_Post` as second arg
 * Sync on `delete_post` and `untrash_post`
 * DOCS.md / README updated
-
-= 1.3.0 =
 * Optional matched-term highlighting in results and autosuggest (Search Settings; CSS class `.scry-ms-highlight`)
 * Autosuggest can show featured-image thumbnails
 * Analytics: extra keys on `scry_ms_analytics_event_to_insert` stored in `search_metadata` (CSV too)
@@ -338,11 +336,8 @@ AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API 
 
 == Upgrade Notice ==
 
-= 1.3.1 =
-More developer hooks (indexing/search gates, client factory, autosuggest results, admin tabs). See DOCS.md.
-
 = 1.3.0 =
-Optional highlighting, autosuggest thumbnails, analytics metadata, Hybrid listing, indexing fix for embedder setups.
+More developer hooks (indexing/search gates, client factory, autosuggest results, admin tabs), optional highlighting, autosuggest thumbnails, analytics metadata, Hybrid listing, indexing fix for embedder setups. See DOCS.md.
 
 = 1.2.1 =
 Upgrades page updates; task pane fix for multi-tenant Meilisearch.

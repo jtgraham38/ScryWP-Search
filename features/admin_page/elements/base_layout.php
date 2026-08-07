@@ -82,3 +82,27 @@ if (method_exists($this, 'get_registered_pages')) {
         require_once $file_path;
     ?>
 </div>
+
+<footer class="scry-ms-admin-review-footer">
+    <p class="scry-ms-admin-review-footer-text">
+        <?php
+        echo wp_kses(
+            sprintf(
+                /* translators: 1: opening anchor tag, 2: closing anchor tag */
+                __('Enjoying Scry Search? Please leave us a %1$s5-star review%2$s.  It helps a lot!', 'scry-search'),
+                '<a class="scry-ms-admin-review-footer-link" href="' . esc_url('https://wordpress.org/support/plugin/scry-search/reviews/#new-post') . '" target="_blank" rel="noopener noreferrer">',
+                '</a>'
+            ),
+            array(
+                'a' => array(
+                    'href'   => true,
+                    'target' => true,
+                    'rel'    => true,
+                    'class'  => true,
+                ),
+            )
+        );
+        ?>
+        <span class="scry-ms-admin-review-footer-stars" aria-hidden="true">★★★★★</span>
+    </p>
+</footer>
