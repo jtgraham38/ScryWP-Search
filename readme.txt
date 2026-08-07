@@ -1,9 +1,9 @@
 === Scry Search: Meilisearch for WordPress ===
 Contributors: jtgraham38
-Tags: meilisearch, search, developer, hooks, extensible, headless, autosuggest, woocommerce
+Tags: meilisearch, search, developer, hooks, extendable
 Requires at least: 5.2
 Tested up to: 7.0
-Stable tag: 1.3.0
+Stable tag: 1.4.0
 Requires PHP: 8.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -18,14 +18,14 @@ Don't want to run Meilisearch yourself? [ScryWP Search](https://scrywp.com) is m
 
 Scry Search is built by developers for developers — but you don't need to be one to run it.
 
-If you can install a plugin and paste API keys, you can connect Meilisearch, pick post types, index content, tune ranking/synonyms/weights, and turn on autosuggest from wp-admin. No theme edits required. Existing search forms keep working. WooCommerce products are a first-class post type.
+If you can install a plugin and paste API keys, you can connect Meilisearch, pick post types, index content, tune ranking/filterable fields/synonyms/typo tolerance/weights, and turn on autosuggest from wp-admin. No theme edits required. Existing search forms keep working. WooCommerce products are a first-class post type.
 
 If you *are* a developer, the same plugin is meant to be extended: `scry_ms_*` filters/actions, optional `window.scrySearch`, and a full hook reference in DOCS.md ([GitHub](https://github.com/jtgraham38/ScryWP-Search)). We use this kind of surface on client work and our own products, so the priorities are boring on purpose: stable hook names, easy-to-find call sites, a real docs file, and no forced frontend chrome.
 
 = Works from the admin (no code) =
 
 * Connection Settings — URL and API keys, with a connection test
-* Index Settings — post types, searchable fields (including meta), ranking rules, synonyms, stop words; bulk index / wipe
+* Index Settings — post types, searchable and filterable fields (including meta and taxonomies), ranking rules (including custom attribute:asc/desc), synonyms, stop words, dictionary, and typo tolerance; bulk index / wipe
 * Search Settings — post-type weights for federated search, optional autosuggest and matched-term highlighting
 * Task drawer, Logs, and Search Analytics for day-to-day ops
 
@@ -58,19 +58,23 @@ Shape the result data with `scry_ms_autosuggest_results`, or the rendered HTML w
 Index any registered post type independently — posts, pages, WooCommerce products, CPTs from other plugins. Each type gets its own Meilisearch index:
 
 * Searchable fields — titles, content, excerpts, taxonomies, author, custom meta (ACF, Meta Box, etc.)
-* Ranking rules — drag-and-drop reorder (words, typo, proximity, attribute, sort, exactness) per index
+* Filterable fields — post type/status/author, post date, taxonomy IDs (`taxonomies.<name>.id`), and more for facets and advanced filters
+* Ranking rules — drag-and-drop reorder (words, typo, proximity, attribute, sort, exactness) plus custom `attribute:asc` / `attribute:desc` rules per index
 * Search weights — e.g. weight products above blog posts in the merged results
 
 Search uses Meilisearch federated multi-search: indexes queried together, results merged and re-ranked with your per–post-type weights (not a hand-stitched PHP merge).
 
-= Relevancy, synonyms, and stopwords =
+= Relevancy, filtering, and language settings =
 
-Per index from wp-admin (or via filters):
+Per index from the tabbed Index Settings dialog (or via filters):
 
-* Reorder ranking rules
-* Choose which attributes are searchable
+* Reorder built-in ranking rules and add custom ranking rules
+* Choose which attributes are searchable and which are filterable
 * Synonyms — nicknames, abbreviations, UK/US spelling, brand aliases
 * Stopwords — drop noise terms that shouldn't affect ranking
+* Dictionary — keep acronyms and multi-word brand names from being split during tokenization
+* Typo tolerance — enable/disable, min word sizes, and disable on numbers, words, or attributes
+* View Raw JSON for each settings group when debugging
 
 = WooCommerce =
 
@@ -127,7 +131,11 @@ Indexing and documents:
 * `scry_ms_index_prepare_document`
 * `scry_ms_index_names`
 * `scry_ms_index_searchable_attributes`
+* `scry_ms_index_filterable_attributes`
+* `scry_ms_index_filterable_fields`
+* `scry_ms_index_typo_tolerance`
 * `scry_ms_bulk_index_query_args`
+* `scry_ms_bulk_index_batch_size`
 * `scry_ms_index_ranking_rules`
 * `scry_ms_index_fields`
 * `scry_ms_index_meta_keys`
@@ -140,6 +148,9 @@ Index settings:
 * `scry_ms_index_searchable_attributes_before_update`
 * `scry_ms_index_synonyms_before_update`
 * `scry_ms_index_stop_words_before_update`
+* `scry_ms_index_filterable_attributes_before_update`
+* `scry_ms_index_dictionary_before_update`
+* `scry_ms_index_typo_tolerance_before_update`
 
 Search and client:
 
@@ -260,9 +271,13 @@ Meilisearch multi-search with federation across your indexes, using the weights 
 
 Yes. Index `product`, choose fields/meta, set weights if you federate with other types. Theme and checkout stay unchanged.
 
-= Synonyms and stopwords? =
+= Synonyms, stopwords, dictionary, and typo tolerance? =
 
-Yes — per index in Index Settings, no Meilisearch config files required. Also filterable from code when you need that.
+Yes — per index in the Index Settings dialog (dedicated tabs), no Meilisearch config files required. Also filterable from code when you need that.
+
+= Can I configure filterable fields from WordPress? =
+
+Yes. The Filterable Fields tab lets you pick core fields, taxonomy IDs, and related attributes. Defaults and the field tree are adjustable with `scry_ms_index_filterable_attributes` / `scry_ms_index_filterable_fields`.
 
 = How do I customize with code? =
 
@@ -287,7 +302,7 @@ AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API 
 == Screenshots ==
 
 1. Index Settings Dashboard - Manage post type indexes, view document counts, and trigger indexing operations
-2. Index Configuration Modal - Drag-and-drop ranking rules, configure searchable fields with post meta support
+2. Index Configuration Modal - Tabbed settings for ranking rules (including custom rules), searchable/filterable fields, synonyms, stop words, dictionary, and typo tolerance
 3. Connection Settings - Configure Meilisearch URL and API keys with connection testing
 4. Search Settings - Configure post type search weights for federated search, enable AJAX autosuggest, and set the class selector for which forms receive predictive search
 5. Task Drawer - Monitor Meilisearch tasks with status, timing, and error details
@@ -295,6 +310,18 @@ AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API 
 7. Search Analytics - Dashboard, privacy/retention settings, CSV export of analytics data
 
 == Changelog ==
+
+= 1.4.0 =
+* Tabbed Index Settings dialog covering ranking rules, searchable fields, filterable fields, synonyms, stop words, dictionary, and typo tolerance
+* Filterable attributes managed in core — including post taxonomies (`taxonomies.<name>.id`) and `post_date_unix`
+* Custom ranking rules (`attribute:asc` / `attribute:desc`) with drag-and-drop ordering alongside built-in rules
+* Dictionary and typo tolerance settings (enable/disable, min word sizes, disable on numbers/words/attributes)
+* View Raw JSON on each settings section for debugging
+* Settings backup/restore now includes filterable attributes, dictionary, and typo tolerance
+* New hooks: `scry_ms_index_filterable_attributes`, `scry_ms_index_filterable_fields`, `scry_ms_index_filterable_attributes_before_update`, `scry_ms_index_dictionary_before_update`, `scry_ms_index_typo_tolerance`, `scry_ms_index_typo_tolerance_before_update`, `scry_ms_bulk_index_batch_size`
+* Bulk indexing processes posts in batches (memory-friendly; batch size filterable)
+* Setup breadcrumb navigation on admin pages
+* DOCS.md / README updated for the new index settings surface
 
 = 1.3.0 =
 * New hooks: `should_index`, `should_delete`, `should_search`, `after_index_document`, `after_delete_document`, `after_bulk_index`, `index_names`, `index_searchable_attributes`, `bulk_index_query_args`, `meilisearch_client`, `autosuggest_results`, `autosuggest_results_rendered`, `admin_pages`
@@ -335,6 +362,9 @@ AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API 
 * Initial release: per-post-type indexes, federated search, ranking/searchable fields, auto + bulk indexing, task drawer, live preview, drop-in WP search
 
 == Upgrade Notice ==
+
+= 1.4.0 =
+Tabbed Index Settings: filterable fields, custom ranking rules, dictionary, typo tolerance, raw JSON viewers, plus batched bulk indexing and new `scry_ms_*` hooks. See DOCS.md.
 
 = 1.3.0 =
 More developer hooks (indexing/search gates, client factory, autosuggest results, admin tabs), optional highlighting, autosuggest thumbnails, analytics metadata, Hybrid listing, indexing fix for embedder setups. See DOCS.md.

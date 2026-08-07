@@ -1,3 +1,9 @@
+<?php
+//exit if accessed directly
+if (!defined('ABSPATH')) {
+    exit;
+}
+?>
 <dialog id="<?php echo esc_attr($index['index_name']); ?>_settings_dialog" class="scrywp-index-dialog scrywp-index-settings-dialog">
     <div class="scrywp-index-dialog-header">
         <h3><?php echo esc_html(sprintf(__('Configure Index: %s', "scry-search"), $index['name'])); ?></h3>

@@ -53,8 +53,8 @@ All hook names use the runtime prefix `scry_ms_` (i.e. `$this->config('hook_pref
 
 | Area | Source file | Examples |
 |---|---|---|
-| Document/index shaping | `features/indexes/feature.php` | `scry_ms_should_index`, `scry_ms_should_delete`, `scry_ms_index_prepare_document`, `scry_ms_index_names`, `scry_ms_index_searchable_attributes`, `scry_ms_index_fields`, `scry_ms_index_meta_keys`, `scry_ms_bulk_index_query_args`, `scry_ms_after_index_document` / `after_delete_document` / `after_bulk_index` (actions) |
-| Index settings flow | `features/indexes/feature.php` | `scry_ms_index_settings_ajax`, `scry_ms_index_settings_backup`, `scry_ms_index_*_before_update`, `scry_ms_index_update_settings` (action), `scry_ms_index_settings_restore` / `scry_ms_after_create_index` (on new indexes only) |
+| Document/index shaping | `features/indexes/feature.php` | `scry_ms_should_index`, `scry_ms_should_delete`, `scry_ms_index_prepare_document`, `scry_ms_index_names`, `scry_ms_index_searchable_attributes`, `scry_ms_index_filterable_attributes`, `scry_ms_index_filterable_fields`, `scry_ms_index_typo_tolerance`, `scry_ms_index_fields`, `scry_ms_index_meta_keys`, `scry_ms_bulk_index_query_args`, `scry_ms_bulk_index_batch_size`, `scry_ms_after_index_document` / `after_delete_document` / `after_bulk_index` (actions) |
+| Index settings flow | `features/indexes/feature.php` | `scry_ms_index_settings_ajax`, `scry_ms_index_settings_backup`, `scry_ms_index_*_before_update` (ranking, searchable, synonyms, stop words, filterable attributes, dictionary, typo tolerance), `scry_ms_index_update_settings` (action), `scry_ms_index_settings_restore` / `scry_ms_after_create_index` (on new indexes only), `scry_ms_index_settings_sections_ui` |
 | Federated search | `features/search/feature.php` | `scry_ms_should_search`, `scry_ms_multi_search_index_names`, `scry_ms_multi_search_query_params`, `scry_ms_multi_search_query`, `scry_ms_multi_search_raw_results`, `scry_ms_multi_search_final_results` |
 | Meilisearch client | `features/client/feature.php` | `scry_ms_meilisearch_client` |
 | Highlighting | `features/highlighting/feature.php` | Hooks the federated-search filters above (`multi_search_query` / `raw_results` / `final_results`); no dedicated public hooks |
@@ -91,9 +91,21 @@ When adding logging to a feature, prefer `error` for genuine failures and `debug
 
 ## Admin-side settings flow (Indexes)
 
-Index settings are configured per-post-type (per Meilisearch index). The “Configure Index” dialog uses:
+Index settings are configured per-post-type (per Meilisearch index). The “Configure Index” dialog is **tabbed**; each `.scrywp-index-settings-section` is a tab (core sections live under `features/indexes/elements/dialog_sections/`). Premium/custom UI can append tabs via `scry_ms_index_settings_sections_ui`.
 
-- **AJAX** `get_index_settings` to fetch current settings from Meilisearch (ranking rules, searchable attributes, synonyms, stop words, and available fields).
+Core tabs:
+
+- Ranking rules (built-in + custom `attribute:asc` / `attribute:desc`)
+- Searchable fields
+- Synonyms / stop words / dictionary
+- Typo tolerance
+- Filterable fields (including taxonomy IDs and `post_date_unix`)
+
+Each section can expand **View Raw JSON** for the live Meilisearch value.
+
+The dialog uses:
+
+- **AJAX** `get_index_settings` to fetch current settings from Meilisearch (ranking rules, searchable/filterable attributes, synonyms, stop words, dictionary, typo tolerance, and available field trees).
 - **AJAX** `update_index_settings` to persist settings back to Meilisearch and save a local backup option.
 
 Security is enforced with:
@@ -101,6 +113,8 @@ Security is enforced with:
 - a per-action **nonce**
 - **`manage_options`** capability checks
 - server-side sanitization and allowlists/validators for sensitive arrays (e.g. ranking rules)
+
+Local settings backups include: `ranking_rules`, `searchable_attributes`, `synonyms`, `stop_words`, `filterable_attributes`, `dictionary`, `typo_tolerance`.
 
 ### Index create vs restore (important for premium / embedders)
 

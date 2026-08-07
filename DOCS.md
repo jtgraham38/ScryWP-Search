@@ -140,6 +140,40 @@ Prefer this when aligning defaults with custom document fields. Use `scry_ms_ind
 
 ---
 
+#### `scry_ms_index_filterable_attributes`
+
+Change the **default** filterable attributes list used when configuring new indexes.
+
+
+|               |                                                                                          |
+| ------------- | ---------------------------------------------------------------------------------------- |
+| **Type**      | Filter                                                                                   |
+| **Arguments** | `array $filterable_attributes`                                                           |
+| **Returns**   | `array` — attribute path list                                                            |
+| **When**      | When default filterable attributes are resolved.                                         |
+
+
+Defaults include fields such as `post_date_unix`, `post_type`, `post_status`, `post_author`, and taxonomy ID paths like `taxonomies.category.id`.
+
+---
+
+#### `scry_ms_index_typo_tolerance`
+
+Change the **default** typo tolerance settings used when configuring new indexes.
+
+
+|               |                                                                 |
+| ------------- | --------------------------------------------------------------- |
+| **Type**      | Filter                                                          |
+| **Arguments** | `array $typo_tolerance`                                         |
+| **Returns**   | `array` — Meilisearch typo tolerance settings shape             |
+| **When**      | When default typo tolerance settings are resolved.              |
+
+
+Typical keys: `enabled`, `minWordSizeForTypos` (`oneTypo` / `twoTypos`), `disableOnWords`, `disableOnAttributes`, `disableOnNumbers`.
+
+---
+
 #### `scry_ms_bulk_index_query_args`
 
 Control the `get_posts` arguments used during a bulk reindex.
@@ -162,6 +196,23 @@ add_filter( 'scry_ms_bulk_index_query_args', function ( $args, $post_type, $inde
 
 ---
 
+#### `scry_ms_bulk_index_batch_size`
+
+Control how many posts are loaded per batch during bulk indexing.
+
+
+|               |                                                                  |
+| ------------- | ---------------------------------------------------------------- |
+| **Type**      | Filter                                                           |
+| **Arguments** | `int $batch_size`, `string $post_type`, `string $index_name`     |
+| **Returns**   | `int` — posts per batch (values below `1` fall back to `100`)    |
+| **When**      | Before the bulk index loop starts fetching post batches.         |
+
+
+Default is `100`. Raise it for fewer round-trips on large catalogs; lower it if memory is tight.
+
+---
+
 #### `scry_ms_index_ranking_rules`
 
 Change the default Meilisearch ranking rules.
@@ -181,7 +232,7 @@ Order matters: rules are applied top to bottom.
 
 #### `scry_ms_index_fields`
 
-Modify the list of fields offered for a post type in the index configuration UI.
+Modify the list of fields offered for a post type in the index configuration UI (searchable fields tree).
 
 
 |               |                                                                  |
@@ -193,6 +244,23 @@ Modify the list of fields offered for a post type in the index configuration UI.
 
 
 Each entry is keyed by field path and contains at least `label`, `type`, and `path`.
+
+---
+
+#### `scry_ms_index_filterable_fields`
+
+Modify the list of fields offered for a post type in the **filterable** fields tree.
+
+
+|               |                                                                            |
+| ------------- | -------------------------------------------------------------------------- |
+| **Type**      | Filter                                                                     |
+| **Arguments** | `array $fields`, `string $post_type`                                       |
+| **Returns**   | `array` — the fields map                                                   |
+| **When**      | When the configuration UI builds the filterable field list for a post type.|
+
+
+Same shape as `scry_ms_index_fields`. Taxonomy entries typically use paths like `taxonomies.<taxonomy>.id`.
 
 ---
 
@@ -228,7 +296,7 @@ Add or adjust the data returned to the index settings screen.
 | **When**      | When current settings for an index are fetched for display. |
 
 
-The payload includes keys such as `ranking_rules`, `searchable_attributes`, `available_fields`, `synonyms`, and `stop_words`. Add your own keys to surface custom data in companion UI.
+The payload includes keys such as `ranking_rules`, `searchable_attributes`, `available_fields`, `filterable_attributes`, `available_filterable_fields`, `synonyms`, `stop_words`, `dictionary`, and `typo_tolerance`. Add your own keys to surface custom data in companion UI.
 
 ---
 
@@ -245,11 +313,11 @@ Modify the settings payload that is persisted locally when an index is saved.
 | **When**      | Right before the settings backup is saved.           |
 
 
-`$index_settings_backup` contains: `ranking_rules`, `searchable_attributes`, `synonyms`, `stop_words`.
+`$index_settings_backup` contains: `ranking_rules`, `searchable_attributes`, `synonyms`, `stop_words`, `filterable_attributes`, `dictionary`, `typo_tolerance`.
 
 ---
 
-The following four filters fire **immediately before** each setting group is applied to Meilisearch. Each receives the index name as a second argument and must return the (possibly modified) value.
+The following filters fire **immediately before** each setting group is applied to Meilisearch. Each receives the index name as a second argument and must return the (possibly modified) value.
 
 #### `scry_ms_index_ranking_rules_before_update`
 
@@ -302,6 +370,42 @@ add_filter( 'scry_ms_index_searchable_attributes_before_update', function ( $att
 
 
 `$stop_words` is a flat list of words. An empty array clears stop words for the index.
+
+#### `scry_ms_index_filterable_attributes_before_update`
+
+
+|               |                                                       |
+| ------------- | ----------------------------------------------------- |
+| **Type**      | Filter                                                |
+| **Arguments** | `array $filterable_attributes`, `string $index_name`  |
+| **Returns**   | `array`                                               |
+
+
+`$filterable_attributes` is a flat list of attribute paths. An empty array clears filterable attributes for the index.
+
+#### `scry_ms_index_dictionary_before_update`
+
+
+|               |                                          |
+| ------------- | ---------------------------------------- |
+| **Type**      | Filter                                   |
+| **Arguments** | `array $dictionary`, `string $index_name`|
+| **Returns**   | `array`                                  |
+
+
+`$dictionary` is a flat list of words that should not be split during tokenization. An empty array clears the dictionary for the index.
+
+#### `scry_ms_index_typo_tolerance_before_update`
+
+
+|               |                                              |
+| ------------- | -------------------------------------------- |
+| **Type**      | Filter                                       |
+| **Arguments** | `array $typo_tolerance`, `string $index_name`|
+| **Returns**   | `array`                                      |
+
+
+`$typo_tolerance` uses the Meilisearch typo tolerance object shape (`enabled`, `minWordSizeForTypos`, `disableOnWords`, `disableOnAttributes`, `disableOnNumbers`).
 
 ---
 
@@ -687,7 +791,7 @@ Fires after a saved settings backup is re‑applied to an index.
 | **When**      | After previously saved settings are restored onto an index.                |
 
 
-`$index_settings_backup` has the same shape as the `scry_ms_index_settings_backup` filter (`ranking_rules`, `searchable_attributes`, `synonyms`, `stop_words`).
+`$index_settings_backup` has the same shape as the `scry_ms_index_settings_backup` filter (`ranking_rules`, `searchable_attributes`, `synonyms`, `stop_words`, `filterable_attributes`, `dictionary`, `typo_tolerance`).
 
 ---
 
