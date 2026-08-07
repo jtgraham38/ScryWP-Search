@@ -249,6 +249,16 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                         $index->updateFilterableAttributes($index_settings_backup['filterable_attributes']);
                     }
 
+                    //restore dictionary if they are in the backup
+                    if (isset($index_settings_backup['dictionary']) && is_array($index_settings_backup['dictionary'])) {
+                        $index->updateDictionary($index_settings_backup['dictionary']);
+                    }
+
+                    //restore typo tolerance if it is in the backup
+                    if (isset($index_settings_backup['typo_tolerance']) && is_array($index_settings_backup['typo_tolerance'])) {
+                        $index->updateTypoTolerance($index_settings_backup['typo_tolerance']);
+                    }
+
                     //hook to allow other plugins to act after the index settings are restored
                     do_action($this->config('hook_prefix') . 'index_settings_restore', $index, $index_settings_backup);
 
@@ -487,6 +497,10 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                     'errorFailedToLoadSettings' => __('Error: Failed to load settings', "scry-search"),
                     'dragToReorder' => __('Drag to reorder', "scry-search"),
                     'expand' => __('Expand', "scry-search"),
+                    'removeCustomRankingRule' => __('Remove custom ranking rule', "scry-search"),
+                    'customRankingAttributeRequired' => __('Please enter an attribute name.', "scry-search"),
+                    'customRankingAttributeInvalid' => __('Attribute names can only contain letters, numbers, underscores, dots, slashes, and hyphens.', "scry-search"),
+                    'customRankingRuleExists' => __('That custom ranking rule is already in the list.', "scry-search"),
                     'settingsSavedSuccessfully' => __('Settings saved successfully', "scry-search"),
                     'failedToSaveSettings' => __('Failed to save settings', "scry-search"),
                 ),
@@ -1154,6 +1168,36 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                 $filterable_attributes = $this->get_default_filterable_attributes();
             }
 
+            // Get current dictionary (flat array of words)
+            $dictionary = array();
+            try {
+                $fetched_dictionary = $index->getDictionary();
+                if (is_array($fetched_dictionary)) {
+                    $dictionary = $fetched_dictionary;
+                }
+            } catch (\Exception $e) {
+                $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Dictionary fetch failed: %s', "scry-search"), $e->getMessage()));
+                $dictionary = array();
+            }
+
+            // Get current typo tolerance settings
+            $typo_tolerance = $this->get_default_typo_tolerance();
+            try {
+                $fetched_typo_tolerance = $index->getTypoTolerance();
+                if (is_array($fetched_typo_tolerance) && !empty($fetched_typo_tolerance)) {
+                    $typo_tolerance = array_merge($typo_tolerance, $fetched_typo_tolerance);
+                    if (isset($fetched_typo_tolerance['minWordSizeForTypos']) && is_array($fetched_typo_tolerance['minWordSizeForTypos'])) {
+                        $typo_tolerance['minWordSizeForTypos'] = array_merge(
+                            $this->get_default_typo_tolerance()['minWordSizeForTypos'],
+                            $fetched_typo_tolerance['minWordSizeForTypos']
+                        );
+                    }
+                }
+            } catch (\Exception $e) {
+                $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Typo tolerance fetch failed: %s', "scry-search"), $e->getMessage()));
+                $typo_tolerance = $this->get_default_typo_tolerance();
+            }
+
             // Get available fields for this post type
             $available_fields = $this->get_available_fields_for_post_type($post_type);
             $available_filterable_fields = $this->get_available_filterable_fields_for_post_type($post_type);
@@ -1167,6 +1211,8 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                 'available_filterable_fields' => $available_filterable_fields,
                 'synonyms' => $synonyms,
                 'stop_words' => $stop_words,
+                'dictionary' => $dictionary,
+                'typo_tolerance' => $typo_tolerance,
             );
 
             //let other plugins add entries to the return array
@@ -1320,6 +1366,62 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             return is_string($attr) && $attr !== '' && $attr !== 'post_taxonomies';
         })));
 
+        // Dictionary words are submitted as dictionary[] (always applied on save; empty clears).
+        $dictionary = array();
+        $raw_dictionary = isset($_POST['dictionary']) ? wp_unslash($_POST['dictionary']) : array();
+        if (!is_array($raw_dictionary)) {
+            $raw_dictionary = array($raw_dictionary);
+        }
+        foreach ($raw_dictionary as $word) {
+            $term = is_string($word) ? trim(sanitize_text_field($word)) : '';
+            if ($term === '') {
+                continue;
+            }
+            $dictionary[] = $term;
+        }
+        $dictionary = array_values(array_unique($dictionary));
+
+        // Typo tolerance settings are submitted as typo_tolerance[...] (always applied on save).
+        $typo_tolerance = $this->get_default_typo_tolerance();
+        $raw_typo_tolerance = isset($_POST['typo_tolerance']) ? wp_unslash($_POST['typo_tolerance']) : array();
+        if (!is_array($raw_typo_tolerance)) {
+            $raw_typo_tolerance = array();
+        }
+        $typo_tolerance['enabled'] = !empty($raw_typo_tolerance['enabled']);
+        $typo_tolerance['disableOnNumbers'] = !empty($raw_typo_tolerance['disableOnNumbers']);
+
+        $one_typo = isset($raw_typo_tolerance['minWordSizeForTypos']['oneTypo'])
+            ? absint($raw_typo_tolerance['minWordSizeForTypos']['oneTypo'])
+            : $typo_tolerance['minWordSizeForTypos']['oneTypo'];
+        $two_typos = isset($raw_typo_tolerance['minWordSizeForTypos']['twoTypos'])
+            ? absint($raw_typo_tolerance['minWordSizeForTypos']['twoTypos'])
+            : $typo_tolerance['minWordSizeForTypos']['twoTypos'];
+        if ($two_typos < $one_typo) {
+            $two_typos = $one_typo;
+        }
+        $typo_tolerance['minWordSizeForTypos'] = array(
+            'oneTypo' => $one_typo,
+            'twoTypos' => $two_typos,
+        );
+
+        $disable_on_words = isset($raw_typo_tolerance['disableOnWords']) ? $raw_typo_tolerance['disableOnWords'] : array();
+        if (!is_array($disable_on_words)) {
+            $disable_on_words = array($disable_on_words);
+        }
+        $typo_tolerance['disableOnWords'] = array_values(array_unique(array_filter(array_map(function ($word) {
+            $term = is_string($word) ? trim(sanitize_text_field($word)) : '';
+            return $term !== '' ? $term : null;
+        }, $disable_on_words))));
+
+        $disable_on_attributes = isset($raw_typo_tolerance['disableOnAttributes']) ? $raw_typo_tolerance['disableOnAttributes'] : array();
+        if (!is_array($disable_on_attributes)) {
+            $disable_on_attributes = array($disable_on_attributes);
+        }
+        $typo_tolerance['disableOnAttributes'] = array_values(array_unique(array_filter(array_map(function ($attr) {
+            $term = is_string($attr) ? trim(sanitize_text_field($attr)) : '';
+            return $term !== '' ? $term : null;
+        }, $disable_on_attributes))));
+
         //backup the settings to the database
         $index_settings_backup_key = $this->prefixed('index_settings_backup_') . $index_name;
         $index_settings_backup = array(
@@ -1328,6 +1430,8 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             'synonyms' => $synonyms,
             'stop_words' => $stop_words,
             'filterable_attributes' => $filterable_attributes,
+            'dictionary' => $dictionary,
+            'typo_tolerance' => $typo_tolerance,
         );
 
         //hook to allow other plugins to modify the index settings backup
@@ -1360,6 +1464,16 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         if (!is_array($filterable_attributes)) {
             $filterable_attributes = array();
         }
+        //@HOOK: scry_ms_index_dictionary_before_update — args: $dictionary, $index_name
+        $dictionary = apply_filters($this->config('hook_prefix') . 'index_dictionary_before_update', $dictionary, $index_name);
+        if (!is_array($dictionary)) {
+            $dictionary = array();
+        }
+        //@HOOK: scry_ms_index_typo_tolerance_before_update — args: $typo_tolerance, $index_name
+        $typo_tolerance = apply_filters($this->config('hook_prefix') . 'index_typo_tolerance_before_update', $typo_tolerance, $index_name);
+        if (!is_array($typo_tolerance)) {
+            $typo_tolerance = $this->get_default_typo_tolerance();
+        }
 
         try {
             // Create Meilisearch client
@@ -1384,6 +1498,12 @@ class ScrySearch_IndexesFeature extends PluginFeature {
 
             // Filterable attributes: always sync from POST (empty array clears Meilisearch filterable attributes for this index).
             $index->updateFilterableAttributes($filterable_attributes);
+
+            // Dictionary: always sync from POST (empty array clears Meilisearch dictionary for this index).
+            $index->updateDictionary($dictionary);
+
+            // Typo tolerance: always sync from POST.
+            $index->updateTypoTolerance($typo_tolerance);
             
             //let other plugins take action using the index and the settings
             do_action($this->config('hook_prefix') . 'index_update_settings', $index);
@@ -1694,5 +1814,35 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         $filterable_attributes = apply_filters($this->config('hook_prefix') . 'index_filterable_attributes', $filterable_attributes);
 
         return $filterable_attributes;
+    }
+
+    /**
+     * Default typo tolerance settings for new indexes.
+     */
+    public function get_default_typo_tolerance() {
+        $typo_tolerance = array(
+            'enabled' => true,
+            'minWordSizeForTypos' => array(
+                'oneTypo' => 5,
+                'twoTypos' => 9,
+            ),
+            'disableOnWords' => array(),
+            'disableOnAttributes' => array(),
+            'disableOnNumbers' => false,
+        );
+
+        //@HOOK: scry_ms_index_typo_tolerance
+        $typo_tolerance = apply_filters($this->config('hook_prefix') . 'index_typo_tolerance', $typo_tolerance);
+
+        return is_array($typo_tolerance) ? $typo_tolerance : array(
+            'enabled' => true,
+            'minWordSizeForTypos' => array(
+                'oneTypo' => 5,
+                'twoTypos' => 9,
+            ),
+            'disableOnWords' => array(),
+            'disableOnAttributes' => array(),
+            'disableOnNumbers' => false,
+        );
     }
 }

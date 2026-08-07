@@ -408,6 +408,11 @@
 
             var rulesList = dialog.querySelector('.scrywp-ranking-rules-list');
             var rankingRulesInputsContainer = dialog.querySelector('.scrywp-ranking-rules-hidden-inputs');
+            var rankingRulesSection = dialog.querySelector('.scrywp-index-settings-section[data-setting-key="ranking_rules"]');
+            var rankingRuleAttributeInput = dialog.querySelector('.scrywp-ranking-rule-attribute-input');
+            var rankingRuleDirectionSelect = dialog.querySelector('.scrywp-ranking-rule-direction-select');
+            var rankingRuleAddButton = dialog.querySelector('.scrywp-ranking-rule-add-button');
+            var rankingRulesAddError = dialog.querySelector('.scrywp-ranking-rules-add-error');
             var synonymsEditor = dialog.querySelector('.scrywp-synonyms-editor');
             var synonymsEntriesContainer = dialog.querySelector('.scrywp-synonyms-entries');
             var synonymsHiddenInputsContainer = dialog.querySelector('.scrywp-synonyms-hidden-inputs');
@@ -415,6 +420,21 @@
             var stopWordsChipsContainer = dialog.querySelector('.scrywp-stopwords-chips');
             var stopWordsInput = dialog.querySelector('.scrywp-stopwords-chip-input');
             var stopWordsHiddenInputsContainer = dialog.querySelector('.scrywp-stopwords-hidden-inputs');
+            var dictionaryEditor = dialog.querySelector('.scrywp-dictionary-editor');
+            var dictionaryChipsContainer = dialog.querySelector('.scrywp-dictionary-chips');
+            var dictionaryInput = dialog.querySelector('.scrywp-dictionary-chip-input');
+            var dictionaryHiddenInputsContainer = dialog.querySelector('.scrywp-dictionary-hidden-inputs');
+            var typoToleranceEditor = dialog.querySelector('.scrywp-typo-tolerance-editor');
+            var typoEnabledCheckbox = dialog.querySelector('.scrywp-typo-tolerance-enabled');
+            var typoOneTypoInput = dialog.querySelector('.scrywp-typo-tolerance-one-typo');
+            var typoTwoTyposInput = dialog.querySelector('.scrywp-typo-tolerance-two-typos');
+            var typoDisableNumbersCheckbox = dialog.querySelector('.scrywp-typo-tolerance-disable-numbers');
+            var typoDisableWordsChipsContainer = dialog.querySelector('.scrywp-typo-disable-words-chips');
+            var typoDisableWordsInput = dialog.querySelector('.scrywp-typo-disable-words-chip-input');
+            var typoDisableWordsHiddenInputsContainer = dialog.querySelector('.scrywp-typo-disable-words-hidden-inputs');
+            var typoDisableAttributesChipsContainer = dialog.querySelector('.scrywp-typo-disable-attributes-chips');
+            var typoDisableAttributesInput = dialog.querySelector('.scrywp-typo-disable-attributes-chip-input');
+            var typoDisableAttributesHiddenInputsContainer = dialog.querySelector('.scrywp-typo-disable-attributes-hidden-inputs');
             var loadingDiv = dialog.querySelector('.scrywp-index-settings-loading');
             var loadedDiv = dialog.querySelector('.scrywp-index-settings-loaded');
             var settingsForm = dialog.querySelector('.scrywp-index-settings-form');
@@ -601,7 +621,7 @@
                 });
             }
 
-            /** Commit text still in synonym / stop-word inputs into chips (must run before save). */
+            /** Commit text still in synonym / stop-word / dictionary / typo chip inputs into chips (must run before save). */
             function flushPendingSynonymAndStopWordInputs() {
                 if (synonymsEntriesContainer) {
                     var entryEls = synonymsEntriesContainer.querySelectorAll('.scrywp-synonyms-entry');
@@ -620,6 +640,27 @@
                     if (sw) {
                         addStopWordChip(sw);
                         stopWordsInput.value = '';
+                    }
+                }
+                if (dictionaryInput) {
+                    var dw = normalizeTerm(dictionaryInput.value);
+                    if (dw) {
+                        addDictionaryChip(dw);
+                        dictionaryInput.value = '';
+                    }
+                }
+                if (typoDisableWordsInput) {
+                    var tw = normalizeTerm(typoDisableWordsInput.value);
+                    if (tw) {
+                        addTypoDisableWordChip(tw);
+                        typoDisableWordsInput.value = '';
+                    }
+                }
+                if (typoDisableAttributesInput) {
+                    var ta = normalizeTerm(typoDisableAttributesInput.value);
+                    if (ta) {
+                        addTypoDisableAttributeChip(ta);
+                        typoDisableAttributesInput.value = '';
                     }
                 }
             }
@@ -871,15 +912,212 @@
                 setupStopWordsInteractions();
 
                 if (!Array.isArray(stopWordsArr)) {
-                    syncStopWordsHiddenInputs();
-                    return;
+                    stopWordsArr = [];
+                }
+                stopWordsArr.forEach(function (word) {
+                    addStopWordChip(word);
+                });
+                syncStopWordsHiddenInputs();
+            }
+
+            function createChipListHelpers(config) {
+                var chipsContainer = config.chipsContainer;
+                var hiddenContainer = config.hiddenContainer;
+                var input = config.input;
+                var editor = config.editor;
+                var hiddenName = config.hiddenName;
+                var chipClass = config.chipClass;
+                var labelClass = config.labelClass;
+                var removeClass = config.removeClass;
+                var removeLabel = config.removeLabel || 'Remove';
+                var attachedFlag = config.attachedFlag;
+
+                function clearUi() {
+                    if (chipsContainer) chipsContainer.innerHTML = '';
+                    if (hiddenContainer) hiddenContainer.innerHTML = '';
+                    if (input) input.value = '';
                 }
 
-                stopWordsArr.forEach(function (term) {
-                    addStopWordChip(term);
-                });
+                function syncHiddenInputs() {
+                    if (!hiddenContainer || !chipsContainer) return;
+                    hiddenContainer.innerHTML = '';
+                    var seen = new Set();
+                    Array.from(chipsContainer.querySelectorAll('.' + chipClass)).forEach(function (chipEl) {
+                        var value = normalizeTerm(chipEl.getAttribute('data-value') || chipEl.textContent);
+                        if (!value || seen.has(value)) return;
+                        seen.add(value);
+                        var hidden = document.createElement('input');
+                        hidden.type = 'hidden';
+                        hidden.name = hiddenName;
+                        hidden.value = value;
+                        hiddenContainer.appendChild(hidden);
+                    });
+                }
 
-                syncStopWordsHiddenInputs();
+                function addChipValue(term) {
+                    var value = normalizeTerm(term);
+                    if (!value || !chipsContainer) return;
+                    var exists = Array.from(chipsContainer.querySelectorAll('.' + chipClass)).some(function (chipEl) {
+                        return normalizeTerm(chipEl.getAttribute('data-value')) === value;
+                    });
+                    if (exists) return;
+
+                    var chip = document.createElement('span');
+                    chip.className = chipClass;
+                    chip.setAttribute('data-value', value);
+
+                    var label = document.createElement('span');
+                    label.className = labelClass;
+                    label.textContent = value;
+
+                    var removeBtn = document.createElement('button');
+                    removeBtn.type = 'button';
+                    removeBtn.className = removeClass;
+                    removeBtn.setAttribute('aria-label', removeLabel);
+                    removeBtn.textContent = '×';
+                    removeBtn.addEventListener('click', function () {
+                        chip.remove();
+                        syncHiddenInputs();
+                    });
+
+                    chip.appendChild(label);
+                    chip.appendChild(removeBtn);
+                    chipsContainer.appendChild(chip);
+                    syncHiddenInputs();
+                }
+
+                function setupInteractions() {
+                    if (!editor && !input) return;
+                    var target = editor || input;
+                    if (target.dataset[attachedFlag] === '1') return;
+                    target.dataset[attachedFlag] = '1';
+
+                    if (!input) return;
+                    input.addEventListener('keydown', function (e) {
+                        if (e.key === 'Enter' || e.key === ',') {
+                            e.preventDefault();
+                            addChipValue(input.value);
+                            input.value = '';
+                            return;
+                        }
+                        if (e.key === 'Backspace' && normalizeTerm(input.value) === '') {
+                            var chips = chipsContainer ? chipsContainer.querySelectorAll('.' + chipClass) : [];
+                            if (chips.length > 0) {
+                                chips[chips.length - 1].remove();
+                                syncHiddenInputs();
+                            }
+                        }
+                    });
+                }
+
+                function hydrateFromArray(values) {
+                    clearUi();
+                    setupInteractions();
+                    if (!Array.isArray(values)) values = [];
+                    values.forEach(function (value) {
+                        addChipValue(value);
+                    });
+                    syncHiddenInputs();
+                }
+
+                return {
+                    clearUi: clearUi,
+                    syncHiddenInputs: syncHiddenInputs,
+                    addChipValue: addChipValue,
+                    setupInteractions: setupInteractions,
+                    hydrateFromArray: hydrateFromArray
+                };
+            }
+
+            var dictionaryChips = createChipListHelpers({
+                chipsContainer: dictionaryChipsContainer,
+                hiddenContainer: dictionaryHiddenInputsContainer,
+                input: dictionaryInput,
+                editor: dictionaryEditor,
+                hiddenName: 'dictionary[]',
+                chipClass: 'scrywp-dictionary-chip',
+                labelClass: 'scrywp-dictionary-chip-label',
+                removeClass: 'scrywp-dictionary-chip-remove',
+                removeLabel: 'Remove dictionary word',
+                attachedFlag: 'dictionaryListenersAttached'
+            });
+
+            function addDictionaryChip(term) {
+                dictionaryChips.addChipValue(term);
+            }
+
+            function setupDictionaryInteractions() {
+                dictionaryChips.setupInteractions();
+            }
+
+            function hydrateDictionaryFromArray(dictionaryArr) {
+                dictionaryChips.hydrateFromArray(dictionaryArr);
+            }
+
+            var typoDisableWordsChips = createChipListHelpers({
+                chipsContainer: typoDisableWordsChipsContainer,
+                hiddenContainer: typoDisableWordsHiddenInputsContainer,
+                input: typoDisableWordsInput,
+                editor: dialog.querySelector('.scrywp-typo-disable-words-editor'),
+                hiddenName: 'typo_tolerance[disableOnWords][]',
+                chipClass: 'scrywp-typo-chip',
+                labelClass: 'scrywp-typo-chip-label',
+                removeClass: 'scrywp-typo-chip-remove',
+                removeLabel: 'Remove word',
+                attachedFlag: 'typoDisableWordsListenersAttached'
+            });
+
+            var typoDisableAttributesChips = createChipListHelpers({
+                chipsContainer: typoDisableAttributesChipsContainer,
+                hiddenContainer: typoDisableAttributesHiddenInputsContainer,
+                input: typoDisableAttributesInput,
+                editor: dialog.querySelector('.scrywp-typo-disable-attributes-editor'),
+                hiddenName: 'typo_tolerance[disableOnAttributes][]',
+                chipClass: 'scrywp-typo-chip',
+                labelClass: 'scrywp-typo-chip-label',
+                removeClass: 'scrywp-typo-chip-remove',
+                removeLabel: 'Remove attribute',
+                attachedFlag: 'typoDisableAttributesListenersAttached'
+            });
+
+            function addTypoDisableWordChip(term) {
+                typoDisableWordsChips.addChipValue(term);
+            }
+
+            function addTypoDisableAttributeChip(term) {
+                typoDisableAttributesChips.addChipValue(term);
+            }
+
+            function setupTypoToleranceInteractions() {
+                typoDisableWordsChips.setupInteractions();
+                typoDisableAttributesChips.setupInteractions();
+            }
+
+            function hydrateTypoToleranceFromObject(typoObj) {
+                setupTypoToleranceInteractions();
+                if (!typoObj || typeof typoObj !== 'object') {
+                    typoObj = {};
+                }
+
+                if (typoEnabledCheckbox) {
+                    typoEnabledCheckbox.checked = typoObj.enabled !== false;
+                }
+                if (typoDisableNumbersCheckbox) {
+                    typoDisableNumbersCheckbox.checked = !!typoObj.disableOnNumbers;
+                }
+
+                var minSizes = typoObj.minWordSizeForTypos && typeof typoObj.minWordSizeForTypos === 'object'
+                    ? typoObj.minWordSizeForTypos
+                    : {};
+                if (typoOneTypoInput) {
+                    typoOneTypoInput.value = minSizes.oneTypo != null ? minSizes.oneTypo : 5;
+                }
+                if (typoTwoTyposInput) {
+                    typoTwoTyposInput.value = minSizes.twoTypos != null ? minSizes.twoTypos : 9;
+                }
+
+                typoDisableWordsChips.hydrateFromArray(Array.isArray(typoObj.disableOnWords) ? typoObj.disableOnWords : []);
+                typoDisableAttributesChips.hydrateFromArray(Array.isArray(typoObj.disableOnAttributes) ? typoObj.disableOnAttributes : []);
             }
 
             // Function to initialize settings from server-rendered form controls
@@ -895,9 +1133,12 @@
                     hydrateRankingRulesFromDom();
                     syncRankingRulesInputs();
                     setupDragAndDrop();
+                    setupCustomRankingRulesInteractions();
                     setupSearchableFieldsInteractions();
                     setupSynonymsInteractions();
                     setupStopWordsInteractions();
+                    setupDictionaryInteractions();
+                    setupTypoToleranceInteractions();
 
                     // Fetch latest settings (including synonyms) from server/Meilisearch.
                     var settingsFormData = new FormData();
@@ -932,6 +1173,18 @@
                                 hydrateStopWordsFromArray(data.data.stop_words);
                             } else {
                                 hydrateStopWordsFromArray([]);
+                            }
+
+                            if (data.data && data.data.dictionary) {
+                                hydrateDictionaryFromArray(data.data.dictionary);
+                            } else {
+                                hydrateDictionaryFromArray([]);
+                            }
+
+                            if (data.data && data.data.typo_tolerance) {
+                                hydrateTypoToleranceFromObject(data.data.typo_tolerance);
+                            } else {
+                                hydrateTypoToleranceFromObject({});
                             }
 
                             updateSettingsRawJsonPanels(data.data || {});
@@ -1022,6 +1275,112 @@
             }
 
             // Function to render ranking rules
+            function isCustomRankingRule(rule) {
+                return /^.+:(asc|desc)$/i.test(rule || '');
+            }
+
+            function showRankingRulesAddError(message) {
+                if (!rankingRulesAddError) return;
+                if (!message) {
+                    rankingRulesAddError.style.display = 'none';
+                    rankingRulesAddError.textContent = '';
+                    return;
+                }
+                rankingRulesAddError.textContent = message;
+                rankingRulesAddError.style.display = 'block';
+            }
+
+            function normalizeCustomRankingAttribute(attribute) {
+                return (attribute || '')
+                    .toString()
+                    .trim()
+                    .replace(/\s+/g, '')
+                    .replace(/:(asc|desc)$/i, '');
+            }
+
+            function addCustomRankingRule() {
+                var attribute = normalizeCustomRankingAttribute(
+                    rankingRuleAttributeInput ? rankingRuleAttributeInput.value : ''
+                );
+                var direction = rankingRuleDirectionSelect ? rankingRuleDirectionSelect.value : 'desc';
+                if (direction !== 'asc' && direction !== 'desc') {
+                    direction = 'desc';
+                }
+
+                if (!attribute) {
+                    showRankingRulesAddError(
+                        (scrywpIndexes.i18n && scrywpIndexes.i18n.customRankingAttributeRequired)
+                            ? scrywpIndexes.i18n.customRankingAttributeRequired
+                            : 'Please enter an attribute name.'
+                    );
+                    return;
+                }
+
+                if (!/^[A-Za-z0-9_./-]+$/.test(attribute)) {
+                    showRankingRulesAddError(
+                        (scrywpIndexes.i18n && scrywpIndexes.i18n.customRankingAttributeInvalid)
+                            ? scrywpIndexes.i18n.customRankingAttributeInvalid
+                            : 'Attribute names can only contain letters, numbers, underscores, dots, slashes, and hyphens.'
+                    );
+                    return;
+                }
+
+                var rule = attribute + ':' + direction;
+                if (currentRankingRules.indexOf(rule) !== -1) {
+                    showRankingRulesAddError(
+                        (scrywpIndexes.i18n && scrywpIndexes.i18n.customRankingRuleExists)
+                            ? scrywpIndexes.i18n.customRankingRuleExists
+                            : 'That custom ranking rule is already in the list.'
+                    );
+                    return;
+                }
+
+                showRankingRulesAddError('');
+                currentRankingRules.push(rule);
+                if (rankingRuleAttributeInput) {
+                    rankingRuleAttributeInput.value = '';
+                    rankingRuleAttributeInput.focus();
+                }
+                renderRankingRules();
+            }
+
+            function setupCustomRankingRulesInteractions() {
+                if (!rankingRulesSection) return;
+                if (rankingRulesSection.dataset.customRankingListenersAttached === '1') return;
+                rankingRulesSection.dataset.customRankingListenersAttached = '1';
+
+                if (rankingRuleAddButton) {
+                    rankingRuleAddButton.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        addCustomRankingRule();
+                    });
+                }
+
+                if (rankingRuleAttributeInput) {
+                    rankingRuleAttributeInput.addEventListener('keydown', function (e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addCustomRankingRule();
+                        }
+                    });
+                }
+
+                if (rulesList) {
+                    rulesList.addEventListener('click', function (e) {
+                        var removeBtn = e.target.closest('.scrywp-ranking-rule-remove');
+                        if (!removeBtn) return;
+                        e.preventDefault();
+                        var item = removeBtn.closest('.scrywp-ranking-rule-item');
+                        if (!item) return;
+                        var rule = item.dataset.rule || '';
+                        currentRankingRules = currentRankingRules.filter(function (existing) {
+                            return existing !== rule;
+                        });
+                        renderRankingRules();
+                    });
+                }
+            }
+
             function renderRankingRules() {
                 if (!rulesList) return;
 
@@ -1029,10 +1388,12 @@
 
                 currentRankingRules.forEach(function (rule, index) {
                     var li = document.createElement('li');
-                    li.className = 'scrywp-ranking-rule-item';
+                    var custom = isCustomRankingRule(rule);
+                    li.className = 'scrywp-ranking-rule-item' + (custom ? ' scrywp-ranking-rule-item-custom' : '');
                     li.draggable = true;
                     li.dataset.rule = rule;
                     li.dataset.index = index;
+                    li.dataset.custom = custom ? '1' : '0';
 
                     var handle = document.createElement('span');
                     handle.className = 'scrywp-ranking-rule-handle';
@@ -1045,6 +1406,21 @@
 
                     li.appendChild(handle);
                     li.appendChild(label);
+
+                    if (custom) {
+                        var removeBtn = document.createElement('button');
+                        removeBtn.type = 'button';
+                        removeBtn.className = 'scrywp-ranking-rule-remove';
+                        removeBtn.setAttribute(
+                            'aria-label',
+                            (scrywpIndexes.i18n && scrywpIndexes.i18n.removeCustomRankingRule)
+                                ? scrywpIndexes.i18n.removeCustomRankingRule
+                                : 'Remove custom ranking rule'
+                        );
+                        removeBtn.textContent = '×';
+                        li.appendChild(removeBtn);
+                    }
+
                     rulesList.appendChild(li);
                 });
 
@@ -1179,6 +1555,9 @@
                         flushPendingSynonymAndStopWordInputs();
                         syncSynonymsHiddenInputs();
                         syncStopWordsHiddenInputs();
+                        dictionaryChips.syncHiddenInputs();
+                        typoDisableWordsChips.syncHiddenInputs();
+                        typoDisableAttributesChips.syncHiddenInputs();
                         saveButton.click();
                     });
                 }
@@ -1198,6 +1577,9 @@
                     flushPendingSynonymAndStopWordInputs();
                     syncSynonymsHiddenInputs();
                     syncStopWordsHiddenInputs();
+                    dictionaryChips.syncHiddenInputs();
+                    typoDisableWordsChips.syncHiddenInputs();
+                    typoDisableAttributesChips.syncHiddenInputs();
                     var formData = settingsForm ? new FormData(settingsForm) : new FormData();
                     formData.set('action', scrywpIndexes.actions.updateIndexSettings);
                     formData.set('nonce', scrywpIndexes.nonces.updateIndexSettings);

@@ -659,6 +659,48 @@ details[open] .scrywp-index-dialog-result-json-toggle::before {
     font-family: 'Courier New', Courier, monospace;
 }
 
+.scrywp-ranking-rule-item-custom .scrywp-ranking-rule-label {
+    color: #1d2327;
+}
+
+.scrywp-ranking-rule-remove {
+    border: none;
+    background: transparent;
+    color: #50575e;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 0 4px;
+    margin-left: 8px;
+}
+
+.scrywp-ranking-rule-remove:hover {
+    color: #dc3232;
+}
+
+.scrywp-ranking-rules-add {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-top: 12px;
+}
+
+.scrywp-ranking-rules-add .scrywp-ranking-rule-attribute-input {
+    min-width: 220px;
+    flex: 1 1 220px;
+}
+
+.scrywp-ranking-rules-add-help {
+    margin-top: 8px;
+}
+
+.scrywp-ranking-rules-add-error {
+    margin: 8px 0 0;
+    color: #b32d2e;
+    font-size: 13px;
+}
+
 /* Searchable Fields Styles */
 .scrywp-searchable-fields-tree {
     border: 1px solid #ccd0d4;
@@ -862,14 +904,19 @@ details[open] .scrywp-index-dialog-result-json-toggle::before {
     margin-left: auto;
 }
 
-/* Stop words editor (chip input) */
-.scrywp-stopwords-editor {
+/* Stop words / dictionary / typo chip editors */
+.scrywp-stopwords-editor,
+.scrywp-dictionary-editor,
+.scrywp-typo-chips-editor {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.scrywp-stopwords-chips {
+.scrywp-stopwords-chips,
+.scrywp-dictionary-chips,
+.scrywp-typo-disable-words-chips,
+.scrywp-typo-disable-attributes-chips {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
@@ -880,7 +927,9 @@ details[open] .scrywp-index-dialog-result-json-toggle::before {
     min-height: 42px;
 }
 
-.scrywp-stopwords-chip {
+.scrywp-stopwords-chip,
+.scrywp-dictionary-chip,
+.scrywp-typo-chip {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -892,7 +941,9 @@ details[open] .scrywp-index-dialog-result-json-toggle::before {
     font-size: 13px;
 }
 
-.scrywp-stopwords-chip-remove {
+.scrywp-stopwords-chip-remove,
+.scrywp-dictionary-chip-remove,
+.scrywp-typo-chip-remove {
     border: none;
     background: transparent;
     cursor: pointer;
@@ -902,10 +953,50 @@ details[open] .scrywp-index-dialog-result-json-toggle::before {
     color: #50575e;
 }
 
-.scrywp-stopwords-chip-remove:hover {
+.scrywp-stopwords-chip-remove:hover,
+.scrywp-dictionary-chip-remove:hover,
+.scrywp-typo-chip-remove:hover {
     color: #dc3232;
 }
 
-.scrywp-stopwords-chip-input {
+.scrywp-stopwords-chip-input,
+.scrywp-dictionary-chip-input,
+.scrywp-typo-disable-words-chip-input,
+.scrywp-typo-disable-attributes-chip-input {
     max-width: 420px;
+}
+
+.scrywp-typo-tolerance-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.scrywp-typo-tolerance-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+}
+
+.scrywp-typo-tolerance-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.scrywp-typo-tolerance-row label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.scrywp-typo-tolerance-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.scrywp-typo-tolerance-field .description {
+    margin-top: 0;
 }
