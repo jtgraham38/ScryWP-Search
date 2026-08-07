@@ -244,6 +244,11 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                         $index->updateStopWords($index_settings_backup['stop_words']);
                     }
 
+                    //restore filterable attributes if they are in the backup
+                    if (isset($index_settings_backup['filterable_attributes']) && is_array($index_settings_backup['filterable_attributes'])) {
+                        $index->updateFilterableAttributes($index_settings_backup['filterable_attributes']);
+                    }
+
                     //hook to allow other plugins to act after the index settings are restored
                     do_action($this->config('hook_prefix') . 'index_settings_restore', $index, $index_settings_backup);
 
@@ -828,26 +833,33 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             $document['post_meta'] = $post_meta;
         }
 
-        // Add taxonomy term names so searchable attrs (categories/tags) match indexed data
-        $excluded_taxonomies = $this->config('excluded_taxonomies');
-        if (!is_array($excluded_taxonomies)) {
-            $excluded_taxonomies = array();
-        }
-        $taxonomies = get_object_taxonomies($post->post_type, 'objects');
-        foreach ($taxonomies as $taxonomy) {
-            if (!$taxonomy->public || in_array($taxonomy->name, $excluded_taxonomies, true)) {
-                continue;
-            }
-            $terms = wp_get_post_terms($post->ID, $taxonomy->name, array('fields' => 'names'));
-            if (is_wp_error($terms) || empty($terms)) {
-                continue;
-            }
-            if ('category' === $taxonomy->name) {
-                $document['categories'] = $terms;
-            } elseif ('post_tag' === $taxonomy->name) {
-                $document['tags'] = $terms;
-            } else {
-                $document[$taxonomy->name] = $terms;
+        //handle taxonomies here: we want to get all taxonomies the post has, and save them under
+        // ['taxonomies']=>[taxonomy_name], with values id, slug, name, and taxonomy set
+        $post_id = $post->ID;
+        $post_taxonomies = get_object_taxonomies(get_post_type($post_id));
+        if (!empty($post_taxonomies)) {
+            $terms = wp_get_object_terms($post_id, $post_taxonomies);
+            if (!is_wp_error($terms) && !empty($terms)) {
+                $excluded_taxonomies = (array) $this->config('excluded_taxonomies');
+                foreach ($terms as $term) {
+                    if (!isset($term->taxonomy) || in_array($term->taxonomy, $excluded_taxonomies, true)) {
+                        continue;
+                    }
+
+
+                    $taxonomy_key = $term->taxonomy;
+                    if (!isset($document['taxonomies'][$taxonomy_key])) {
+                        $document['taxonomies'][$taxonomy_key] = array();
+                    }
+
+                    $document['taxonomies'][$taxonomy_key][] = array(
+                        'id' => (int) $term->term_id,
+                        'slug' => (string) $term->slug,
+                        'name' => (string) $term->name,
+                        'taxonomy' => (string) $term->taxonomy,
+                        'parent' => (int) $term->parent,
+                    );
+                }
             }
         }
         
@@ -1128,14 +1140,31 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                 $stop_words = array();
             }
 
+            // Get current filterable attributes
+            $filterable_attributes = array();
+            try {
+                $fetched_filterable_attributes = $index->getFilterableAttributes();
+                if (is_array($fetched_filterable_attributes) && !empty($fetched_filterable_attributes)) {
+                    $filterable_attributes = $fetched_filterable_attributes;
+                } else {
+                    $filterable_attributes = $this->get_default_filterable_attributes();
+                }
+            } catch (\Exception $e) {
+                $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Filterable attributes fetch failed: %s', "scry-search"), $e->getMessage()));
+                $filterable_attributes = $this->get_default_filterable_attributes();
+            }
+
             // Get available fields for this post type
             $available_fields = $this->get_available_fields_for_post_type($post_type);
+            $available_filterable_fields = $this->get_available_filterable_fields_for_post_type($post_type);
 
             //create the return array
             $return_array = array(
                 'ranking_rules' => $ranking_rules,
                 'searchable_attributes' => $searchable_attributes,
                 'available_fields' => $available_fields,
+                'filterable_attributes' => $filterable_attributes,
+                'available_filterable_fields' => $available_filterable_fields,
                 'synonyms' => $synonyms,
                 'stop_words' => $stop_words,
             );
@@ -1281,6 +1310,16 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         //ensure the stop words are unique
         $stop_words = array_values(array_unique($stop_words));
 
+        // Filterable attributes are submitted as filterable_attributes[] (always applied on save; empty clears).
+        $filterable_attributes = isset($_POST['filterable_attributes']) ? wp_unslash($_POST['filterable_attributes']) : array();
+        if (!is_array($filterable_attributes)) {
+            $filterable_attributes = array();
+        }
+        $filterable_attributes = array_map('sanitize_text_field', $filterable_attributes);
+        $filterable_attributes = array_values(array_unique(array_filter($filterable_attributes, function ($attr) {
+            return is_string($attr) && $attr !== '' && $attr !== 'post_taxonomies';
+        })));
+
         //backup the settings to the database
         $index_settings_backup_key = $this->prefixed('index_settings_backup_') . $index_name;
         $index_settings_backup = array(
@@ -1288,6 +1327,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             'searchable_attributes' => $searchable_attributes,
             'synonyms' => $synonyms,
             'stop_words' => $stop_words,
+            'filterable_attributes' => $filterable_attributes,
         );
 
         //hook to allow other plugins to modify the index settings backup
@@ -1315,6 +1355,11 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         $synonyms = apply_filters($this->config('hook_prefix') . 'index_synonyms_before_update', $synonyms, $index_name);
         //@HOOK: scry_ms_index_stop_words_before_update — args: $stop_words, $index_name
         $stop_words = apply_filters($this->config('hook_prefix') . 'index_stop_words_before_update', $stop_words, $index_name);
+        //@HOOK: scry_ms_index_filterable_attributes_before_update — args: $filterable_attributes, $index_name
+        $filterable_attributes = apply_filters($this->config('hook_prefix') . 'index_filterable_attributes_before_update', $filterable_attributes, $index_name);
+        if (!is_array($filterable_attributes)) {
+            $filterable_attributes = array();
+        }
 
         try {
             // Create Meilisearch client
@@ -1336,6 +1381,9 @@ class ScrySearch_IndexesFeature extends PluginFeature {
 
             // Stop words: always sync from POST (empty array clears Meilisearch stop words for this index).
             $index->updateStopWords($stop_words);
+
+            // Filterable attributes: always sync from POST (empty array clears Meilisearch filterable attributes for this index).
+            $index->updateFilterableAttributes($filterable_attributes);
             
             //let other plugins take action using the index and the settings
             do_action($this->config('hook_prefix') . 'index_update_settings', $index);
@@ -1467,6 +1515,91 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         
         return $fields;
     }
+
+    /**
+     * Get available filterable fields for a post type.
+     * Same shape as searchable fields, plus a Post Taxonomies group.
+     */
+    public function get_available_filterable_fields_for_post_type($post_type) {
+        $fields = $this->get_available_fields_for_post_type($post_type);
+        if (!is_array($fields)) {
+            $fields = array();
+        }
+
+        // Replace date string fields with a single unix timestamp filter field.
+        //delete the other post dates
+        unset(
+            $fields['post_date'],
+            $fields['post_date_gmt'],
+            $fields['post_modified'],
+            $fields['post_modified_gmt']
+        );
+
+        //reorder the fields
+        $ordered_fields = array();
+        foreach ($fields as $key => $field) {
+            if ($key === 'post_author') {
+                $ordered_fields['post_date_unix'] = array(
+                    'label' => __('Post Date', "scry-search"),
+                    'type' => 'core',
+                    'path' => 'post_date_unix',
+                );
+            }
+            $ordered_fields[$key] = $field;
+        }
+        //add the post date unix field if it's not already in the array
+        if (!isset($ordered_fields['post_date_unix'])) {
+            $ordered_fields['post_date_unix'] = array(
+                'label' => __('Post Date', "scry-search"),
+                'type' => 'core',
+                'path' => 'post_date_unix',
+            );
+        }
+        $fields = $ordered_fields;
+
+        $excluded_taxonomies = $this->config('excluded_taxonomies');
+        if (!is_array($excluded_taxonomies)) {
+            $excluded_taxonomies = array();
+        }
+
+        $taxonomies = get_object_taxonomies($post_type, 'objects');
+        $taxonomy_children = array();
+
+        if (is_array($taxonomies)) {
+            foreach ($taxonomies as $taxonomy) {
+                if (!is_object($taxonomy) || !isset($taxonomy->name)) {
+                    continue;
+                }
+                if (in_array($taxonomy->name, $excluded_taxonomies, true)) {
+                    continue;
+                }
+
+                // Match nested taxonomy paths used when indexing documents.
+                $path = 'taxonomies.' . $taxonomy->name . '.id';
+
+                $label = isset($taxonomy->label) ? (string) $taxonomy->label : (string) $taxonomy->name;
+                $taxonomy_children[$path] = array(
+                    'label' => sprintf('%s (%s)', $label, $taxonomy->name),
+                    'type' => 'taxonomy',
+                    'path' => $path,
+                );
+            }
+        }
+
+        if (!empty($taxonomy_children)) {
+            $fields['post_taxonomies'] = array(
+                'label' => __('Post Taxonomies', "scry-search"),
+                'type' => 'group',
+                'path' => 'post_taxonomies',
+                'children' => $taxonomy_children,
+            );
+        }
+
+        //@HOOK: scry_ms_index_filterable_fields
+        $fields = apply_filters($this->config('hook_prefix') . 'index_filterable_fields', $fields, $post_type);
+
+        return $fields;
+    }
     
     /**
      * Get all unique meta keys for a post type
@@ -1542,5 +1675,24 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         $searchable_attributes = apply_filters($this->config('hook_prefix') . 'index_searchable_attributes', $searchable_attributes);
 
         return $searchable_attributes;
+    }
+
+    /**
+     * Default filterable attributes for new indexes.
+     */
+    public function get_default_filterable_attributes() {
+        $filterable_attributes = array(
+            'post_date_unix',
+            'post_type',
+            'post_status',
+            'post_author',
+            'taxonomies.category.id',
+            'taxonomies.post_tag.id',
+        );
+
+        //@HOOK: scry_ms_index_filterable_attributes
+        $filterable_attributes = apply_filters($this->config('hook_prefix') . 'index_filterable_attributes', $filterable_attributes);
+
+        return $filterable_attributes;
     }
 }

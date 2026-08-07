@@ -403,6 +403,11 @@ details[open] .scrywp-index-dialog-result-json-toggle::before {
     overflow-y: auto;
 }
 
+.scrywp-index-settings-raw-json {
+    margin-top: 16px;
+    margin-bottom: 0;
+}
+
 .scrywp-index-dialog-result-actions {
     display: flex;
     gap: 10px;

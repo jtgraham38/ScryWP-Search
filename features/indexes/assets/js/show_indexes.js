@@ -407,7 +407,6 @@
             if (!dialog) return;
 
             var rulesList = dialog.querySelector('.scrywp-ranking-rules-list');
-            var fieldsTree = dialog.querySelector('.scrywp-searchable-fields-tree');
             var rankingRulesInputsContainer = dialog.querySelector('.scrywp-ranking-rules-hidden-inputs');
             var synonymsEditor = dialog.querySelector('.scrywp-synonyms-editor');
             var synonymsEntriesContainer = dialog.querySelector('.scrywp-synonyms-entries');
@@ -935,6 +934,8 @@
                                 hydrateStopWordsFromArray([]);
                             }
 
+                            updateSettingsRawJsonPanels(data.data || {});
+
                             loadingDiv.style.display = 'none';
                             loadedDiv.style.display = 'flex';
                             resetSaveButton();
@@ -953,6 +954,53 @@
                 loadedDiv.style.display = 'none';
                 errorDiv.style.display = 'block';
                 errorDiv.querySelector('.scrywp-index-settings-error-message').textContent = message;
+            }
+
+            function ensureSettingsRawJsonPanel(section) {
+                if (!section) return null;
+
+                var existing = section.querySelector('.scrywp-index-settings-raw-json');
+                if (existing) {
+                    return existing.querySelector('.scrywp-index-settings-raw-json-content') || existing.querySelector('pre');
+                }
+
+                var details = document.createElement('details');
+                details.className = 'scrywp-index-dialog-result-json scrywp-index-settings-raw-json';
+
+                var summary = document.createElement('summary');
+                summary.className = 'scrywp-index-dialog-result-json-toggle';
+                summary.textContent = (scrywpIndexes.i18n && scrywpIndexes.i18n.viewRawJson) ? scrywpIndexes.i18n.viewRawJson : 'View Raw JSON';
+
+                var pre = document.createElement('pre');
+                pre.className = 'scrywp-index-dialog-result-json-content scrywp-index-settings-raw-json-content';
+                pre.textContent = 'null';
+
+                details.appendChild(summary);
+                details.appendChild(pre);
+                section.appendChild(details);
+
+                return pre;
+            }
+
+            function updateSettingsRawJsonPanels(settings) {
+                if (!settingsForm || !settings || typeof settings !== 'object') return;
+
+                var sections = settingsForm.querySelectorAll('.scrywp-index-settings-section[data-setting-key]');
+                sections.forEach(function (section) {
+                    var key = section.getAttribute('data-setting-key');
+                    if (!key || !Object.prototype.hasOwnProperty.call(settings, key)) {
+                        return;
+                    }
+
+                    var pre = ensureSettingsRawJsonPanel(section);
+                    if (!pre) return;
+
+                    try {
+                        pre.textContent = JSON.stringify(settings[key], null, 2);
+                    } catch (e) {
+                        pre.textContent = String(settings[key]);
+                    }
+                });
             }
 
             function hydrateRankingRulesFromDom() {
@@ -1083,10 +1131,10 @@
                     });
                 });
             }
-            function setupSearchableFieldsInteractions() {
-                if (!fieldsTree) return;
+            function setupFieldTreeInteractions(tree) {
+                if (!tree) return;
 
-                var groups = fieldsTree.querySelectorAll('.scrywp-searchable-field-group');
+                var groups = tree.querySelectorAll('.scrywp-searchable-field-group');
                 groups.forEach(function (group) {
                     if (group.dataset.groupListenersAttached === '1') {
                         return;
@@ -1113,6 +1161,13 @@
                             });
                         });
                     }
+                });
+            }
+
+            function setupSearchableFieldsInteractions() {
+                var fieldTrees = dialog.querySelectorAll('.scrywp-searchable-fields-tree');
+                fieldTrees.forEach(function (tree) {
+                    setupFieldTreeInteractions(tree);
                 });
             }
 
