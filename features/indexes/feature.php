@@ -642,61 +642,117 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         }
         
         try {
-            // Get all posts of this post type that are published
-            $query_args = array(
-                'post_type' => $post_type,
-                'posts_per_page' => -1,
-                'post_status' => 'publish',
-            );
+            // Process posts in batches to avoid loading everything into memory at once
+            $batch_size = 100;
+            //@HOOK: scry_ms_bulk_index_batch_size
+            $batch_size = (int) apply_filters($this->config('hook_prefix') . 'bulk_index_batch_size', $batch_size, $post_type, $index_name);
+            if ($batch_size < 1) {
+                $batch_size = 100;
+            }
 
-            //@HOOK: scry_ms_bulk_index_query_args
-            $query_args = apply_filters($this->config('hook_prefix') . 'bulk_index_query_args', $query_args, $post_type, $index_name);
+            //query vars
+            $offset = 0;
+            $total_indexed = 0;
+            $found_any_posts = false;
+            $task = null;
 
-            $posts = get_posts($query_args);
-            
-            if (empty($posts)) {
+            //get a meilisearch client
+            $client = $this->get_feature('scry_ms_client')->get_client();
+            $index = $client->index($index_name);
+
+            //begin indexing in batches
+            while (true) {
+                //build the query args for the batch
+                $query_args = array(
+                    'post_type' => $post_type,
+                    'posts_per_page' => $batch_size,
+                    'offset' => $offset,
+                    'post_status' => 'publish',
+                    'orderby' => 'ID',
+                    'order' => 'ASC',
+                    'no_found_rows' => true,
+                );
+
+                //@HOOK: scry_ms_bulk_index_query_args
+                $query_args = apply_filters($this->config('hook_prefix') . 'bulk_index_query_args', $query_args, $post_type, $index_name);
+
+                // Keep batching intact even if a filter changes page size/offset
+                $query_args['posts_per_page'] = $batch_size;
+                $query_args['offset'] = $offset;
+
+                //get the posts for the batch
+                $posts = get_posts($query_args);
+                $post_count = count($posts);
+
+                //if no posts found, break the loop
+                if ($post_count === 0) {
+                    break;
+                }
+
+                //set the flag that we found at least one post
+                $found_any_posts = true;
+
+                //build the documents array
+                $documents = array();
+                foreach ($posts as $post) {
+                    //test if the post should be indexed
+                    //@HOOK: scry_ms_should_index
+                    $should_index = apply_filters($this->config('hook_prefix') . 'should_index', true, $post, 'bulk');
+                    if (!$should_index) {
+                        continue;
+                    }
+                    //format the post for Meilisearch indexing
+                    $documents[] = $this->format_post_for_meilisearch($post);
+                }
+
+                //unset the posts array to free up memory
+                unset($posts);
+
+                //if there are documents to index, index them
+                if (!empty($documents)) {
+                    $task = $index->updateDocuments($documents);
+                    $total_indexed += count($documents);
+                }
+
+                //unset the documents array to free up memory
+                unset($documents);
+
+                //if we didn't index all the posts in the batch, break the loop
+                if ($post_count < $batch_size) {
+                    break;
+                }
+
+                //increment the offset
+                $offset += $batch_size;
+            }
+
+            //if no posts were found, log an error and exit
+            if (!$found_any_posts) {
                 //log a debug message with the logging feature
                 $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('No posts found for post type "%s". Exiting ajax_index_posts.', "scry-search"), $post_type));
                 wp_send_json_error(array('message' => sprintf(__('No posts found for post type "%s"', "scry-search"), $post_type)));
                 return;
             }
-            
-            // Format posts for Meilisearch
-            $documents = array();
-            foreach ($posts as $post) {
-                //@HOOK: scry_ms_should_index
-                $should_index = apply_filters($this->config('hook_prefix') . 'should_index', true, $post, 'bulk');
-                if (!$should_index) {
-                    continue;
-                }
-                $documents[] = $this->format_post_for_meilisearch($post);
-            }
 
-            if (empty($documents)) {
+            //if no documents were indexed, log an error and exit
+            if ($total_indexed === 0) {
                 $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('No documents to index for post type "%s" after should_index filter. Exiting ajax_index_posts.', "scry-search"), $post_type));
                 wp_send_json_error(array('message' => sprintf(__('No documents to index for post type "%s"', "scry-search"), $post_type)));
                 return;
             }
-            
-            // Create Meilisearch client
-            $client = $this->get_feature('scry_ms_client')->get_client();
-            
-            // Get the index and add/update documents
-            $index = $client->index($index_name);
-            $task = $index->updateDocuments($documents);
 
             //@HOOK: scry_ms_after_bulk_index
-            do_action($this->config('hook_prefix') . 'after_bulk_index', $post_type, $index_name, count($documents), $task);
+            do_action($this->config('hook_prefix') . 'after_bulk_index', $post_type, $index_name, $total_indexed, $task);
             
             // Success
             wp_send_json_success(array(
                 'message' => sprintf(
                     __('Successfully indexed %d post(s) of type "%s".', "scry-search"),
-                    count($documents),
+                    $total_indexed,
                     $post_type
                 ),
-                'count' => count($documents),
-                'task_uid' => isset($task['taskUid']) ? $task['taskUid'] : null
+                'count' => $total_indexed,
+                'task_uid' => (is_array($task) && isset($task['taskUid'])) ? $task['taskUid'] : null
             ));
             
         } catch (\Meilisearch\Exceptions\CommunicationException $e) {
