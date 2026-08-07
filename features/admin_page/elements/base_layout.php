@@ -50,6 +50,65 @@ if (method_exists($this, 'get_registered_pages')) {
 }
 ?>
 
+<?php
+// Setup breadcrumb: show until connection is configured and at least one site index exists in Meilisearch.
+$meilisearch_url       = get_option($this->prefixed('meilisearch_url'), '');
+$meilisearch_admin_key = get_option($this->prefixed('meilisearch_admin_key'), '');
+$connection_configured = !empty($meilisearch_url) && !empty($meilisearch_admin_key);
+
+//test if the site indexes exist in Meilisearch
+$has_site_indexes = false;
+$indexes_feature  = $this->get_feature('scry_ms_indexes');
+$index_names      = method_exists($indexes_feature, 'get_index_names') ? $indexes_feature->get_index_names() : array();
+
+//test if the site indexes exist in Meilisearch
+if ($connection_configured && !empty($index_names)) {
+	try {
+		$client = $this->get_feature('scry_ms_client')->get_client();
+		foreach ($index_names as $index_uid) {
+			try {
+				$client->index($index_uid)->fetchRawInfo();
+				$has_site_indexes = true;
+				break;
+			} catch (\Exception $e) {
+				// Index missing or unreachable — keep looking.
+				continue;
+			}
+		}
+	} catch (\Exception $e) {
+		$has_site_indexes = false;
+	}
+}
+
+//determine if the setup breadcrumb should be shown
+$show_setup_breadcrumb = !$connection_configured || !$has_site_indexes;
+
+//determine which step to highlight in the setup breadcrumb
+if (!$connection_configured) {
+	$setup_current_step = 1;
+} elseif (!$has_site_indexes) {
+	$setup_current_step = 2;
+} else {
+	$setup_current_step = 3;
+}
+
+//steps to set up the plugin
+$setup_steps = array(
+	1 => array(
+		'label' => __('Configure connection', 'scry-search'),
+		'url'   => admin_url('admin.php?page=scry-search-meilisearch-settings'),
+	),
+	2 => array(
+		'label' => __('Index posts', 'scry-search'),
+		'url'   => admin_url('admin.php?page=scry-search-meilisearch-index-settings'),
+	),
+	3 => array(
+		'label' => __('Search!', 'scry-search'),
+		'url'   => home_url('/'),
+	),
+);
+?>
+
 <div class="wrap">
     <h1 class="wp-heading-inline">
         <span class="dashicons dashicons-search" style="font-size: 30px; width: 30px; height: 30px; margin-right: 10px;"></span>
@@ -71,6 +130,39 @@ if (method_exists($this, 'get_registered_pages')) {
             </a>
         <?php endforeach; ?>
     </nav>
+
+    <?php if ($show_setup_breadcrumb) : ?>
+        <nav class="scry-ms-setup-breadcrumb" aria-label="<?php esc_attr_e('Setup steps', 'scry-search'); ?>">
+            <p class="scry-ms-setup-breadcrumb-intro"><?php esc_html_e('Get started with Scry Search:', 'scry-search'); ?></p>
+            <ol class="scry-ms-setup-breadcrumb-steps">
+                <?php foreach ($setup_steps as $step_number => $step) :
+                    $is_complete = $step_number < $setup_current_step;
+                    $is_current  = $step_number === $setup_current_step;
+                    $classes     = 'scry-ms-setup-breadcrumb-step';
+                    if ($is_complete) {
+                        $classes .= ' is-complete';
+                    }
+                    if ($is_current) {
+                        $classes .= ' is-current';
+                    }
+                    ?>
+                    <li class="<?php echo esc_attr($classes); ?>">
+                        <?php if ($is_current || !$is_complete) : ?>
+                            <a class="scry-ms-setup-breadcrumb-link" href="<?php echo esc_url($step['url']); ?>">
+                                <span class="scry-ms-setup-breadcrumb-number"><?php echo esc_html((string) $step_number); ?></span>
+                                <span class="scry-ms-setup-breadcrumb-label"><?php echo esc_html($step['label']); ?></span>
+                            </a>
+                        <?php else : ?>
+                            <span class="scry-ms-setup-breadcrumb-link">
+                                <span class="scry-ms-setup-breadcrumb-number"><?php echo esc_html((string) $step_number); ?></span>
+                                <span class="scry-ms-setup-breadcrumb-label"><?php echo esc_html($step['label']); ?></span>
+                            </span>
+                        <?php endif; ?>
+                    </li>
+                <?php endforeach; ?>
+            </ol>
+        </nav>
+    <?php endif; ?>
 
     <!-- Task View -->
     <?php require_once plugin_dir_path(__FILE__) . 'task_view.php'; ?>
