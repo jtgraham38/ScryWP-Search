@@ -426,6 +426,107 @@
 
             var currentRankingRules = [];
 
+            function slugifyTabId(label, fallback) {
+                var slug = (label || '')
+                    .toString()
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/^-+|-+$/g, '');
+                return slug || fallback;
+            }
+
+            function initSettingsTabs() {
+                if (!settingsForm) return;
+
+                var tabsNav = settingsForm.querySelector('.scrywp-index-settings-tabs');
+                var panels = settingsForm.querySelector('.scrywp-index-settings-panels');
+                if (!tabsNav || !panels) return;
+
+                var sections = Array.from(panels.children).filter(function (el) {
+                    return el.classList && el.classList.contains('scrywp-index-settings-section');
+                });
+                if (!sections.length) return;
+
+                // Rebuild so plugin-injected sections are always included.
+                tabsNav.innerHTML = '';
+
+                var usedIds = {};
+                var tabButtons = [];
+
+                sections.forEach(function (section, index) {
+                    var titleEl = section.querySelector('.scrywp-index-settings-section-header h4, h4');
+                    var label = titleEl ? titleEl.textContent.trim() : '';
+                    var baseId = section.getAttribute('data-tab') || slugifyTabId(label, 'section-' + (index + 1));
+                    var tabId = baseId;
+                    var suffix = 2;
+                    while (usedIds[tabId]) {
+                        tabId = baseId + '-' + suffix;
+                        suffix += 1;
+                    }
+                    usedIds[tabId] = true;
+
+                    var panelId = indexName + '-settings-panel-' + tabId;
+                    section.id = panelId;
+                    section.setAttribute('role', 'tabpanel');
+                    section.setAttribute('aria-labelledby', indexName + '-settings-tab-' + tabId);
+                    section.hidden = index !== 0;
+
+                    var button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'scrywp-index-settings-tab' + (index === 0 ? ' is-active' : '');
+                    button.id = indexName + '-settings-tab-' + tabId;
+                    button.setAttribute('role', 'tab');
+                    button.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
+                    button.setAttribute('aria-controls', panelId);
+                    button.setAttribute('tabindex', index === 0 ? '0' : '-1');
+                    button.textContent = label || ('Section ' + (index + 1));
+                    button.addEventListener('click', function () {
+                        activateSettingsTab(index);
+                    });
+
+                    tabsNav.appendChild(button);
+                    tabButtons.push(button);
+                });
+
+                function activateSettingsTab(activeIndex) {
+                    sections.forEach(function (section, index) {
+                        var isActive = index === activeIndex;
+                        section.hidden = !isActive;
+                        if (tabButtons[index]) {
+                            tabButtons[index].classList.toggle('is-active', isActive);
+                            tabButtons[index].setAttribute('aria-selected', isActive ? 'true' : 'false');
+                            tabButtons[index].setAttribute('tabindex', isActive ? '0' : '-1');
+                        }
+                    });
+                }
+
+                tabsNav.addEventListener('keydown', function (event) {
+                    var currentIndex = tabButtons.findIndex(function (btn) {
+                        return btn.getAttribute('aria-selected') === 'true';
+                    });
+                    if (currentIndex < 0) return;
+
+                    var nextIndex = currentIndex;
+                    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+                        nextIndex = (currentIndex + 1) % tabButtons.length;
+                    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+                        nextIndex = (currentIndex - 1 + tabButtons.length) % tabButtons.length;
+                    } else if (event.key === 'Home') {
+                        nextIndex = 0;
+                    } else if (event.key === 'End') {
+                        nextIndex = tabButtons.length - 1;
+                    } else {
+                        return;
+                    }
+
+                    event.preventDefault();
+                    activateSettingsTab(nextIndex);
+                    tabButtons[nextIndex].focus();
+                });
+            }
+
+            initSettingsTabs();
+
             // Store original button text
             var originalSaveButtonText = saveButton ? saveButton.textContent : '';
 
@@ -835,7 +936,7 @@
                             }
 
                             loadingDiv.style.display = 'none';
-                            loadedDiv.style.display = 'block';
+                            loadedDiv.style.display = 'flex';
                             resetSaveButton();
                         })
                         .catch(function () {
