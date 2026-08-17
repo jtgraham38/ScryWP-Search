@@ -19,8 +19,9 @@
 
 .scrywp-hy-embedder-row {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
     padding: 8px 4px;
     border-bottom: 1px solid #f0f0f1;
 }
@@ -29,8 +30,13 @@
     border-bottom: none;
 }
 
+.scrywp-hy-embedder-row-meta {
+    min-width: 0;
+}
+
 .scrywp-hy-embedder-row-name {
     font-weight: 600;
+    display: block;
 }
 
 .scrywp-hy-embedder-row-detail {
@@ -40,4 +46,19 @@
 
 .scrywp-hy-embedders-status .notice {
     margin: 8px 0;
+}
+
+.scrywp-hy-embedder-form {
+    margin-top: 12px;
+}
+
+.scrywp-hy-embedder-form .description {
+    display: block;
+    margin-top: 4px;
+}
+
+.scrywp-hy-embedder-form-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
 }
