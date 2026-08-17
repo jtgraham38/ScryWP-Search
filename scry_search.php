@@ -29,6 +29,15 @@ use jtgraham38\jgwordpresskit\PluginFeature;
 //set plugin config
 $config = array(
     'hook_prefix' => 'scry_ms_',    //set a separate prefix because changing it will break dependent plugins
+    // Hybrid search defaults (Configure Index → Hybrid Search).
+    'default_semantic_ratio' => 0.5, // 0 = keyword, 1 = fully semantic
+    'default_document_template' => "{{doc.post_title}}\n{{doc.post_excerpt}}",
+    'embedder_sources' => array(
+        'openAi',
+        'ollama',
+        'huggingFace',
+        'userProvided',
+    ),
     'excluded_taxonomies' => array(
         'post_format',
         'nav_menu',
