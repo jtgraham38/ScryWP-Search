@@ -1845,4 +1845,40 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             'disableOnNumbers' => false,
         );
     }
+
+    /**
+     * Hybrid prefs stored in the WP index settings backup for this index.
+     *
+     * @param string $index_name Meilisearch index uid.
+     * @return array{enabled:bool,embedder:string,semantic_ratio:float}
+     */
+    public function get_hybrid_settings($index_name) {
+        $default_ratio = (float) $this->config('default_semantic_ratio');
+        if ($default_ratio < 0 || $default_ratio > 1) {
+            $default_ratio = 0.5;
+        }
+
+        $defaults = array(
+            'enabled' => false,
+            'embedder' => '',
+            'semantic_ratio' => $default_ratio,
+        );
+
+        $backup = get_option($this->prefixed('index_settings_backup_') . $index_name, array());
+        if (!is_array($backup) || !isset($backup['hybrid']) || !is_array($backup['hybrid'])) {
+            return $defaults;
+        }
+
+        $hybrid = $backup['hybrid'];
+        $ratio = isset($hybrid['semantic_ratio']) ? (float) $hybrid['semantic_ratio'] : $default_ratio;
+        $ratio = max(0.0, min(1.0, $ratio));
+        $embedder = isset($hybrid['embedder']) ? (string) $hybrid['embedder'] : '';
+        $enabled = !empty($hybrid['enabled']) && $embedder !== '';
+
+        return array(
+            'enabled' => $enabled,
+            'embedder' => $embedder,
+            'semantic_ratio' => $ratio,
+        );
+    }
 }
