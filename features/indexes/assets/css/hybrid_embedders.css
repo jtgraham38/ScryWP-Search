@@ -1,0 +1,43 @@
+.scrywp-hy-hybrid-separator {
+    margin: 20px 0;
+    border: 0;
+    border-top: 1px solid #dcdcde;
+}
+
+.scrywp-hy-embedders-heading {
+    margin: 0 0 4px;
+    font-size: 13px;
+}
+
+.scrywp-hy-embedders-list {
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    background: #fff;
+    padding: 8px 10px;
+    margin: 8px 0 0;
+}
+
+.scrywp-hy-embedder-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 4px;
+    border-bottom: 1px solid #f0f0f1;
+}
+
+.scrywp-hy-embedder-row:last-child {
+    border-bottom: none;
+}
+
+.scrywp-hy-embedder-row-name {
+    font-weight: 600;
+}
+
+.scrywp-hy-embedder-row-detail {
+    color: #646970;
+    font-size: 12px;
+}
+
+.scrywp-hy-embedders-status .notice {
+    margin: 8px 0;
+}
