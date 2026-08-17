@@ -44,6 +44,12 @@
     font-size: 12px;
 }
 
+.scrywp-hy-embedder-row-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
 .scrywp-hy-embedders-status .notice {
     margin: 8px 0;
 }
