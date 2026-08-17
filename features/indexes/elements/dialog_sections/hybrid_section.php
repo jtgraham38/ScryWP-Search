@@ -56,6 +56,7 @@ if ($hybrid['embedder'] !== '') {
                 id="<?php echo esc_attr($id_prefix); ?>_hybrid_embedder"
                 name="hybrid_embedder"
                 class="regular-text scrywp-hy-hybrid-embedder-select"
+                data-selected="<?php echo esc_attr($hybrid['embedder']); ?>"
             >
                 <option value=""><?php esc_html_e('— Select an embedder —', "scry-search"); ?></option>
                 <?php foreach ($embedder_names as $name) { ?>
@@ -65,12 +66,6 @@ if ($hybrid['embedder'] !== '') {
                 <?php } ?>
             </select>
         </p>
-
-        <?php if (empty($embedder_names)) { ?>
-            <p class="description scrywp-hy-hybrid-empty-hint">
-                <?php esc_html_e('No embedders on this index yet. You will add them in a later step.', "scry-search"); ?>
-            </p>
-        <?php } ?>
 
         <p>
             <label for="<?php echo esc_attr($id_prefix); ?>_hybrid_semantic_ratio">
@@ -90,5 +85,20 @@ if ($hybrid['embedder'] !== '') {
                 <?php esc_html_e('0 = keyword only, 1 = fully semantic. Typical starting point: 0.5.', "scry-search"); ?>
             </span>
         </p>
+    </div>
+
+    <hr class="scrywp-hy-hybrid-separator">
+
+    <div class="scrywp-hy-embedders">
+        <h5 class="scrywp-hy-embedders-heading"><?php esc_html_e('Embedders on this index', "scry-search"); ?></h5>
+        <p class="description">
+            <?php esc_html_e('Definitions live in Meilisearch for this index only. Add and edit come in a later step.', "scry-search"); ?>
+        </p>
+        <div class="scrywp-hy-embedders-status" aria-live="polite"></div>
+        <div class="scrywp-hy-embedders-list">
+            <p class="description scrywp-hy-embedders-loading">
+                <?php esc_html_e('Open this dialog to load embedders…', "scry-search"); ?>
+            </p>
+        </div>
     </div>
 </div>
