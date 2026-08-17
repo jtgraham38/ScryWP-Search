@@ -42,6 +42,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         add_action('wp_ajax_' . $this->prefixed('search_index'), array($this, 'ajax_search_index'));
         add_action('wp_ajax_' . $this->prefixed('get_index_settings'), array($this, 'ajax_get_index_settings'));
         add_action('wp_ajax_' . $this->prefixed('update_index_settings'), array($this, 'ajax_update_index_settings'));
+        add_action('wp_ajax_' . $this->prefixed('list_embedders'), array($this, 'ajax_list_embedders'));
     }
 
     //function to index a post when it is created or updated
@@ -503,6 +504,39 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                     'customRankingRuleExists' => __('That custom ranking rule is already in the list.', "scry-search"),
                     'settingsSavedSuccessfully' => __('Settings saved successfully', "scry-search"),
                     'failedToSaveSettings' => __('Failed to save settings', "scry-search"),
+                ),
+            )
+        );
+
+        wp_enqueue_style(
+            $this->prefixed('hybrid-embedders-styles'),
+            plugin_dir_url(__FILE__) . 'assets/css/hybrid_embedders.css',
+            array($this->prefixed('show-indexes-styles')),
+            (string) filemtime(plugin_dir_path(__FILE__) . 'assets/css/hybrid_embedders.css')
+        );
+
+        wp_enqueue_script(
+            $this->prefixed('hybrid-embedders-script'),
+            plugin_dir_url(__FILE__) . 'assets/js/hybrid_embedders.js',
+            array(),
+            (string) filemtime(plugin_dir_path(__FILE__) . 'assets/js/hybrid_embedders.js'),
+            true
+        );
+
+        wp_localize_script(
+            $this->prefixed('hybrid-embedders-script'),
+            'scrywpHybridEmbedders',
+            array(
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'action' => $this->prefixed('list_embedders'),
+                'nonce' => wp_create_nonce($this->prefixed('list_embedders')),
+                'i18n' => array(
+                    'loading' => __('Loading embedders…', "scry-search"),
+                    'none' => __('No embedders on this index yet.', "scry-search"),
+                    'loadFailed' => __('Failed to load embedders.', "scry-search"),
+                    'hasKey' => __('API key set', "scry-search"),
+                    'noKey' => __('No API key', "scry-search"),
+                    'selectEmbedder' => __('— Select an embedder —', "scry-search"),
                 ),
             )
         );
@@ -1916,5 +1950,115 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             'embedder' => $embedder,
             'semantic_ratio' => $ratio,
         );
+    }
+
+    /**
+     * GET embedders for one Scry index. API keys never leave PHP as plaintext.
+     */
+    public function ajax_list_embedders() {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('list_embedders'))) {
+            wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
+            return;
+        }
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
+            return;
+        }
+
+        $index_name = isset($_POST['index_name']) ? sanitize_text_field(wp_unslash($_POST['index_name'])) : '';
+        if ($index_name === '') {
+            wp_send_json_error(array('message' => __('Please provide an index name', "scry-search")));
+            return;
+        }
+
+        $index_names = $this->get_index_names();
+        if (!in_array($index_name, $index_names, true)) {
+            wp_send_json_error(array('message' => __('Invalid index name', "scry-search")));
+            return;
+        }
+
+        $embedders = $this->get_embedders_for_index($index_name);
+        if (is_wp_error($embedders)) {
+            wp_send_json_error(array('message' => $embedders->get_error_message()));
+            return;
+        }
+
+        wp_send_json_success(array(
+            'index_name' => $index_name,
+            'embedders' => $this->sanitize_embedders_for_browser($embedders),
+        ));
+    }
+
+    /**
+     * Raw embedder map from Meilisearch for one index (includes apiKey).
+     *
+     * @param string $index_name Meilisearch index uid.
+     * @return array|WP_Error
+     */
+    private function get_embedders_for_index($index_name) {
+        $meilisearch_url = get_option($this->prefixed('meilisearch_url'), '');
+        $meilisearch_admin_key = get_option($this->prefixed('meilisearch_admin_key'), '');
+
+        if ($meilisearch_url === '' || $meilisearch_admin_key === '' || $index_name === '') {
+            return new WP_Error(
+                'scry_ms_no_connection',
+                __('Connection settings are not configured', "scry-search")
+            );
+        }
+
+        $endpoint = trailingslashit($meilisearch_url) . 'indexes/' . rawurlencode($index_name) . '/settings/embedders';
+        $response = wp_remote_get($endpoint, array(
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $meilisearch_admin_key,
+            ),
+            'timeout' => 15,
+        ));
+
+        if (is_wp_error($response)) {
+            return $response;
+        }
+
+        $code = (int) wp_remote_retrieve_response_code($response);
+        if ($code < 200 || $code >= 300) {
+            $body = wp_remote_retrieve_body($response);
+            $decoded = json_decode($body, true);
+            $message = is_array($decoded) && isset($decoded['message'])
+                ? (string) $decoded['message']
+                : sprintf(__('Meilisearch returned HTTP %d', "scry-search"), $code);
+            return new WP_Error('scry_ms_embedders_http', $message);
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+        if (!is_array($body)) {
+            return array();
+        }
+
+        return $body;
+    }
+
+    /**
+     * Strip apiKey; expose has_api_key so the admin UI can say a key exists.
+     *
+     * @param array $embedders Meilisearch embedder map.
+     * @return array<string,array>
+     */
+    private function sanitize_embedders_for_browser($embedders) {
+        $safe = array();
+        if (!is_array($embedders)) {
+            return $safe;
+        }
+
+        foreach ($embedders as $name => $config) {
+            if (!is_string($name) || $name === '' || !is_array($config)) {
+                continue;
+            }
+            $has_key = !empty($config['apiKey']);
+            unset($config['apiKey']);
+            $config['has_api_key'] = $has_key;
+            $safe[$name] = $config;
+        }
+
+        return $safe;
     }
 }
