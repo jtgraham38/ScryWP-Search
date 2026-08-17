@@ -1580,6 +1580,17 @@
                     dictionaryChips.syncHiddenInputs();
                     typoDisableWordsChips.syncHiddenInputs();
                     typoDisableAttributesChips.syncHiddenInputs();
+
+                    var hybridEnabled = settingsForm
+                        ? settingsForm.querySelector('.scrywp-hy-hybrid-section input[name="hybrid_enabled"]')
+                        : null;
+                    var hybridEmbedder = settingsForm
+                        ? settingsForm.querySelector('.scrywp-hy-hybrid-section select[name="hybrid_embedder"]')
+                        : null;
+                    if (hybridEnabled && hybridEmbedder && hybridEnabled.checked && !hybridEmbedder.value) {
+                        hybridEnabled.checked = false;
+                    }
+
                     var formData = settingsForm ? new FormData(settingsForm) : new FormData();
                     formData.set('action', scrywpIndexes.actions.updateIndexSettings);
                     formData.set('nonce', scrywpIndexes.nonces.updateIndexSettings);
