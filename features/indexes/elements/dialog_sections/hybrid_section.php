@@ -6,7 +6,7 @@ if (!defined('ABSPATH')) {
 
 $index_name = isset($index['index_name']) ? (string) $index['index_name'] : '';
 $id_prefix = preg_replace('/[^A-Za-z0-9_-]/', '_', $index_name);
-$hybrid = $this->get_hybrid_settings($index_name);
+$hybrid = $indexes_feature->get_hybrid_settings($index_name);
 
 $embedder_names = array();
 if ($hybrid['embedder'] !== '') {
