@@ -1,5 +1,11 @@
 /**
- * List and save Meilisearch embedders for the open Configure Index dialog (this index only).
+ * Hybrid embedder CRUD for the open Configure Index dialog (this index only).
+ *
+ * The browser never talks to Meilisearch. post() hits admin-ajax.php; PHP holds the admin key
+ * and GET/PATCHes /indexes/{uid}/settings/embedders.
+ *
+ * Wrapped in an IIFE so these helpers are not global. scrywpHybridEmbedders comes from
+ * wp_localize_script (ajax URL, action names, nonces, i18n strings).
  */
 (function () {
     'use strict';
@@ -8,6 +14,7 @@
         return;
     }
 
+    // Last GET per index uid, used by Edit so we do not need a second fetch.
     var embeddersCache = {};
 
     function ready(fn) {
@@ -45,6 +52,7 @@
         statusEl.appendChild(notice);
     }
 
+    // POST to WordPress admin-ajax.php (not Meilisearch). timeoutMs aborts hung Ollama/Meili waits.
     function post(action, nonce, fields, timeoutMs) {
         var body = new FormData();
         body.set('action', action);
@@ -88,6 +96,7 @@
             });
     }
 
+    // Show/hide URL, dimensions, API key, model, template based on source. Scoped to this dialog.
     function toggleSourceFields(section) {
         var sourceSelect = section.querySelector('.scrywp-hy-embedder-source');
         var source = sourceSelect ? sourceSelect.value : 'openAi';
@@ -173,7 +182,7 @@
 
         if (nameInput) {
             nameInput.value = name;
-            nameInput.readOnly = true;
+            nameInput.readOnly = true; // Meili keys embedders by name; renaming would create a second embedder.
         }
         if (sourceSelect) {
             sourceSelect.value = config.source || 'openAi';
@@ -182,7 +191,7 @@
             modelInput.value = config.model || '';
         }
         if (apiKeyInput) {
-            apiKeyInput.value = '';
+            apiKeyInput.value = ''; // Never put the key in the DOM; blank means keep existing on save.
         }
         if (urlInput) {
             urlInput.value = config.url || '';
@@ -218,6 +227,7 @@
         });
 
         if (current && names.indexOf(current) === -1) {
+            // WP backup still has a name Meili no longer has — keep it selectable until Save Settings.
             var extra = document.createElement('option');
             extra.value = current;
             extra.textContent = current;
@@ -331,6 +341,7 @@
             setStatus(section, '', 'info');
         }
 
+        // List this index only — index_name is required by PHP.
         return post(
             scrywpHybridEmbedders.actions.list,
             scrywpHybridEmbedders.nonces.list,
@@ -367,7 +378,7 @@
         }
 
         var fields = {
-            index_name: indexName,
+            index_name: indexName, // PHP PATCHes only this uid.
             name: name,
             source: (section.querySelector('.scrywp-hy-embedder-source') || {}).value || '',
             model: ((section.querySelector('.scrywp-hy-embedder-model') || {}).value || '').trim(),
@@ -447,6 +458,7 @@
                 var cleared = !!(data.data && data.data.cleared_selection);
 
                 if (select && (select.value === name || (select.getAttribute('data-selected') || '') === name || cleared)) {
+                    // Keep the open dialog in sync with PHP clearing the WP backup selection.
                     select.setAttribute('data-selected', '');
                     select.value = '';
                     if (enabled) {
@@ -485,6 +497,7 @@
         document.addEventListener(
             'click',
             function (event) {
+                // Capture phase: start the GET as soon as Configure Index is clicked.
                 var configure = event.target && event.target.closest
                     ? event.target.closest('.scrywp-configure-index-button')
                     : null;

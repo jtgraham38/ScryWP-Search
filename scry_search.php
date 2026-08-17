@@ -30,6 +30,7 @@ use jtgraham38\jgwordpresskit\PluginFeature;
 $config = array(
     'hook_prefix' => 'scry_ms_',    //set a separate prefix because changing it will break dependent plugins
     // Hybrid search defaults (Configure Index → Hybrid Search).
+    // Meilisearch source names are camelCase as in their embedders API.
     'default_semantic_ratio' => 0.5, // 0 = keyword, 1 = fully semantic
     'default_document_template' => "{{doc.post_title}}\n{{doc.post_excerpt}}",
     'embedder_sources' => array(

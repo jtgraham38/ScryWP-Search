@@ -1,4 +1,19 @@
 <?php
+/**
+ * Configure Index → Hybrid Search tab.
+ *
+ * Storage:
+ * - Enable / selected embedder name / ratio → WordPress backup (name= fields, Save Settings).
+ * - Embedder definitions (model, URL, key) → Meilisearch for THIS index only (JS + AJAX).
+ *
+ * This file is included from index_settings_dialog.php, which is itself included from
+ * the admin page. $this is the admin-page feature, not indexes — use $indexes_feature.
+ *
+ * The add/update block is a <div>, not a <form>: we are already inside the Configure Index
+ * <form>. CRUD inputs have no name= so Save Settings will not POST them. Buttons are
+ * type="button" so they do not submit that parent form. IDs use $id_prefix so post/page
+ * dialogs do not share the same id.
+ */
 //exit if accessed directly
 if (!defined('ABSPATH')) {
     exit;
@@ -10,6 +25,7 @@ $hybrid = $indexes_feature->get_hybrid_settings($index_name);
 $embedder_sources = (array) $indexes_feature->config('embedder_sources');
 $default_document_template = (string) $indexes_feature->config('default_document_template');
 
+// JS replaces this list from Meilisearch; keep the saved name so the <select> is not empty before AJAX.
 $embedder_names = array();
 if ($hybrid['embedder'] !== '') {
     $embedder_names[] = $hybrid['embedder'];
@@ -89,6 +105,7 @@ if ($hybrid['embedder'] !== '') {
         </p>
     </div>
 
+    <?php // Horizontal rule: prefs above, Meilisearch embedder CRUD below. ?>
     <hr class="scrywp-hy-hybrid-separator">
 
     <div class="scrywp-hy-embedders">
@@ -104,6 +121,7 @@ if ($hybrid['embedder'] !== '') {
         </div>
 
         <h5 class="scrywp-hy-embedders-heading"><?php esc_html_e('Add / update embedder', "scry-search"); ?></h5>
+        <?php // Not a <form>: nested forms inside Configure Index are invalid and steal Save Settings. ?>
         <div class="scrywp-hy-embedder-form" autocomplete="off">
             <p>
                 <label for="<?php echo esc_attr($id_prefix); ?>_hy_embedder_name">
@@ -162,6 +180,7 @@ if ($hybrid['embedder'] !== '') {
             </p>
 
             <p class="scrywp-hy-field-url" hidden>
+                <?php // hidden until JS sees source=ollama. localhost inside Docker is the Meili container, not the laptop. ?>
                 <label for="<?php echo esc_attr($id_prefix); ?>_hy_embedder_url">
                     <?php esc_html_e('URL', "scry-search"); ?>
                 </label><br>
@@ -202,6 +221,7 @@ if ($hybrid['embedder'] !== '') {
             </p>
 
             <p class="scrywp-hy-embedder-form-actions">
+                <?php // type="button": Enter in these fields must not submit Configure Index Save Settings. ?>
                 <button type="button" class="button button-primary scrywp-hy-embedder-save">
                     <?php esc_html_e('Save embedder', "scry-search"); ?>
                 </button>

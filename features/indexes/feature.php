@@ -42,6 +42,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         add_action('wp_ajax_' . $this->prefixed('search_index'), array($this, 'ajax_search_index'));
         add_action('wp_ajax_' . $this->prefixed('get_index_settings'), array($this, 'ajax_get_index_settings'));
         add_action('wp_ajax_' . $this->prefixed('update_index_settings'), array($this, 'ajax_update_index_settings'));
+        // Hybrid embedders: browser POSTs here; PHP talks to Meilisearch (admin key never goes to JS).
         add_action('wp_ajax_' . $this->prefixed('list_embedders'), array($this, 'ajax_list_embedders'));
         add_action('wp_ajax_' . $this->prefixed('save_embedder'), array($this, 'ajax_save_embedder'));
         add_action('wp_ajax_' . $this->prefixed('delete_embedder'), array($this, 'ajax_delete_embedder'));
@@ -510,6 +511,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             )
         );
 
+        // Hybrid CRUD UI on Configure Index (this index only). filemtime busts the browser cache.
         wp_enqueue_style(
             $this->prefixed('hybrid-embedders-styles'),
             plugin_dir_url(__FILE__) . 'assets/css/hybrid_embedders.css',
@@ -527,7 +529,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
 
         wp_localize_script(
             $this->prefixed('hybrid-embedders-script'),
-            'scrywpHybridEmbedders',
+            'scrywpHybridEmbedders', // JS global: ajaxUrl, actions, nonces, i18n (translated strings).
             array(
                 'ajaxUrl' => admin_url('admin-ajax.php'),
                 'actions' => array(
@@ -1487,6 +1489,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             'filterable_attributes' => $filterable_attributes,
             'dictionary' => $dictionary,
             'typo_tolerance' => $typo_tolerance,
+            // Prefs only (enabled / embedder name / ratio). Embedder defs stay in Meilisearch until chunk 7.
             'hybrid' => $this->get_hybrid_settings_from_post(),
         );
 
@@ -1904,6 +1907,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
 
     /**
      * Hybrid prefs stored in the WP index settings backup for this index.
+     * Not the embedder definition — that lives on Meilisearch. enabled is forced off if embedder is empty.
      *
      * @param string $index_name Meilisearch index uid.
      * @return array{enabled:bool,embedder:string,semantic_ratio:float}
@@ -1939,7 +1943,9 @@ class ScrySearch_IndexesFeature extends PluginFeature {
     }
 
     /**
-     * Hybrid prefs from Configure Index POST. Unchecked checkbox is omitted from POST.
+     * Hybrid prefs from Configure Index POST (Save Settings).
+     * Unchecked checkboxes are omitted from POST — missing hybrid_enabled means off.
+     * Empty embedder forces enabled off so hybrid cannot be "on" with nothing selected.
      *
      * @return array{enabled:bool,embedder:string,semantic_ratio:float}
      */
@@ -1974,7 +1980,8 @@ class ScrySearch_IndexesFeature extends PluginFeature {
     }
 
     /**
-     * GET embedders for one Scry index. API keys never leave PHP as plaintext.
+     * AJAX: GET embedders for one Scry index. Browser never sees apiKey (has_api_key only).
+     * Requires a known Scry index_name so callers cannot probe arbitrary Meili uids.
      */
     public function ajax_list_embedders() {
         if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('list_embedders'))) {
@@ -2012,7 +2019,9 @@ class ScrySearch_IndexesFeature extends PluginFeature {
     }
 
     /**
-     * PATCH one embedder onto one Scry index. Does not fan out to other indexes.
+     * AJAX: PATCH one embedder onto one Scry index. Does not copy to other indexes.
+     * Blank api_key on edit keeps the existing Meili key. Does not wait for the async Meili task
+     * (Ollama/embeddings can hang that wait).
      */
     public function ajax_save_embedder() {
         if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('save_embedder'))) {
@@ -2083,6 +2092,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         }
 
         if ($api_key === '') {
+            // Edit with a blank key: reuse the key already stored on this index.
             $existing = $this->get_embedders_for_index($index_name);
             if (!is_wp_error($existing) && isset($existing[$name]['apiKey']) && $existing[$name]['apiKey'] !== '') {
                 $config['apiKey'] = $existing[$name]['apiKey'];
@@ -2110,7 +2120,8 @@ class ScrySearch_IndexesFeature extends PluginFeature {
     }
 
     /**
-     * Remove one embedder from one Scry index. Does not fan out to other indexes.
+     * AJAX: remove one embedder from one Scry index (Meili PATCH { name: null }).
+     * If this index's WP backup had that name selected, clear it and turn hybrid off.
      */
     public function ajax_delete_embedder() {
         if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('delete_embedder'))) {
@@ -2145,7 +2156,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         $response = $this->meilisearch_request(
             'PATCH',
             'indexes/' . rawurlencode($index_name) . '/settings/embedders',
-            array($name => null)
+            array($name => null) // Meilisearch delete: JSON null for that key, not HTTP DELETE.
         );
 
         if (is_wp_error($response)) {
@@ -2196,6 +2207,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
 
     /**
      * Raw embedder map from Meilisearch for one index (includes apiKey).
+     * PHP-only — always run through sanitize_embedders_for_browser before wp_send_json_*.
      *
      * @param string $index_name Meilisearch index uid.
      * @return array|WP_Error
@@ -2242,7 +2254,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
     }
 
     /**
-     * Strip apiKey; expose has_api_key so the admin UI can say a key exists.
+     * Strip apiKey; expose has_api_key so the admin UI can say a key exists without sending it.
      *
      * @param array $embedders Meilisearch embedder map.
      * @return array<string,array>
@@ -2268,6 +2280,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
 
     /**
      * Low-level Meilisearch HTTP helper (WP HTTP API).
+     * Used for PATCH embedders; GET list still uses wp_remote_get in get_embedders_for_index().
      *
      * @param string     $method GET|PATCH|POST|DELETE
      * @param string     $path   Path after host.

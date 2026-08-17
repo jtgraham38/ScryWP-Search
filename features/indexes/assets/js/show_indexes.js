@@ -1581,6 +1581,8 @@
                     typoDisableWordsChips.syncHiddenInputs();
                     typoDisableAttributesChips.syncHiddenInputs();
 
+                    // Hybrid cannot stay enabled with no embedder. Uncheck before FormData
+                    // so the checkbox is omitted from POST (PHP treats missing as off).
                     var hybridEnabled = settingsForm
                         ? settingsForm.querySelector('.scrywp-hy-hybrid-section input[name="hybrid_enabled"]')
                         : null;
