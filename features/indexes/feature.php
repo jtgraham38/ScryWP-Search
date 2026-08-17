@@ -1432,6 +1432,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             'filterable_attributes' => $filterable_attributes,
             'dictionary' => $dictionary,
             'typo_tolerance' => $typo_tolerance,
+            'hybrid' => $this->get_hybrid_settings_from_post(),
         );
 
         //hook to allow other plugins to modify the index settings backup
@@ -1877,6 +1878,41 @@ class ScrySearch_IndexesFeature extends PluginFeature {
 
         return array(
             'enabled' => $enabled,
+            'embedder' => $embedder,
+            'semantic_ratio' => $ratio,
+        );
+    }
+
+    /**
+     * Hybrid prefs from Configure Index POST. Unchecked checkbox is omitted from POST.
+     *
+     * @return array{enabled:bool,embedder:string,semantic_ratio:float}
+     */
+    private function get_hybrid_settings_from_post() {
+        $enabled = isset($_POST['hybrid_enabled']) && (string) wp_unslash($_POST['hybrid_enabled']) === '1';
+
+        $embedder = '';
+        if (isset($_POST['hybrid_embedder'])) {
+            $embedder = sanitize_text_field(wp_unslash($_POST['hybrid_embedder']));
+        }
+
+        if ($embedder === '') {
+            $enabled = false;
+        }
+
+        $default_ratio = (float) $this->config('default_semantic_ratio');
+        if ($default_ratio < 0 || $default_ratio > 1) {
+            $default_ratio = 0.5;
+        }
+
+        $ratio = $default_ratio;
+        if (isset($_POST['hybrid_semantic_ratio'])) {
+            $ratio = (float) wp_unslash($_POST['hybrid_semantic_ratio']);
+        }
+        $ratio = max(0.0, min(1.0, $ratio));
+
+        return array(
+            'enabled' => (bool) $enabled,
             'embedder' => $embedder,
             'semantic_ratio' => $ratio,
         );
