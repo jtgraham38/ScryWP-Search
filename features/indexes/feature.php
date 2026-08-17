@@ -44,6 +44,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         add_action('wp_ajax_' . $this->prefixed('update_index_settings'), array($this, 'ajax_update_index_settings'));
         add_action('wp_ajax_' . $this->prefixed('list_embedders'), array($this, 'ajax_list_embedders'));
         add_action('wp_ajax_' . $this->prefixed('save_embedder'), array($this, 'ajax_save_embedder'));
+        add_action('wp_ajax_' . $this->prefixed('delete_embedder'), array($this, 'ajax_delete_embedder'));
     }
 
     //function to index a post when it is created or updated
@@ -532,10 +533,12 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                 'actions' => array(
                     'list' => $this->prefixed('list_embedders'),
                     'save' => $this->prefixed('save_embedder'),
+                    'delete' => $this->prefixed('delete_embedder'),
                 ),
                 'nonces' => array(
                     'list' => wp_create_nonce($this->prefixed('list_embedders')),
                     'save' => wp_create_nonce($this->prefixed('save_embedder')),
+                    'delete' => wp_create_nonce($this->prefixed('delete_embedder')),
                 ),
                 'i18n' => array(
                     'loading' => __('Loading embedders…', "scry-search"),
@@ -545,6 +548,10 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                     'noKey' => __('No API key', "scry-search"),
                     'selectEmbedder' => __('— Select an embedder —', "scry-search"),
                     'edit' => __('Edit', "scry-search"),
+                    'delete' => __('Delete', "scry-search"),
+                    'deleting' => __('Deleting…', "scry-search"),
+                    'confirmDelete' => __('Delete this embedder from this index? Other indexes are not changed.', "scry-search"),
+                    'deleteFailed' => __('Failed to delete embedder.', "scry-search"),
                     'saving' => __('Saving…', "scry-search"),
                     'saveEmbedder' => __('Save embedder', "scry-search"),
                     'saveFailed' => __('Failed to save embedder.', "scry-search"),
@@ -2100,6 +2107,91 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             'name' => $name,
             'index_name' => $index_name,
         ));
+    }
+
+    /**
+     * Remove one embedder from one Scry index. Does not fan out to other indexes.
+     */
+    public function ajax_delete_embedder() {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('delete_embedder'))) {
+            wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
+            return;
+        }
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
+            return;
+        }
+
+        $index_name = isset($_POST['index_name']) ? sanitize_text_field(wp_unslash($_POST['index_name'])) : '';
+        if ($index_name === '') {
+            wp_send_json_error(array('message' => __('Please provide an index name', "scry-search")));
+            return;
+        }
+
+        $index_names = $this->get_index_names();
+        if (!in_array($index_name, $index_names, true)) {
+            wp_send_json_error(array('message' => __('Invalid index name', "scry-search")));
+            return;
+        }
+
+        $name = isset($_POST['name']) ? sanitize_text_field(wp_unslash($_POST['name'])) : '';
+        $name = preg_replace('/[^a-zA-Z0-9_-]/', '', $name);
+        if ($name === '') {
+            wp_send_json_error(array('message' => __('Embedder name is required.', "scry-search")));
+            return;
+        }
+
+        $response = $this->meilisearch_request(
+            'PATCH',
+            'indexes/' . rawurlencode($index_name) . '/settings/embedders',
+            array($name => null)
+        );
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+            return;
+        }
+
+        $cleared_selection = $this->clear_embedder_from_index_backup($index_name, $name);
+
+        wp_send_json_success(array(
+            'message' => __('Embedder deleted from this index.', "scry-search"),
+            'name' => $name,
+            'index_name' => $index_name,
+            'cleared_selection' => $cleared_selection,
+        ));
+    }
+
+    /**
+     * If this index's WP backup had that embedder selected, clear it and turn hybrid off.
+     *
+     * @param string $index_name     Meilisearch index uid.
+     * @param string $embedder_name  Embedder that was deleted.
+     * @return bool True if the backup selection was cleared.
+     */
+    private function clear_embedder_from_index_backup($index_name, $embedder_name) {
+        $embedder_name = (string) $embedder_name;
+        if ($index_name === '' || $embedder_name === '') {
+            return false;
+        }
+
+        $backup_key = $this->prefixed('index_settings_backup_') . $index_name;
+        $backup = get_option($backup_key, array());
+        if (!is_array($backup) || !isset($backup['hybrid']) || !is_array($backup['hybrid'])) {
+            return false;
+        }
+
+        $current = isset($backup['hybrid']['embedder']) ? (string) $backup['hybrid']['embedder'] : '';
+        if ($current !== $embedder_name) {
+            return false;
+        }
+
+        $backup['hybrid']['embedder'] = '';
+        $backup['hybrid']['enabled'] = false;
+        update_option($backup_key, $backup);
+
+        return true;
     }
 
     /**
