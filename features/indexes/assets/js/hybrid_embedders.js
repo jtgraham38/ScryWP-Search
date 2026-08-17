@@ -1,5 +1,5 @@
 /**
- * Load Meilisearch embedders for the open Configure Index dialog (this index only).
+ * List and save Meilisearch embedders for the open Configure Index dialog (this index only).
  */
 (function () {
     'use strict';
@@ -7,6 +7,8 @@
     if (typeof scrywpHybridEmbedders === 'undefined') {
         return;
     }
+
+    var embeddersCache = {};
 
     function ready(fn) {
         if (document.readyState !== 'loading') {
@@ -41,6 +43,159 @@
         p.textContent = message;
         notice.appendChild(p);
         statusEl.appendChild(notice);
+    }
+
+    function post(action, nonce, fields, timeoutMs) {
+        var body = new FormData();
+        body.set('action', action);
+        body.set('nonce', nonce);
+        Object.keys(fields || {}).forEach(function (key) {
+            body.set(key, fields[key]);
+        });
+
+        var controller = null;
+        var timer = null;
+        var opts = {
+            method: 'POST',
+            body: body,
+            credentials: 'same-origin'
+        };
+        if (timeoutMs && typeof AbortController !== 'undefined') {
+            controller = new AbortController();
+            opts.signal = controller.signal;
+            timer = setTimeout(function () {
+                controller.abort();
+            }, timeoutMs);
+        }
+
+        return fetch(scrywpHybridEmbedders.ajaxUrl, opts)
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .catch(function (err) {
+                if (err && err.name === 'AbortError') {
+                    throw new Error(scrywpHybridEmbedders.i18n.saveTimeout);
+                }
+                throw err;
+            })
+            .finally(function () {
+                if (timer) {
+                    clearTimeout(timer);
+                }
+            });
+    }
+
+    function toggleSourceFields(section) {
+        var sourceSelect = section.querySelector('.scrywp-hy-embedder-source');
+        var source = sourceSelect ? sourceSelect.value : 'openAi';
+        var urlRow = section.querySelector('.scrywp-hy-field-url');
+        var dimsRow = section.querySelector('.scrywp-hy-field-dimensions');
+        var templateRow = section.querySelector('.scrywp-hy-field-template');
+        var apiKeyRow = section.querySelector('.scrywp-hy-field-api-key');
+        var modelRow = section.querySelector('.scrywp-hy-field-model');
+
+        if (urlRow) {
+            urlRow.hidden = source !== 'ollama';
+        }
+        if (dimsRow) {
+            dimsRow.hidden = source !== 'userProvided';
+        }
+        if (templateRow) {
+            templateRow.hidden = source === 'userProvided';
+        }
+        if (apiKeyRow) {
+            apiKeyRow.hidden = source === 'userProvided';
+        }
+        if (modelRow) {
+            modelRow.hidden = source === 'userProvided';
+        }
+    }
+
+    function resetSaveButton(section) {
+        var saveBtn = section.querySelector('.scrywp-hy-embedder-save');
+        if (!saveBtn) {
+            return;
+        }
+        saveBtn.disabled = false;
+        saveBtn.textContent = scrywpHybridEmbedders.i18n.saveEmbedder;
+    }
+
+    function resetForm(section) {
+        var nameInput = section.querySelector('.scrywp-hy-embedder-name');
+        var sourceSelect = section.querySelector('.scrywp-hy-embedder-source');
+        var modelInput = section.querySelector('.scrywp-hy-embedder-model');
+        var apiKeyInput = section.querySelector('.scrywp-hy-embedder-api-key');
+        var urlInput = section.querySelector('.scrywp-hy-embedder-url');
+        var dimsInput = section.querySelector('.scrywp-hy-embedder-dimensions');
+        var template = section.querySelector('.scrywp-hy-embedder-template');
+
+        if (nameInput) {
+            nameInput.value = '';
+            nameInput.readOnly = false;
+        }
+        if (sourceSelect) {
+            sourceSelect.value = 'openAi';
+        }
+        if (modelInput) {
+            modelInput.value = '';
+        }
+        if (apiKeyInput) {
+            apiKeyInput.value = '';
+        }
+        if (urlInput) {
+            urlInput.value = '';
+        }
+        if (dimsInput) {
+            dimsInput.value = '';
+        }
+        if (template) {
+            template.value = template.defaultValue || '';
+        }
+
+        resetSaveButton(section);
+        toggleSourceFields(section);
+    }
+
+    function fillForm(section, name, config) {
+        if (!config) {
+            return;
+        }
+        var nameInput = section.querySelector('.scrywp-hy-embedder-name');
+        var sourceSelect = section.querySelector('.scrywp-hy-embedder-source');
+        var modelInput = section.querySelector('.scrywp-hy-embedder-model');
+        var apiKeyInput = section.querySelector('.scrywp-hy-embedder-api-key');
+        var urlInput = section.querySelector('.scrywp-hy-embedder-url');
+        var dimsInput = section.querySelector('.scrywp-hy-embedder-dimensions');
+        var template = section.querySelector('.scrywp-hy-embedder-template');
+
+        if (nameInput) {
+            nameInput.value = name;
+            nameInput.readOnly = true;
+        }
+        if (sourceSelect) {
+            sourceSelect.value = config.source || 'openAi';
+        }
+        if (modelInput) {
+            modelInput.value = config.model || '';
+        }
+        if (apiKeyInput) {
+            apiKeyInput.value = '';
+        }
+        if (urlInput) {
+            urlInput.value = config.url || '';
+        }
+        if (dimsInput) {
+            dimsInput.value = config.dimensions || '';
+        }
+        if (template) {
+            template.value = config.documentTemplate || template.defaultValue || '';
+        }
+
+        toggleSourceFields(section);
+        setStatus(section, config.has_api_key ? scrywpHybridEmbedders.i18n.keepKey : '', 'info');
     }
 
     function fillSelect(select, names, selected) {
@@ -78,15 +233,22 @@
     function renderList(section, embedders) {
         var listEl = section.querySelector('.scrywp-hy-embedders-list');
         var select = section.querySelector('select[name="hybrid_embedder"]');
+        var indexName = section.getAttribute('data-index-name') || '';
         if (!listEl) {
             return;
         }
 
+        embeddersCache[indexName] = embedders || {};
         listEl.innerHTML = '';
-        var names = Object.keys(embedders || {});
+        var names = Object.keys(embeddersCache[indexName]);
         names.sort();
 
-        fillSelect(select, names, select ? select.getAttribute('data-selected') : '');
+        var currentSelected = select ? select.value : '';
+        fillSelect(
+            select,
+            names,
+            currentSelected || (select ? select.getAttribute('data-selected') : '')
+        );
 
         if (names.length === 0) {
             var empty = document.createElement('p');
@@ -97,9 +259,12 @@
         }
 
         names.forEach(function (name) {
-            var config = embedders[name] || {};
+            var config = embeddersCache[indexName][name] || {};
             var row = document.createElement('div');
             row.className = 'scrywp-hy-embedder-row';
+
+            var meta = document.createElement('div');
+            meta.className = 'scrywp-hy-embedder-row-meta';
 
             var title = document.createElement('span');
             title.className = 'scrywp-hy-embedder-row-name';
@@ -117,16 +282,28 @@
             parts.push(config.has_api_key ? scrywpHybridEmbedders.i18n.hasKey : scrywpHybridEmbedders.i18n.noKey);
             detail.textContent = parts.join(' · ');
 
-            row.appendChild(title);
-            row.appendChild(detail);
+            meta.appendChild(title);
+            meta.appendChild(detail);
+
+            var editBtn = document.createElement('button');
+            editBtn.type = 'button';
+            editBtn.className = 'button button-small scrywp-hy-embedder-edit';
+            editBtn.textContent = scrywpHybridEmbedders.i18n.edit;
+            editBtn.addEventListener('click', function () {
+                fillForm(section, name, config);
+            });
+
+            row.appendChild(meta);
+            row.appendChild(editBtn);
             listEl.appendChild(row);
         });
     }
 
-    function loadEmbedders(indexName) {
+    function loadEmbedders(indexName, options) {
+        options = options || {};
         var section = findSection(indexName);
         if (!section || !indexName) {
-            return;
+            return Promise.resolve();
         }
 
         var listEl = section.querySelector('.scrywp-hy-embedders-list');
@@ -137,24 +314,15 @@
             loading.textContent = scrywpHybridEmbedders.i18n.loading;
             listEl.appendChild(loading);
         }
-        setStatus(section, '', 'info');
+        if (!options.keepStatus) {
+            setStatus(section, '', 'info');
+        }
 
-        var body = new FormData();
-        body.set('action', scrywpHybridEmbedders.action);
-        body.set('nonce', scrywpHybridEmbedders.nonce);
-        body.set('index_name', indexName);
-
-        fetch(scrywpHybridEmbedders.ajaxUrl, {
-            method: 'POST',
-            body: body,
-            credentials: 'same-origin'
-        })
-            .then(function (response) {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
+        return post(
+            scrywpHybridEmbedders.actions.list,
+            scrywpHybridEmbedders.nonces.list,
+            { index_name: indexName }
+        )
             .then(function (data) {
                 if (!data.success) {
                     var msg = data.data && data.data.message ? data.data.message : scrywpHybridEmbedders.i18n.loadFailed;
@@ -174,22 +342,114 @@
             });
     }
 
+    function saveEmbedder(section) {
+        var indexName = section.getAttribute('data-index-name') || '';
+        var saveBtn = section.querySelector('.scrywp-hy-embedder-save');
+        var nameInput = section.querySelector('.scrywp-hy-embedder-name');
+        var name = nameInput ? nameInput.value.trim() : '';
+
+        if (!indexName || !name) {
+            setStatus(section, scrywpHybridEmbedders.i18n.nameRequired, 'error');
+            return;
+        }
+
+        var fields = {
+            index_name: indexName,
+            name: name,
+            source: (section.querySelector('.scrywp-hy-embedder-source') || {}).value || '',
+            model: ((section.querySelector('.scrywp-hy-embedder-model') || {}).value || '').trim(),
+            api_key: (section.querySelector('.scrywp-hy-embedder-api-key') || {}).value || '',
+            url: ((section.querySelector('.scrywp-hy-embedder-url') || {}).value || '').trim(),
+            dimensions: (section.querySelector('.scrywp-hy-embedder-dimensions') || {}).value || '',
+            document_template: (section.querySelector('.scrywp-hy-embedder-template') || {}).value || ''
+        };
+
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.textContent = scrywpHybridEmbedders.i18n.saving;
+        }
+
+        post(
+            scrywpHybridEmbedders.actions.save,
+            scrywpHybridEmbedders.nonces.save,
+            fields,
+            30000
+        )
+            .then(function (data) {
+                if (!data.success) {
+                    throw new Error(
+                        (data.data && data.data.message) || scrywpHybridEmbedders.i18n.saveFailed
+                    );
+                }
+                resetForm(section);
+                return loadEmbedders(indexName, { keepStatus: true }).then(function () {
+                    setStatus(
+                        section,
+                        (data.data && data.data.message) || scrywpHybridEmbedders.i18n.saveEmbedder,
+                        'success'
+                    );
+                });
+            })
+            .catch(function (err) {
+                setStatus(section, (err && err.message) || scrywpHybridEmbedders.i18n.saveFailed, 'error');
+            })
+            .finally(function () {
+                resetSaveButton(section);
+            });
+    }
+
     ready(function () {
+        document.querySelectorAll('.scrywp-hy-hybrid-section').forEach(function (section) {
+            toggleSourceFields(section);
+        });
+
         document.addEventListener(
             'click',
             function (event) {
-                var button = event.target && event.target.closest
+                var configure = event.target && event.target.closest
                     ? event.target.closest('.scrywp-configure-index-button')
                     : null;
-                if (!button) {
+                if (configure) {
+                    var indexName = configure.getAttribute('data-index-name');
+                    if (indexName) {
+                        loadEmbedders(indexName);
+                    }
                     return;
                 }
-                var indexName = button.getAttribute('data-index-name');
-                if (indexName) {
-                    loadEmbedders(indexName);
+
+                var saveBtn = event.target && event.target.closest
+                    ? event.target.closest('.scrywp-hy-embedder-save')
+                    : null;
+                if (saveBtn) {
+                    var saveSection = saveBtn.closest('.scrywp-hy-hybrid-section');
+                    if (saveSection) {
+                        saveEmbedder(saveSection);
+                    }
+                    return;
+                }
+
+                var resetBtn = event.target && event.target.closest
+                    ? event.target.closest('.scrywp-hy-embedder-reset')
+                    : null;
+                if (resetBtn) {
+                    var resetSection = resetBtn.closest('.scrywp-hy-hybrid-section');
+                    if (resetSection) {
+                        resetForm(resetSection);
+                        setStatus(resetSection, '', 'info');
+                    }
                 }
             },
             true
         );
+
+        document.addEventListener('change', function (event) {
+            if (!event.target || !event.target.classList.contains('scrywp-hy-embedder-source')) {
+                return;
+            }
+            var section = event.target.closest('.scrywp-hy-hybrid-section');
+            if (section) {
+                toggleSourceFields(section);
+            }
+        });
     });
 })();

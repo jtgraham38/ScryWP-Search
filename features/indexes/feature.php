@@ -43,6 +43,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         add_action('wp_ajax_' . $this->prefixed('get_index_settings'), array($this, 'ajax_get_index_settings'));
         add_action('wp_ajax_' . $this->prefixed('update_index_settings'), array($this, 'ajax_update_index_settings'));
         add_action('wp_ajax_' . $this->prefixed('list_embedders'), array($this, 'ajax_list_embedders'));
+        add_action('wp_ajax_' . $this->prefixed('save_embedder'), array($this, 'ajax_save_embedder'));
     }
 
     //function to index a post when it is created or updated
@@ -528,8 +529,14 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             'scrywpHybridEmbedders',
             array(
                 'ajaxUrl' => admin_url('admin-ajax.php'),
-                'action' => $this->prefixed('list_embedders'),
-                'nonce' => wp_create_nonce($this->prefixed('list_embedders')),
+                'actions' => array(
+                    'list' => $this->prefixed('list_embedders'),
+                    'save' => $this->prefixed('save_embedder'),
+                ),
+                'nonces' => array(
+                    'list' => wp_create_nonce($this->prefixed('list_embedders')),
+                    'save' => wp_create_nonce($this->prefixed('save_embedder')),
+                ),
                 'i18n' => array(
                     'loading' => __('Loading embedders…', "scry-search"),
                     'none' => __('No embedders on this index yet.', "scry-search"),
@@ -537,6 +544,13 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                     'hasKey' => __('API key set', "scry-search"),
                     'noKey' => __('No API key', "scry-search"),
                     'selectEmbedder' => __('— Select an embedder —', "scry-search"),
+                    'edit' => __('Edit', "scry-search"),
+                    'saving' => __('Saving…', "scry-search"),
+                    'saveEmbedder' => __('Save embedder', "scry-search"),
+                    'saveFailed' => __('Failed to save embedder.', "scry-search"),
+                    'nameRequired' => __('Embedder name is required (letters, numbers, _ or -).', "scry-search"),
+                    'keepKey' => __('API key set — leave blank to keep it.', "scry-search"),
+                    'saveTimeout' => __('Save timed out waiting for Meilisearch. If Meilisearch is in Docker, Ollama often needs host.docker.internal.', "scry-search"),
                 ),
             )
         );
@@ -1991,6 +2005,104 @@ class ScrySearch_IndexesFeature extends PluginFeature {
     }
 
     /**
+     * PATCH one embedder onto one Scry index. Does not fan out to other indexes.
+     */
+    public function ajax_save_embedder() {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('save_embedder'))) {
+            wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
+            return;
+        }
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
+            return;
+        }
+
+        $index_name = isset($_POST['index_name']) ? sanitize_text_field(wp_unslash($_POST['index_name'])) : '';
+        if ($index_name === '') {
+            wp_send_json_error(array('message' => __('Please provide an index name', "scry-search")));
+            return;
+        }
+
+        $index_names = $this->get_index_names();
+        if (!in_array($index_name, $index_names, true)) {
+            wp_send_json_error(array('message' => __('Invalid index name', "scry-search")));
+            return;
+        }
+
+        $name = isset($_POST['name']) ? sanitize_text_field(wp_unslash($_POST['name'])) : '';
+        $name = preg_replace('/[^a-zA-Z0-9_-]/', '', $name);
+        if ($name === '') {
+            wp_send_json_error(array('message' => __('Embedder name is required (letters, numbers, _ or -).', "scry-search")));
+            return;
+        }
+
+        $source = isset($_POST['source']) ? sanitize_text_field(wp_unslash($_POST['source'])) : '';
+        $allowed_sources = (array) $this->config('embedder_sources');
+        if ($allowed_sources === array()) {
+            $allowed_sources = array('openAi', 'ollama', 'huggingFace', 'userProvided');
+        }
+        if (!in_array($source, $allowed_sources, true)) {
+            wp_send_json_error(array('message' => __('Invalid embedder source.', "scry-search")));
+            return;
+        }
+
+        $model = isset($_POST['model']) ? sanitize_text_field(wp_unslash($_POST['model'])) : '';
+        $api_key = isset($_POST['api_key']) ? (string) wp_unslash($_POST['api_key']) : '';
+        $url = isset($_POST['url']) ? esc_url_raw(wp_unslash($_POST['url'])) : '';
+        $document_template = isset($_POST['document_template']) ? sanitize_textarea_field(wp_unslash($_POST['document_template'])) : '';
+        $dimensions = isset($_POST['dimensions']) ? absint($_POST['dimensions']) : 0;
+
+        $config = array(
+            'source' => $source,
+        );
+        if ($model !== '') {
+            $config['model'] = $model;
+        }
+        if ($url !== '') {
+            $config['url'] = $url;
+        }
+        if ($document_template !== '' && $source !== 'userProvided') {
+            $config['documentTemplate'] = $document_template;
+        }
+        if ($source === 'userProvided') {
+            if ($dimensions < 1) {
+                wp_send_json_error(array('message' => __('Dimensions are required for userProvided embedders.', "scry-search")));
+                return;
+            }
+            $config['dimensions'] = $dimensions;
+        } elseif ($dimensions > 0) {
+            $config['dimensions'] = $dimensions;
+        }
+
+        if ($api_key === '') {
+            $existing = $this->get_embedders_for_index($index_name);
+            if (!is_wp_error($existing) && isset($existing[$name]['apiKey']) && $existing[$name]['apiKey'] !== '') {
+                $config['apiKey'] = $existing[$name]['apiKey'];
+            }
+        } else {
+            $config['apiKey'] = $api_key;
+        }
+
+        $response = $this->meilisearch_request(
+            'PATCH',
+            'indexes/' . rawurlencode($index_name) . '/settings/embedders',
+            array($name => $config)
+        );
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+            return;
+        }
+
+        wp_send_json_success(array(
+            'message' => __('Sent to Meilisearch. It will apply this embedder in the background. Reindex to build vectors.', "scry-search"),
+            'name' => $name,
+            'index_name' => $index_name,
+        ));
+    }
+
+    /**
      * Raw embedder map from Meilisearch for one index (includes apiKey).
      *
      * @param string $index_name Meilisearch index uid.
@@ -2060,5 +2172,60 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         }
 
         return $safe;
+    }
+
+    /**
+     * Low-level Meilisearch HTTP helper (WP HTTP API).
+     *
+     * @param string     $method GET|PATCH|POST|DELETE
+     * @param string     $path   Path after host.
+     * @param array|null $body   JSON body for PATCH/POST.
+     * @return array|WP_Error
+     */
+    private function meilisearch_request($method, $path, $body = null) {
+        $url = get_option($this->prefixed('meilisearch_url'), '');
+        $key = get_option($this->prefixed('meilisearch_admin_key'), '');
+
+        if ($url === '' || $key === '') {
+            return new WP_Error(
+                'scry_ms_no_connection',
+                __('Connection settings are not configured', "scry-search")
+            );
+        }
+
+        $endpoint = trailingslashit($url) . ltrim($path, '/');
+        $args = array(
+            'method' => strtoupper($method),
+            'timeout' => 30,
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $key,
+                'Content-Type' => 'application/json',
+            ),
+        );
+
+        if ($body !== null) {
+            $args['body'] = wp_json_encode($body);
+        }
+
+        $response = wp_remote_request($endpoint, $args);
+        if (is_wp_error($response)) {
+            return $response;
+        }
+
+        $code = (int) wp_remote_retrieve_response_code($response);
+        $raw = wp_remote_retrieve_body($response);
+        $decoded = json_decode($raw, true);
+
+        if ($code < 200 || $code >= 300) {
+            $message = __('Meilisearch request failed.', "scry-search");
+            if (is_array($decoded) && isset($decoded['message'])) {
+                $message = (string) $decoded['message'];
+            } elseif ($raw !== '') {
+                $message = $raw;
+            }
+            return new WP_Error('scry_ms_meili_http', $message, array('status' => $code));
+        }
+
+        return is_array($decoded) ? $decoded : array();
     }
 }

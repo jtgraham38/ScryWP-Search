@@ -7,6 +7,8 @@ if (!defined('ABSPATH')) {
 $index_name = isset($index['index_name']) ? (string) $index['index_name'] : '';
 $id_prefix = preg_replace('/[^A-Za-z0-9_-]/', '_', $index_name);
 $hybrid = $indexes_feature->get_hybrid_settings($index_name);
+$embedder_sources = (array) $indexes_feature->config('embedder_sources');
+$default_document_template = (string) $indexes_feature->config('default_document_template');
 
 $embedder_names = array();
 if ($hybrid['embedder'] !== '') {
@@ -92,12 +94,120 @@ if ($hybrid['embedder'] !== '') {
     <div class="scrywp-hy-embedders">
         <h5 class="scrywp-hy-embedders-heading"><?php esc_html_e('Embedders on this index', "scry-search"); ?></h5>
         <p class="description">
-            <?php esc_html_e('Definitions live in Meilisearch for this index only. Add and edit come in a later step.', "scry-search"); ?>
+            <?php esc_html_e('Definitions live in Meilisearch for this index only. Saving an embedder does not copy it to other indexes.', "scry-search"); ?>
         </p>
         <div class="scrywp-hy-embedders-status" aria-live="polite"></div>
         <div class="scrywp-hy-embedders-list">
             <p class="description scrywp-hy-embedders-loading">
                 <?php esc_html_e('Open this dialog to load embedders…', "scry-search"); ?>
+            </p>
+        </div>
+
+        <h5 class="scrywp-hy-embedders-heading"><?php esc_html_e('Add / update embedder', "scry-search"); ?></h5>
+        <div class="scrywp-hy-embedder-form" autocomplete="off">
+            <p>
+                <label for="<?php echo esc_attr($id_prefix); ?>_hy_embedder_name">
+                    <?php esc_html_e('Name', "scry-search"); ?>
+                </label><br>
+                <input
+                    type="text"
+                    id="<?php echo esc_attr($id_prefix); ?>_hy_embedder_name"
+                    class="regular-text scrywp-hy-embedder-name"
+                    placeholder="default"
+                    pattern="[A-Za-z0-9_-]+"
+                >
+                <span class="description"><?php esc_html_e('Letters, numbers, underscore, hyphen. This is what the dropdown above selects.', "scry-search"); ?></span>
+            </p>
+
+            <p>
+                <label for="<?php echo esc_attr($id_prefix); ?>_hy_embedder_source">
+                    <?php esc_html_e('Source', "scry-search"); ?>
+                </label><br>
+                <select
+                    id="<?php echo esc_attr($id_prefix); ?>_hy_embedder_source"
+                    class="regular-text scrywp-hy-embedder-source"
+                >
+                    <?php foreach ($embedder_sources as $source) { ?>
+                        <option value="<?php echo esc_attr($source); ?>" <?php selected($source, 'openAi'); ?>>
+                            <?php echo esc_html($source); ?>
+                        </option>
+                    <?php } ?>
+                </select>
+            </p>
+
+            <p class="scrywp-hy-field-model">
+                <label for="<?php echo esc_attr($id_prefix); ?>_hy_embedder_model">
+                    <?php esc_html_e('Model', "scry-search"); ?>
+                </label><br>
+                <input
+                    type="text"
+                    id="<?php echo esc_attr($id_prefix); ?>_hy_embedder_model"
+                    class="regular-text scrywp-hy-embedder-model"
+                    placeholder="text-embedding-3-small"
+                >
+            </p>
+
+            <p class="scrywp-hy-field-api-key">
+                <label for="<?php echo esc_attr($id_prefix); ?>_hy_embedder_api_key">
+                    <?php esc_html_e('API key', "scry-search"); ?>
+                </label><br>
+                <input
+                    type="password"
+                    id="<?php echo esc_attr($id_prefix); ?>_hy_embedder_api_key"
+                    class="regular-text scrywp-hy-embedder-api-key"
+                    value=""
+                    autocomplete="new-password"
+                >
+                <span class="description"><?php esc_html_e('Leave blank when editing to keep the existing key.', "scry-search"); ?></span>
+            </p>
+
+            <p class="scrywp-hy-field-url" hidden>
+                <label for="<?php echo esc_attr($id_prefix); ?>_hy_embedder_url">
+                    <?php esc_html_e('URL', "scry-search"); ?>
+                </label><br>
+                <input
+                    type="url"
+                    id="<?php echo esc_attr($id_prefix); ?>_hy_embedder_url"
+                    class="regular-text scrywp-hy-embedder-url"
+                    placeholder="http://localhost:11434/api/embeddings"
+                >
+                <span class="description"><?php esc_html_e('Used for ollama. Docker Meilisearch often needs http://host.docker.internal:11434/api/embeddings.', "scry-search"); ?></span>
+            </p>
+
+            <p class="scrywp-hy-field-dimensions" hidden>
+                <label for="<?php echo esc_attr($id_prefix); ?>_hy_embedder_dimensions">
+                    <?php esc_html_e('Dimensions', "scry-search"); ?>
+                </label><br>
+                <input
+                    type="number"
+                    id="<?php echo esc_attr($id_prefix); ?>_hy_embedder_dimensions"
+                    class="small-text scrywp-hy-embedder-dimensions"
+                    min="1"
+                    step="1"
+                    value=""
+                >
+                <span class="description"><?php esc_html_e('Required for userProvided.', "scry-search"); ?></span>
+            </p>
+
+            <p class="scrywp-hy-field-template">
+                <label for="<?php echo esc_attr($id_prefix); ?>_hy_embedder_template">
+                    <?php esc_html_e('Document template', "scry-search"); ?>
+                </label><br>
+                <textarea
+                    id="<?php echo esc_attr($id_prefix); ?>_hy_embedder_template"
+                    class="large-text code scrywp-hy-embedder-template"
+                    rows="3"
+                ><?php echo esc_textarea($default_document_template); ?></textarea>
+                <span class="description"><?php esc_html_e('Liquid-style template over indexed fields, e.g. {{doc.post_title}}.', "scry-search"); ?></span>
+            </p>
+
+            <p class="scrywp-hy-embedder-form-actions">
+                <button type="button" class="button button-primary scrywp-hy-embedder-save">
+                    <?php esc_html_e('Save embedder', "scry-search"); ?>
+                </button>
+                <button type="button" class="button button-secondary scrywp-hy-embedder-reset">
+                    <?php esc_html_e('Clear form', "scry-search"); ?>
+                </button>
             </p>
         </div>
     </div>
