@@ -431,9 +431,9 @@
             return;
         }
 
-        if (deleteBtn) {
-            deleteBtn.disabled = true;
-            deleteBtn.textContent = scrywpHybridEmbedders.i18n.deleting;
+        var row = deleteBtn && deleteBtn.closest('.scrywp-hy-embedder-row');
+        if (row && row.parentNode) {
+            row.parentNode.removeChild(row);
         }
 
         post(
@@ -458,7 +458,6 @@
                 var cleared = !!(data.data && data.data.cleared_selection);
 
                 if (select && (select.value === name || (select.getAttribute('data-selected') || '') === name || cleared)) {
-                    // Keep the open dialog in sync with PHP clearing the WP backup selection.
                     select.setAttribute('data-selected', '');
                     select.value = '';
                     if (enabled) {
@@ -470,22 +469,15 @@
                     resetForm(section);
                 }
 
-                return loadEmbedders(indexName, { keepStatus: true }).then(function () {
-                    setStatus(
-                        section,
-                        (data.data && data.data.message) || scrywpHybridEmbedders.i18n.delete,
-                        'success'
-                    );
-                });
+                setStatus(
+                    section,
+                    (data.data && data.data.message) || scrywpHybridEmbedders.i18n.delete,
+                    'success'
+                );
             })
             .catch(function (err) {
                 setStatus(section, (err && err.message) || scrywpHybridEmbedders.i18n.deleteFailed, 'error');
-            })
-            .finally(function () {
-                if (deleteBtn) {
-                    deleteBtn.disabled = false;
-                    deleteBtn.textContent = scrywpHybridEmbedders.i18n.delete;
-                }
+                return loadEmbedders(indexName, { keepStatus: true });
             });
     }
 
