@@ -393,6 +393,16 @@
             saveBtn.textContent = scrywpHybridEmbedders.i18n.saving;
         }
 
+        // PATCH is async in Meili — a GET right after save still misses the new name.
+        var cache = embeddersCache[indexName] || {};
+        var prev = cache[name] || {};
+        cache[name] = {
+            source: fields.source,
+            model: fields.model,
+            has_api_key: !!fields.api_key || !!prev.has_api_key
+        };
+        renderList(section, cache);
+
         post(
             scrywpHybridEmbedders.actions.save,
             scrywpHybridEmbedders.nonces.save,
@@ -406,16 +416,15 @@
                     );
                 }
                 resetForm(section);
-                return loadEmbedders(indexName, { keepStatus: true }).then(function () {
-                    setStatus(
-                        section,
-                        (data.data && data.data.message) || scrywpHybridEmbedders.i18n.saveEmbedder,
-                        'success'
-                    );
-                });
+                setStatus(
+                    section,
+                    (data.data && data.data.message) || scrywpHybridEmbedders.i18n.saveEmbedder,
+                    'success'
+                );
             })
             .catch(function (err) {
                 setStatus(section, (err && err.message) || scrywpHybridEmbedders.i18n.saveFailed, 'error');
+                return loadEmbedders(indexName, { keepStatus: true });
             })
             .finally(function () {
                 resetSaveButton(section);
