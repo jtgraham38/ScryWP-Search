@@ -50,16 +50,16 @@
     flex-shrink: 0;
 }
 
-.scrywp-hy-embedder-delete {
+.wp-core-ui .button.scrywp-hy-embedder-delete {
     color: #b32d2e;
     border-color: #b32d2e;
 }
 
-.scrywp-hy-embedder-delete:hover,
-.scrywp-hy-embedder-delete:focus {
+.wp-core-ui .button.scrywp-hy-embedder-delete:hover,
+.wp-core-ui .button.scrywp-hy-embedder-delete:focus {
     color: #fff;
     background: #b32d2e;
-    border-color: #b32d2e;
+    border-color: #8a2424;
 }
 
 .scrywp-hy-embedders-status .notice {
