@@ -285,6 +285,9 @@
             meta.appendChild(title);
             meta.appendChild(detail);
 
+            var actions = document.createElement('div');
+            actions.className = 'scrywp-hy-embedder-row-actions';
+
             var editBtn = document.createElement('button');
             editBtn.type = 'button';
             editBtn.className = 'button button-small scrywp-hy-embedder-edit';
@@ -293,8 +296,18 @@
                 fillForm(section, name, config);
             });
 
+            var deleteBtn = document.createElement('button');
+            deleteBtn.type = 'button';
+            deleteBtn.className = 'button button-small scrywp-hy-embedder-delete';
+            deleteBtn.textContent = scrywpHybridEmbedders.i18n.delete;
+            deleteBtn.addEventListener('click', function () {
+                deleteEmbedder(section, name, deleteBtn);
+            });
+
+            actions.appendChild(editBtn);
+            actions.appendChild(deleteBtn);
             row.appendChild(meta);
-            row.appendChild(editBtn);
+            row.appendChild(actions);
             listEl.appendChild(row);
         });
     }
@@ -395,6 +408,72 @@
             })
             .finally(function () {
                 resetSaveButton(section);
+            });
+    }
+
+    function deleteEmbedder(section, name, deleteBtn) {
+        var indexName = section.getAttribute('data-index-name') || '';
+        if (!indexName || !name) {
+            return;
+        }
+        if (!window.confirm(scrywpHybridEmbedders.i18n.confirmDelete)) {
+            return;
+        }
+
+        if (deleteBtn) {
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = scrywpHybridEmbedders.i18n.deleting;
+        }
+
+        post(
+            scrywpHybridEmbedders.actions.delete,
+            scrywpHybridEmbedders.nonces.delete,
+            {
+                index_name: indexName,
+                name: name
+            },
+            30000
+        )
+            .then(function (data) {
+                if (!data.success) {
+                    throw new Error(
+                        (data.data && data.data.message) || scrywpHybridEmbedders.i18n.deleteFailed
+                    );
+                }
+
+                var select = section.querySelector('select[name="hybrid_embedder"]');
+                var enabled = section.querySelector('input[name="hybrid_enabled"]');
+                var nameInput = section.querySelector('.scrywp-hy-embedder-name');
+                var cleared = !!(data.data && data.data.cleared_selection);
+
+                if (select && (select.value === name || (select.getAttribute('data-selected') || '') === name || cleared)) {
+                    select.setAttribute('data-selected', '');
+                    select.value = '';
+                    if (enabled) {
+                        enabled.checked = false;
+                    }
+                }
+
+                if (nameInput && nameInput.value === name) {
+                    resetForm(section);
+                }
+
+                return loadEmbedders(indexName, { keepStatus: true }).then(function () {
+                    setStatus(
+                        section,
+                        (data.data && data.data.message) || scrywpHybridEmbedders.i18n.delete,
+                        'success'
+                    );
+                });
+            })
+            .catch(function (err) {
+                setStatus(section, (err && err.message) || scrywpHybridEmbedders.i18n.deleteFailed, 'error');
+            })
+            .finally(function () {
+                if (deleteBtn) {
+                    deleteBtn.disabled = false;
+                    deleteBtn.textContent = scrywpHybridEmbedders.i18n.delete;
+                }
             });
     }
 
