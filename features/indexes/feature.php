@@ -216,9 +216,9 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                     }
                 }
 
-                //only restore settings on a freshly created index; re-sending them on
-                //every page load keeps meilisearch permanently enqueueing tasks, which
-                //leaves the indexes ui stuck on "indexing..." when embedders are set up
+                // only restore settings on a freshly created index. continue skips the rest of
+                // this foreach item (other indexes still run). Re-PATCHing embedders on every
+                // init would enqueue Meili tasks forever and stick the UI on "Indexing...".
                 if (!$created) {
                     continue;
                 }
@@ -262,6 +262,10 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                     if (isset($index_settings_backup['typo_tolerance']) && is_array($index_settings_backup['typo_tolerance'])) {
                         $index->updateTypoTolerance($index_settings_backup['typo_tolerance']);
                     }
+
+                    // Embedder defs (source, model, url, apiKey). Only here — $created is true.
+                    // continue above skips this on every other page load so Meili is not PATCHed forever.
+                    $this->restore_embedders_from_backup($index_name, $index_settings_backup);
 
                     //hook to allow other plugins to act after the index settings are restored
                     do_action($this->config('hook_prefix') . 'index_settings_restore', $index, $index_settings_backup);
@@ -1481,6 +1485,16 @@ class ScrySearch_IndexesFeature extends PluginFeature {
 
         //backup the settings to the database
         $index_settings_backup_key = $this->prefixed('index_settings_backup_') . $index_name;
+        $hybrid = $this->get_hybrid_settings_from_post();
+        // Save Settings POSTs prefs only. Keep embedder defs already stored from save/delete.
+        $existing_backup = get_option($index_settings_backup_key, array());
+        if (
+            is_array($existing_backup)
+            && isset($existing_backup['hybrid']['embedders'])
+            && is_array($existing_backup['hybrid']['embedders'])
+        ) {
+            $hybrid['embedders'] = $existing_backup['hybrid']['embedders'];
+        }
         $index_settings_backup = array(
             'ranking_rules' => $ranking_rules,
             'searchable_attributes' => $searchable_attributes,
@@ -1489,8 +1503,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             'filterable_attributes' => $filterable_attributes,
             'dictionary' => $dictionary,
             'typo_tolerance' => $typo_tolerance,
-            // Prefs only (enabled / embedder name / ratio). Embedder defs stay in Meilisearch until chunk 7.
-            'hybrid' => $this->get_hybrid_settings_from_post(),
+            'hybrid' => $hybrid,
         );
 
         //hook to allow other plugins to modify the index settings backup
@@ -1907,7 +1920,8 @@ class ScrySearch_IndexesFeature extends PluginFeature {
 
     /**
      * Hybrid prefs stored in the WP index settings backup for this index.
-     * Not the embedder definition — that lives on Meilisearch. enabled is forced off if embedder is empty.
+     * enabled / embedder / ratio only — embedder defs are backup['hybrid']['embedders'] (PHP-only).
+     * enabled is forced off if embedder is empty.
      *
      * @param string $index_name Meilisearch index uid.
      * @return array{enabled:bool,embedder:string,semantic_ratio:float}
@@ -2012,6 +2026,10 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             return;
         }
 
+        // First list after upgrade: copy Meili defs into WP so a later wipe can restore them.
+        // isset() is false when the key is missing, true when it is [] (all deleted — do not refill from a stale GET).
+        $this->maybe_backfill_embedders_backup($index_name, $embedders);
+
         wp_send_json_success(array(
             'index_name' => $index_name,
             'embedders' => $this->sanitize_embedders_for_browser($embedders),
@@ -2112,6 +2130,8 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             return;
         }
 
+        $this->merge_embedder_into_index_backup($index_name, $name, $config);
+
         wp_send_json_success(array(
             'message' => __('Sent to Meilisearch. It will apply this embedder in the background. Reindex to build vectors.', "scry-search"),
             'name' => $name,
@@ -2176,6 +2196,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
 
     /**
      * If this index's WP backup had that embedder selected, clear it and turn hybrid off.
+     * Always drop the def from hybrid.embedders so wipe/recreate does not put a deleted embedder back.
      *
      * @param string $index_name     Meilisearch index uid.
      * @param string $embedder_name  Embedder that was deleted.
@@ -2189,20 +2210,147 @@ class ScrySearch_IndexesFeature extends PluginFeature {
 
         $backup_key = $this->prefixed('index_settings_backup_') . $index_name;
         $backup = get_option($backup_key, array());
-        if (!is_array($backup) || !isset($backup['hybrid']) || !is_array($backup['hybrid'])) {
+        if (!is_array($backup)) {
             return false;
         }
+        if (!isset($backup['hybrid']) || !is_array($backup['hybrid'])) {
+            $backup['hybrid'] = array();
+        }
 
+        $cleared_selection = false;
         $current = isset($backup['hybrid']['embedder']) ? (string) $backup['hybrid']['embedder'] : '';
-        if ($current !== $embedder_name) {
-            return false;
+        if ($current === $embedder_name) {
+            $backup['hybrid']['embedder'] = '';
+            $backup['hybrid']['enabled'] = false;
+            $cleared_selection = true;
         }
 
-        $backup['hybrid']['embedder'] = '';
-        $backup['hybrid']['enabled'] = false;
+        if (isset($backup['hybrid']['embedders']) && is_array($backup['hybrid']['embedders'])) {
+            unset($backup['hybrid']['embedders'][$embedder_name]);
+        }
+
         update_option($backup_key, $backup);
 
-        return true;
+        return $cleared_selection;
+    }
+
+    /**
+     * Copy Meili embedder defs into WP once, when this index has never stored them.
+     * Does not PATCH Meili. Does not overwrite [] (user deleted every embedder).
+     *
+     * @param string $index_name Meilisearch index uid.
+     * @param array  $embedders  Raw map from GET (includes apiKey).
+     */
+    private function maybe_backfill_embedders_backup($index_name, $embedders) {
+        if ($index_name === '' || !is_array($embedders)) {
+            return;
+        }
+
+        $backup = get_option($this->prefixed('index_settings_backup_') . $index_name, array());
+        if (is_array($backup) && isset($backup['hybrid']['embedders']) && is_array($backup['hybrid']['embedders'])) {
+            return;
+        }
+
+        $this->save_hybrid_embedders_to_backup($index_name, $embedders);
+    }
+
+    /**
+     * Merge one embedder def into this index's WP backup (keeps apiKey for restore).
+     *
+     * @param string $index_name Meilisearch index uid.
+     * @param string $name       Embedder name.
+     * @param array  $config     Meili embedder body.
+     */
+    private function merge_embedder_into_index_backup($index_name, $name, $config) {
+        if ($index_name === '' || $name === '' || !is_array($config)) {
+            return;
+        }
+
+        $embedders = $this->get_hybrid_embedders_from_backup($index_name);
+        $embedders[$name] = $config;
+        $this->save_hybrid_embedders_to_backup($index_name, $embedders);
+    }
+
+    /**
+     * Read backup['hybrid']['embedders'] for this index. Missing key → empty array.
+     *
+     * @param string $index_name Meilisearch index uid.
+     * @return array<string,array>
+     */
+    private function get_hybrid_embedders_from_backup($index_name) {
+        $backup = get_option($this->prefixed('index_settings_backup_') . $index_name, array());
+        if (!is_array($backup) || !isset($backup['hybrid']['embedders']) || !is_array($backup['hybrid']['embedders'])) {
+            return array();
+        }
+
+        return $backup['hybrid']['embedders'];
+    }
+
+    /**
+     * Write backup['hybrid']['embedders'] without wiping enabled / embedder / ratio.
+     * get_option reads wp_options; update_option writes it. apiKey stays in PHP — never JSON to the browser.
+     *
+     * @param string $index_name Meilisearch index uid.
+     * @param array  $embedders  Name => config map.
+     */
+    private function save_hybrid_embedders_to_backup($index_name, $embedders) {
+        if ($index_name === '' || !is_array($embedders)) {
+            return;
+        }
+
+        $backup_key = $this->prefixed('index_settings_backup_') . $index_name;
+        $backup = get_option($backup_key, array());
+        if (!is_array($backup)) {
+            $backup = array();
+        }
+        if (!isset($backup['hybrid']) || !is_array($backup['hybrid'])) {
+            $backup['hybrid'] = array();
+        }
+        $backup['hybrid']['embedders'] = $embedders;
+        update_option($backup_key, $backup);
+    }
+
+    /**
+     * PATCH stored embedder defs onto a brand-new Meili index. Caller must only run this when $created.
+     *
+     * @param string $index_name Meilisearch index uid.
+     * @param mixed  $backup     Index settings backup option value.
+     */
+    private function restore_embedders_from_backup($index_name, $backup) {
+        if ($index_name === '' || !is_array($backup) || !isset($backup['hybrid']['embedders']) || !is_array($backup['hybrid']['embedders'])) {
+            return;
+        }
+
+        $to_restore = array();
+        foreach ($backup['hybrid']['embedders'] as $name => $config) {
+            // continue skips this loop item only (not the whole function).
+            $name = preg_replace('/[^a-zA-Z0-9_-]/', '', (string) $name);
+            if ($name === '' || !is_array($config)) {
+                continue;
+            }
+            $to_restore[$name] = $config;
+        }
+
+        if ($to_restore === array()) {
+            return;
+        }
+
+        $response = $this->meilisearch_request(
+            'PATCH',
+            'indexes/' . rawurlencode($index_name) . '/settings/embedders',
+            $to_restore
+        );
+
+        if (is_wp_error($response)) {
+            $this->get_feature('scry_ms_logs')->log(
+                'error',
+                sprintf(
+                    __('Failed to restore embedders for %1$s: %2$s', "scry-search"),
+                    $index_name,
+                    $response->get_error_message()
+                )
+            );
+        }
     }
 
     /**
