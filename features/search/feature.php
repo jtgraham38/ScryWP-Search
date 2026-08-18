@@ -11,13 +11,14 @@ use jtgraham38\jgwordpresskit\PluginFeature;
 use Meilisearch\Contracts\SearchQuery;
 use Meilisearch\Contracts\MultiSearchFederation;
 use Meilisearch\Contracts\FederationOptions;
+use Meilisearch\Contracts\HybridSearchOptions;
 
 class ScrySearch_SearchFeature extends PluginFeature {
     
     public function add_filters() {
-        // Add any filters here if needed
         add_filter('posts_pre_query', array($this, 'meilisearch_search'), 10, 2);
-
+        // Per federated index query. 10 = default priority; 2 = accept $search_query and $index_name.
+        add_filter($this->prefixed('multi_search_query'), array($this, 'add_hybrid_to_search_query'), 10, 2);
     }
     
     public function add_actions() {
@@ -253,6 +254,53 @@ class ScrySearch_SearchFeature extends PluginFeature {
             return array();
         }
         
+    }
+
+    /**
+     * Attach hybrid params to one federated query when that index has hybrid on.
+     * Reads WP backup via indexes->get_hybrid_settings(). Other indexes in the same
+     * multiSearch are untouched (each query is built in the foreach, then this filter runs).
+     *
+     * @param mixed  $search_query Meilisearch SearchQuery.
+     * @param string $index_name   Meilisearch index uid.
+     * @return mixed
+     */
+    public function add_hybrid_to_search_query($search_query, $index_name) {
+        // method_exists: don't fatal if this SDK build has no setHybrid().
+        if (!is_object($search_query) || !method_exists($search_query, 'setHybrid')) {
+            return $search_query;
+        }
+
+        if (!class_exists(HybridSearchOptions::class)) {
+            return $search_query;
+        }
+
+        $indexes = $this->get_feature('scry_ms_indexes');
+        if (!$indexes || !method_exists($indexes, 'get_hybrid_settings')) {
+            return $search_query;
+        }
+
+        $hybrid = $indexes->get_hybrid_settings((string) $index_name);
+        // empty() is true for false, 0, '', null. enabled is already forced off if embedder is blank.
+        if (empty($hybrid['enabled'])) {
+            return $search_query;
+        }
+
+        $embedder = isset($hybrid['embedder']) ? trim((string) $hybrid['embedder']) : '';
+        if ($embedder === '') {
+            return $search_query;
+        }
+
+        $ratio = isset($hybrid['semantic_ratio']) ? (float) $hybrid['semantic_ratio'] : (float) $this->config('default_semantic_ratio');
+        $ratio = max(0.0, min(1.0, $ratio));
+
+        $hybrid_options = (new HybridSearchOptions())
+            ->setEmbedder($embedder)
+            ->setSemanticRatio($ratio);
+
+        $search_query->setHybrid($hybrid_options);
+
+        return $search_query;
     }
 
     /**
