@@ -16,9 +16,20 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
      * 1.1 added the extras column; 1.2 renames it to search_metadata.
      */
     private $db_version = '1.2';
+
+    /**
+     * Hybrid applied on this request, keyed by Meili index uid.
+     * Shape: [ uid => [ 'semantic_ratio' => float, 'embedder' => string ] ]
+     *
+     * @var array
+     */
+    private $applied_hybrid_by_index = array();
     
     public function add_filters() {
-        // No filters needed
+        // Priority 11: after search's setHybrid() (10). We only record; we do not change the query.
+        add_filter($this->prefixed('multi_search_query'), array($this, 'record_hybrid_for_analytics'), 11, 2);
+        //@HOOK: scry_ms_analytics_event_to_insert
+        add_filter($this->prefixed('analytics_event_to_insert'), array($this, 'add_hybrid_to_analytics_event'), 10, 1);
     }
     
     public function add_actions() {
@@ -206,6 +217,70 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
         );
 
         return $result !== false;
+    }
+
+    /**
+     * Remember hybrid prefs for one federated index query (same rules as setHybrid()).
+     * Returns $search_query unchanged.
+     *
+     * @param mixed  $search_query Meilisearch SearchQuery.
+     * @param string $index_name   Meilisearch index uid.
+     * @return mixed
+     */
+    public function record_hybrid_for_analytics($search_query, $index_name) {
+        $index_name = (string) $index_name;
+        if ($index_name === '') {
+            return $search_query;
+        }
+
+        $indexes = $this->get_feature('scry_ms_indexes');
+        if (!$indexes || !method_exists($indexes, 'get_hybrid_settings')) {
+            return $search_query;
+        }
+
+        $hybrid = $indexes->get_hybrid_settings($index_name);
+        if (empty($hybrid['enabled'])) {
+            return $search_query;
+        }
+
+        $embedder = isset($hybrid['embedder']) ? trim((string) $hybrid['embedder']) : '';
+        if ($embedder === '') {
+            return $search_query;
+        }
+
+        $ratio = isset($hybrid['semantic_ratio']) ? (float) $hybrid['semantic_ratio'] : (float) $this->config('default_semantic_ratio');
+        $ratio = max(0.0, min(1.0, $ratio));
+
+        $this->applied_hybrid_by_index[$index_name] = array(
+            'semantic_ratio' => $ratio,
+            'embedder'       => $embedder,
+        );
+
+        return $search_query;
+    }
+
+    /**
+     * Put scry_search_hybrid on the event when any index used hybrid.
+     * pack_analytics_event_search_metadata() then moves that key into the search_metadata JSON column.
+     * Omit the key when nothing applied (no empty bag).
+     *
+     * @param array $event_to_insert Row from insert_search_analytics_event.
+     * @return array
+     */
+    public function add_hybrid_to_analytics_event($event_to_insert) {
+        if (!is_array($event_to_insert)) {
+            return $event_to_insert;
+        }
+
+        if (empty($this->applied_hybrid_by_index)) {
+            return $event_to_insert;
+        }
+
+        $event_to_insert['scry_search_hybrid'] = array(
+            'indexes' => $this->applied_hybrid_by_index,
+        );
+
+        return $event_to_insert;
     }
 
     /**
