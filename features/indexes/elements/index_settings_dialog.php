@@ -53,6 +53,8 @@ if (!defined('ABSPATH')) {
                 // Keep defaults so the form remains usable even if settings fetch fails.
             }
 
+            $searchable_attributes = $indexes_feature->resolve_searchable_attributes_for_ui($searchable_attributes, $available_fields);
+
             $dialog_sections_dir = plugin_dir_path(__FILE__) . 'dialog_sections/';
         ?>
         <form class="scrywp-index-settings-form scrywp-index-settings-loaded" data-index-name="<?php echo esc_attr($index['index_name']); ?>" style="display: none;">
