@@ -1038,3 +1038,20 @@ details[open] .scrywp-index-dialog-result-json-toggle::before {
 .scrywp-typo-tolerance-field .description {
     margin-top: 0;
 }
+
+.scrywp-hy-hybrid-enabled {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0;
+    font-weight: 600;
+}
+
+.scrywp-hy-hybrid-fields label {
+    font-weight: 600;
+}
+
+.scrywp-hy-hybrid-fields input[type="number"].small-text {
+    width: 5em;
+}
+

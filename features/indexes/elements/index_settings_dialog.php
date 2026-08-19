@@ -68,6 +68,7 @@ if (!defined('ABSPATH')) {
                 <?php include $dialog_sections_dir . 'dictionary_section.php'; ?>
                 <?php include $dialog_sections_dir . 'typo_tolerance_section.php'; ?>
                 <?php include $dialog_sections_dir . 'filterable_fields_section.php'; ?>
+                <?php include $dialog_sections_dir . 'hybrid_section.php'; ?>
 
                 <!-- this is where other plugins can insert their index settings section -->
                 <?php do_action($this->config('hook_prefix') . 'index_settings_sections_ui', $index); ?>

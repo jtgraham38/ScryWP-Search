@@ -42,6 +42,10 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         add_action('wp_ajax_' . $this->prefixed('search_index'), array($this, 'ajax_search_index'));
         add_action('wp_ajax_' . $this->prefixed('get_index_settings'), array($this, 'ajax_get_index_settings'));
         add_action('wp_ajax_' . $this->prefixed('update_index_settings'), array($this, 'ajax_update_index_settings'));
+        // Hybrid embedders: browser POSTs here; PHP talks to Meilisearch (admin key never goes to JS).
+        add_action('wp_ajax_' . $this->prefixed('list_embedders'), array($this, 'ajax_list_embedders'));
+        add_action('wp_ajax_' . $this->prefixed('save_embedder'), array($this, 'ajax_save_embedder'));
+        add_action('wp_ajax_' . $this->prefixed('delete_embedder'), array($this, 'ajax_delete_embedder'));
     }
 
     //function to index a post when it is created or updated
@@ -212,9 +216,9 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                     }
                 }
 
-                //only restore settings on a freshly created index; re-sending them on
-                //every page load keeps meilisearch permanently enqueueing tasks, which
-                //leaves the indexes ui stuck on "indexing..." when embedders are set up
+                // only restore settings on a freshly created index. continue skips the rest of
+                // this foreach item (other indexes still run). Re-PATCHing embedders on every
+                // init would enqueue Meili tasks forever and stick the UI on "Indexing...".
                 if (!$created) {
                     continue;
                 }
@@ -258,6 +262,10 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                     if (isset($index_settings_backup['typo_tolerance']) && is_array($index_settings_backup['typo_tolerance'])) {
                         $index->updateTypoTolerance($index_settings_backup['typo_tolerance']);
                     }
+
+                    // Embedder defs (source, model, url, apiKey). Only here — $created is true.
+                    // continue above skips this on every other page load so Meili is not PATCHed forever.
+                    $this->restore_embedders_from_backup($index_name, $index_settings_backup);
 
                     //hook to allow other plugins to act after the index settings are restored
                     do_action($this->config('hook_prefix') . 'index_settings_restore', $index, $index_settings_backup);
@@ -503,6 +511,59 @@ class ScrySearch_IndexesFeature extends PluginFeature {
                     'customRankingRuleExists' => __('That custom ranking rule is already in the list.', "scry-search"),
                     'settingsSavedSuccessfully' => __('Settings saved successfully', "scry-search"),
                     'failedToSaveSettings' => __('Failed to save settings', "scry-search"),
+                ),
+            )
+        );
+
+        // Hybrid CRUD UI on Configure Index (this index only). filemtime busts the browser cache.
+        wp_enqueue_style(
+            $this->prefixed('hybrid-embedders-styles'),
+            plugin_dir_url(__FILE__) . 'assets/css/hybrid_embedders.css',
+            array($this->prefixed('show-indexes-styles')),
+            (string) filemtime(plugin_dir_path(__FILE__) . 'assets/css/hybrid_embedders.css')
+        );
+
+        wp_enqueue_script(
+            $this->prefixed('hybrid-embedders-script'),
+            plugin_dir_url(__FILE__) . 'assets/js/hybrid_embedders.js',
+            array(),
+            (string) filemtime(plugin_dir_path(__FILE__) . 'assets/js/hybrid_embedders.js'),
+            true
+        );
+
+        wp_localize_script(
+            $this->prefixed('hybrid-embedders-script'),
+            'scrywpHybridEmbedders', // JS global: ajaxUrl, actions, nonces, i18n (translated strings).
+            array(
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'actions' => array(
+                    'list' => $this->prefixed('list_embedders'),
+                    'save' => $this->prefixed('save_embedder'),
+                    'delete' => $this->prefixed('delete_embedder'),
+                ),
+                'nonces' => array(
+                    'list' => wp_create_nonce($this->prefixed('list_embedders')),
+                    'save' => wp_create_nonce($this->prefixed('save_embedder')),
+                    'delete' => wp_create_nonce($this->prefixed('delete_embedder')),
+                ),
+                'i18n' => array(
+                    'loading' => __('Loading embedders…', "scry-search"),
+                    'none' => __('No embedders on this index yet.', "scry-search"),
+                    'loadFailed' => __('Failed to load embedders.', "scry-search"),
+                    'hasKey' => __('API key set', "scry-search"),
+                    'noKey' => __('No API key', "scry-search"),
+                    'selectEmbedder' => __('— Select an embedder —', "scry-search"),
+                    'edit' => __('Edit', "scry-search"),
+                    'delete' => __('Delete', "scry-search"),
+                    'deleting' => __('Deleting…', "scry-search"),
+                    'confirmDelete' => __('Delete this embedder from this index? Other indexes are not changed.', "scry-search"),
+                    'deleteFailed' => __('Failed to delete embedder.', "scry-search"),
+                    'saving' => __('Saving…', "scry-search"),
+                    'saveEmbedder' => __('Save embedder', "scry-search"),
+                    'saveFailed' => __('Failed to save embedder.', "scry-search"),
+                    'nameRequired' => __('Embedder name is required (letters, numbers, _ or -).', "scry-search"),
+                    'keepKey' => __('API key set — leave blank to keep it.', "scry-search"),
+                    'saveTimeout' => __('Save timed out waiting for Meilisearch. If Meilisearch is in Docker, Ollama often needs host.docker.internal.', "scry-search"),
                 ),
             )
         );
@@ -1428,6 +1489,16 @@ class ScrySearch_IndexesFeature extends PluginFeature {
 
         //backup the settings to the database
         $index_settings_backup_key = $this->prefixed('index_settings_backup_') . $index_name;
+        $hybrid = $this->get_hybrid_settings_from_post();
+        // Save Settings POSTs prefs only. Keep embedder defs already stored from save/delete.
+        $existing_backup = get_option($index_settings_backup_key, array());
+        if (
+            is_array($existing_backup)
+            && isset($existing_backup['hybrid']['embedders'])
+            && is_array($existing_backup['hybrid']['embedders'])
+        ) {
+            $hybrid['embedders'] = $existing_backup['hybrid']['embedders'];
+        }
         $index_settings_backup = array(
             'ranking_rules' => $ranking_rules,
             'searchable_attributes' => $searchable_attributes,
@@ -1436,6 +1507,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             'filterable_attributes' => $filterable_attributes,
             'dictionary' => $dictionary,
             'typo_tolerance' => $typo_tolerance,
+            'hybrid' => $hybrid,
         );
 
         //hook to allow other plugins to modify the index settings backup
@@ -1909,5 +1981,569 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             'disableOnAttributes' => array(),
             'disableOnNumbers' => false,
         );
+    }
+
+    /**
+     * Hybrid prefs stored in the WP index settings backup for this index.
+     * enabled / embedder / ratio only — embedder defs are backup['hybrid']['embedders'] (PHP-only).
+     * enabled is forced off if embedder is empty.
+     *
+     * @param string $index_name Meilisearch index uid.
+     * @return array{enabled:bool,embedder:string,semantic_ratio:float}
+     */
+    public function get_hybrid_settings($index_name) {
+        $default_ratio = (float) $this->config('default_semantic_ratio');
+        if ($default_ratio < 0 || $default_ratio > 1) {
+            $default_ratio = 0.5;
+        }
+
+        $defaults = array(
+            'enabled' => false,
+            'embedder' => '',
+            'semantic_ratio' => $default_ratio,
+        );
+
+        $backup = get_option($this->prefixed('index_settings_backup_') . $index_name, array());
+        if (!is_array($backup) || !isset($backup['hybrid']) || !is_array($backup['hybrid'])) {
+            return $defaults;
+        }
+
+        $hybrid = $backup['hybrid'];
+        $ratio = isset($hybrid['semantic_ratio']) ? (float) $hybrid['semantic_ratio'] : $default_ratio;
+        $ratio = max(0.0, min(1.0, $ratio));
+        $embedder = isset($hybrid['embedder']) ? (string) $hybrid['embedder'] : '';
+        $enabled = !empty($hybrid['enabled']) && $embedder !== '';
+
+        return array(
+            'enabled' => $enabled,
+            'embedder' => $embedder,
+            'semantic_ratio' => $ratio,
+        );
+    }
+
+    /**
+     * Hybrid prefs from Configure Index POST (Save Settings).
+     * Unchecked checkboxes are omitted from POST — missing hybrid_enabled means off.
+     * Empty embedder forces enabled off so hybrid cannot be "on" with nothing selected.
+     *
+     * @return array{enabled:bool,embedder:string,semantic_ratio:float}
+     */
+    private function get_hybrid_settings_from_post() {
+        $enabled = isset($_POST['hybrid_enabled']) && (string) wp_unslash($_POST['hybrid_enabled']) === '1';
+
+        $embedder = '';
+        if (isset($_POST['hybrid_embedder'])) {
+            $embedder = sanitize_text_field(wp_unslash($_POST['hybrid_embedder']));
+        }
+
+        if ($embedder === '') {
+            $enabled = false;
+        }
+
+        $default_ratio = (float) $this->config('default_semantic_ratio');
+        if ($default_ratio < 0 || $default_ratio > 1) {
+            $default_ratio = 0.5;
+        }
+
+        $ratio = $default_ratio;
+        if (isset($_POST['hybrid_semantic_ratio'])) {
+            $ratio = (float) wp_unslash($_POST['hybrid_semantic_ratio']);
+        }
+        $ratio = max(0.0, min(1.0, $ratio));
+
+        return array(
+            'enabled' => (bool) $enabled,
+            'embedder' => $embedder,
+            'semantic_ratio' => $ratio,
+        );
+    }
+
+    /**
+     * AJAX: GET embedders for one Scry index. Browser never sees apiKey (has_api_key only).
+     * Requires a known Scry index_name so callers cannot probe arbitrary Meili uids.
+     */
+    public function ajax_list_embedders() {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('list_embedders'))) {
+            wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
+            return;
+        }
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
+            return;
+        }
+
+        $index_name = isset($_POST['index_name']) ? sanitize_text_field(wp_unslash($_POST['index_name'])) : '';
+        if ($index_name === '') {
+            wp_send_json_error(array('message' => __('Please provide an index name', "scry-search")));
+            return;
+        }
+
+        $index_names = $this->get_index_names();
+        if (!in_array($index_name, $index_names, true)) {
+            wp_send_json_error(array('message' => __('Invalid index name', "scry-search")));
+            return;
+        }
+
+        $embedders = $this->get_embedders_for_index($index_name);
+        if (is_wp_error($embedders)) {
+            wp_send_json_error(array('message' => $embedders->get_error_message()));
+            return;
+        }
+
+        // First list after upgrade: copy Meili defs into WP so a later wipe can restore them.
+        // isset() is false when the key is missing, true when it is [] (all deleted — do not refill from a stale GET).
+        $this->maybe_backfill_embedders_backup($index_name, $embedders);
+
+        wp_send_json_success(array(
+            'index_name' => $index_name,
+            'embedders' => $this->sanitize_embedders_for_browser($embedders),
+        ));
+    }
+
+    /**
+     * AJAX: PATCH one embedder onto one Scry index. Does not copy to other indexes.
+     * Blank api_key on edit keeps the existing Meili key. Does not wait for the async Meili task
+     * (Ollama/embeddings can hang that wait).
+     */
+    public function ajax_save_embedder() {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('save_embedder'))) {
+            wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
+            return;
+        }
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
+            return;
+        }
+
+        $index_name = isset($_POST['index_name']) ? sanitize_text_field(wp_unslash($_POST['index_name'])) : '';
+        if ($index_name === '') {
+            wp_send_json_error(array('message' => __('Please provide an index name', "scry-search")));
+            return;
+        }
+
+        $index_names = $this->get_index_names();
+        if (!in_array($index_name, $index_names, true)) {
+            wp_send_json_error(array('message' => __('Invalid index name', "scry-search")));
+            return;
+        }
+
+        $name = isset($_POST['name']) ? sanitize_text_field(wp_unslash($_POST['name'])) : '';
+        $name = preg_replace('/[^a-zA-Z0-9_-]/', '', $name);
+        if ($name === '') {
+            wp_send_json_error(array('message' => __('Embedder name is required (letters, numbers, _ or -).', "scry-search")));
+            return;
+        }
+
+        $source = isset($_POST['source']) ? sanitize_text_field(wp_unslash($_POST['source'])) : '';
+        $allowed_sources = (array) $this->config('embedder_sources');
+        if ($allowed_sources === array()) {
+            $allowed_sources = array('openAi', 'ollama', 'huggingFace', 'userProvided');
+        }
+        if (!in_array($source, $allowed_sources, true)) {
+            wp_send_json_error(array('message' => __('Invalid embedder source.', "scry-search")));
+            return;
+        }
+
+        $model = isset($_POST['model']) ? sanitize_text_field(wp_unslash($_POST['model'])) : '';
+        $api_key = isset($_POST['api_key']) ? (string) wp_unslash($_POST['api_key']) : '';
+        $url = isset($_POST['url']) ? esc_url_raw(wp_unslash($_POST['url'])) : '';
+        $document_template = isset($_POST['document_template']) ? sanitize_textarea_field(wp_unslash($_POST['document_template'])) : '';
+        $dimensions = isset($_POST['dimensions']) ? absint($_POST['dimensions']) : 0;
+
+        $config = array(
+            'source' => $source,
+        );
+        if ($model !== '') {
+            $config['model'] = $model;
+        }
+        if ($url !== '') {
+            $config['url'] = $url;
+        }
+        if ($document_template !== '' && $source !== 'userProvided') {
+            $config['documentTemplate'] = $document_template;
+        }
+        if ($source === 'userProvided') {
+            if ($dimensions < 1) {
+                wp_send_json_error(array('message' => __('Dimensions are required for userProvided embedders.', "scry-search")));
+                return;
+            }
+            $config['dimensions'] = $dimensions;
+        } elseif ($dimensions > 0) {
+            $config['dimensions'] = $dimensions;
+        }
+
+        if ($api_key === '') {
+            // Edit with a blank key: reuse the key already stored on this index.
+            $existing = $this->get_embedders_for_index($index_name);
+            if (!is_wp_error($existing) && isset($existing[$name]['apiKey']) && $existing[$name]['apiKey'] !== '') {
+                $config['apiKey'] = $existing[$name]['apiKey'];
+            }
+        } else {
+            $config['apiKey'] = $api_key;
+        }
+
+        $response = $this->meilisearch_request(
+            'PATCH',
+            'indexes/' . rawurlencode($index_name) . '/settings/embedders',
+            array($name => $config)
+        );
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+            return;
+        }
+
+        $this->merge_embedder_into_index_backup($index_name, $name, $config);
+
+        wp_send_json_success(array(
+            'message' => __('Sent to Meilisearch. It will apply this embedder in the background. Reindex to build vectors.', "scry-search"),
+            'name' => $name,
+            'index_name' => $index_name,
+        ));
+    }
+
+    /**
+     * AJAX: remove one embedder from one Scry index (Meili PATCH { name: null }).
+     * If this index's WP backup had that name selected, clear it and turn hybrid off.
+     */
+    public function ajax_delete_embedder() {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), $this->prefixed('delete_embedder'))) {
+            wp_send_json_error(array('message' => __('Security check failed', "scry-search")));
+            return;
+        }
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('Permission denied', "scry-search")));
+            return;
+        }
+
+        $index_name = isset($_POST['index_name']) ? sanitize_text_field(wp_unslash($_POST['index_name'])) : '';
+        if ($index_name === '') {
+            wp_send_json_error(array('message' => __('Please provide an index name', "scry-search")));
+            return;
+        }
+
+        $index_names = $this->get_index_names();
+        if (!in_array($index_name, $index_names, true)) {
+            wp_send_json_error(array('message' => __('Invalid index name', "scry-search")));
+            return;
+        }
+
+        $name = isset($_POST['name']) ? sanitize_text_field(wp_unslash($_POST['name'])) : '';
+        $name = preg_replace('/[^a-zA-Z0-9_-]/', '', $name);
+        if ($name === '') {
+            wp_send_json_error(array('message' => __('Embedder name is required.', "scry-search")));
+            return;
+        }
+
+        $response = $this->meilisearch_request(
+            'PATCH',
+            'indexes/' . rawurlencode($index_name) . '/settings/embedders',
+            array($name => null) // Meilisearch delete: JSON null for that key, not HTTP DELETE.
+        );
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()));
+            return;
+        }
+
+        $cleared_selection = $this->clear_embedder_from_index_backup($index_name, $name);
+
+        wp_send_json_success(array(
+            'message' => __('Embedder deleted from this index.', "scry-search"),
+            'name' => $name,
+            'index_name' => $index_name,
+            'cleared_selection' => $cleared_selection,
+        ));
+    }
+
+    /**
+     * If this index's WP backup had that embedder selected, clear it and turn hybrid off.
+     * Always drop the def from hybrid.embedders so wipe/recreate does not put a deleted embedder back.
+     *
+     * @param string $index_name     Meilisearch index uid.
+     * @param string $embedder_name  Embedder that was deleted.
+     * @return bool True if the backup selection was cleared.
+     */
+    private function clear_embedder_from_index_backup($index_name, $embedder_name) {
+        $embedder_name = (string) $embedder_name;
+        if ($index_name === '' || $embedder_name === '') {
+            return false;
+        }
+
+        $backup_key = $this->prefixed('index_settings_backup_') . $index_name;
+        $backup = get_option($backup_key, array());
+        if (!is_array($backup)) {
+            return false;
+        }
+        if (!isset($backup['hybrid']) || !is_array($backup['hybrid'])) {
+            $backup['hybrid'] = array();
+        }
+
+        $cleared_selection = false;
+        $current = isset($backup['hybrid']['embedder']) ? (string) $backup['hybrid']['embedder'] : '';
+        if ($current === $embedder_name) {
+            $backup['hybrid']['embedder'] = '';
+            $backup['hybrid']['enabled'] = false;
+            $cleared_selection = true;
+        }
+
+        if (isset($backup['hybrid']['embedders']) && is_array($backup['hybrid']['embedders'])) {
+            unset($backup['hybrid']['embedders'][$embedder_name]);
+        }
+
+        update_option($backup_key, $backup);
+
+        return $cleared_selection;
+    }
+
+    /**
+     * Copy Meili embedder defs into WP once, when this index has never stored them.
+     * Does not PATCH Meili. Does not overwrite [] (user deleted every embedder).
+     *
+     * @param string $index_name Meilisearch index uid.
+     * @param array  $embedders  Raw map from GET (includes apiKey).
+     */
+    private function maybe_backfill_embedders_backup($index_name, $embedders) {
+        if ($index_name === '' || !is_array($embedders)) {
+            return;
+        }
+
+        $backup = get_option($this->prefixed('index_settings_backup_') . $index_name, array());
+        if (is_array($backup) && isset($backup['hybrid']['embedders']) && is_array($backup['hybrid']['embedders'])) {
+            return;
+        }
+
+        $this->save_hybrid_embedders_to_backup($index_name, $embedders);
+    }
+
+    /**
+     * Merge one embedder def into this index's WP backup (keeps apiKey for restore).
+     *
+     * @param string $index_name Meilisearch index uid.
+     * @param string $name       Embedder name.
+     * @param array  $config     Meili embedder body.
+     */
+    private function merge_embedder_into_index_backup($index_name, $name, $config) {
+        if ($index_name === '' || $name === '' || !is_array($config)) {
+            return;
+        }
+
+        $embedders = $this->get_hybrid_embedders_from_backup($index_name);
+        $embedders[$name] = $config;
+        $this->save_hybrid_embedders_to_backup($index_name, $embedders);
+    }
+
+    /**
+     * Read backup['hybrid']['embedders'] for this index. Missing key → empty array.
+     *
+     * @param string $index_name Meilisearch index uid.
+     * @return array<string,array>
+     */
+    private function get_hybrid_embedders_from_backup($index_name) {
+        $backup = get_option($this->prefixed('index_settings_backup_') . $index_name, array());
+        if (!is_array($backup) || !isset($backup['hybrid']['embedders']) || !is_array($backup['hybrid']['embedders'])) {
+            return array();
+        }
+
+        return $backup['hybrid']['embedders'];
+    }
+
+    /**
+     * Write backup['hybrid']['embedders'] without wiping enabled / embedder / ratio.
+     * get_option reads wp_options; update_option writes it. apiKey stays in PHP — never JSON to the browser.
+     *
+     * @param string $index_name Meilisearch index uid.
+     * @param array  $embedders  Name => config map.
+     */
+    private function save_hybrid_embedders_to_backup($index_name, $embedders) {
+        if ($index_name === '' || !is_array($embedders)) {
+            return;
+        }
+
+        $backup_key = $this->prefixed('index_settings_backup_') . $index_name;
+        $backup = get_option($backup_key, array());
+        if (!is_array($backup)) {
+            $backup = array();
+        }
+        if (!isset($backup['hybrid']) || !is_array($backup['hybrid'])) {
+            $backup['hybrid'] = array();
+        }
+        $backup['hybrid']['embedders'] = $embedders;
+        update_option($backup_key, $backup);
+    }
+
+    /**
+     * PATCH stored embedder defs onto a brand-new Meili index. Caller must only run this when $created.
+     *
+     * @param string $index_name Meilisearch index uid.
+     * @param mixed  $backup     Index settings backup option value.
+     */
+    private function restore_embedders_from_backup($index_name, $backup) {
+        if ($index_name === '' || !is_array($backup) || !isset($backup['hybrid']['embedders']) || !is_array($backup['hybrid']['embedders'])) {
+            return;
+        }
+
+        $to_restore = array();
+        foreach ($backup['hybrid']['embedders'] as $name => $config) {
+            // continue skips this loop item only (not the whole function).
+            $name = preg_replace('/[^a-zA-Z0-9_-]/', '', (string) $name);
+            if ($name === '' || !is_array($config)) {
+                continue;
+            }
+            $to_restore[$name] = $config;
+        }
+
+        if ($to_restore === array()) {
+            return;
+        }
+
+        $response = $this->meilisearch_request(
+            'PATCH',
+            'indexes/' . rawurlencode($index_name) . '/settings/embedders',
+            $to_restore
+        );
+
+        if (is_wp_error($response)) {
+            $this->get_feature('scry_ms_logs')->log(
+                'error',
+                sprintf(
+                    __('Failed to restore embedders for %1$s: %2$s', "scry-search"),
+                    $index_name,
+                    $response->get_error_message()
+                )
+            );
+        }
+    }
+
+    /**
+     * Raw embedder map from Meilisearch for one index (includes apiKey).
+     * PHP-only — always run through sanitize_embedders_for_browser before wp_send_json_*.
+     *
+     * @param string $index_name Meilisearch index uid.
+     * @return array|WP_Error
+     */
+    private function get_embedders_for_index($index_name) {
+        $meilisearch_url = get_option($this->prefixed('meilisearch_url'), '');
+        $meilisearch_admin_key = get_option($this->prefixed('meilisearch_admin_key'), '');
+
+        if ($meilisearch_url === '' || $meilisearch_admin_key === '' || $index_name === '') {
+            return new WP_Error(
+                'scry_ms_no_connection',
+                __('Connection settings are not configured', "scry-search")
+            );
+        }
+
+        $endpoint = trailingslashit($meilisearch_url) . 'indexes/' . rawurlencode($index_name) . '/settings/embedders';
+        $response = wp_remote_get($endpoint, array(
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $meilisearch_admin_key,
+            ),
+            'timeout' => 15,
+        ));
+
+        if (is_wp_error($response)) {
+            return $response;
+        }
+
+        $code = (int) wp_remote_retrieve_response_code($response);
+        if ($code < 200 || $code >= 300) {
+            $body = wp_remote_retrieve_body($response);
+            $decoded = json_decode($body, true);
+            $message = is_array($decoded) && isset($decoded['message'])
+                ? (string) $decoded['message']
+                : sprintf(__('Meilisearch returned HTTP %d', "scry-search"), $code);
+            return new WP_Error('scry_ms_embedders_http', $message);
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+        if (!is_array($body)) {
+            return array();
+        }
+
+        return $body;
+    }
+
+    /**
+     * Strip apiKey; expose has_api_key so the admin UI can say a key exists without sending it.
+     *
+     * @param array $embedders Meilisearch embedder map.
+     * @return array<string,array>
+     */
+    private function sanitize_embedders_for_browser($embedders) {
+        $safe = array();
+        if (!is_array($embedders)) {
+            return $safe;
+        }
+
+        foreach ($embedders as $name => $config) {
+            if (!is_string($name) || $name === '' || !is_array($config)) {
+                continue;
+            }
+            $has_key = !empty($config['apiKey']);
+            unset($config['apiKey']);
+            $config['has_api_key'] = $has_key;
+            $safe[$name] = $config;
+        }
+
+        return $safe;
+    }
+
+    /**
+     * Low-level Meilisearch HTTP helper (WP HTTP API).
+     * Used for PATCH embedders; GET list still uses wp_remote_get in get_embedders_for_index().
+     *
+     * @param string     $method GET|PATCH|POST|DELETE
+     * @param string     $path   Path after host.
+     * @param array|null $body   JSON body for PATCH/POST.
+     * @return array|WP_Error
+     */
+    private function meilisearch_request($method, $path, $body = null) {
+        $url = get_option($this->prefixed('meilisearch_url'), '');
+        $key = get_option($this->prefixed('meilisearch_admin_key'), '');
+
+        if ($url === '' || $key === '') {
+            return new WP_Error(
+                'scry_ms_no_connection',
+                __('Connection settings are not configured', "scry-search")
+            );
+        }
+
+        $endpoint = trailingslashit($url) . ltrim($path, '/');
+        $args = array(
+            'method' => strtoupper($method),
+            'timeout' => 30,
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $key,
+                'Content-Type' => 'application/json',
+            ),
+        );
+
+        if ($body !== null) {
+            $args['body'] = wp_json_encode($body);
+        }
+
+        $response = wp_remote_request($endpoint, $args);
+        if (is_wp_error($response)) {
+            return $response;
+        }
+
+        $code = (int) wp_remote_retrieve_response_code($response);
+        $raw = wp_remote_retrieve_body($response);
+        $decoded = json_decode($raw, true);
+
+        if ($code < 200 || $code >= 300) {
+            $message = __('Meilisearch request failed.', "scry-search");
+            if (is_array($decoded) && isset($decoded['message'])) {
+                $message = (string) $decoded['message'];
+            } elseif ($raw !== '') {
+                $message = $raw;
+            }
+            return new WP_Error('scry_ms_meili_http', $message, array('status' => $code));
+        }
+
+        return is_array($decoded) ? $decoded : array();
     }
 }
