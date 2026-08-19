@@ -711,11 +711,20 @@ details[open] .scrywp-index-dialog-result-json-toggle::before {
     overflow-y: auto;
 }
 
+.scrywp-searchable-field-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 2px 0;
+}
+
 .scrywp-searchable-field-item {
     display: flex;
     align-items: center;
+    flex: 1;
+    min-width: 0;
     padding: 8px 10px;
-    margin: 2px 0;
+    margin: 0;
     cursor: pointer;
     border-radius: 3px;
     transition: background 0.2s ease;
@@ -736,22 +745,51 @@ details[open] .scrywp-index-dialog-result-json-toggle::before {
     user-select: none;
 }
 
+.scrywp-searchable-field-handle {
+    color: #8c8f94;
+    cursor: grab;
+    font-size: 14px;
+    padding: 0 4px;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.scrywp-searchable-field-handle:active {
+    cursor: grabbing;
+}
+
+.scrywp-searchable-field-draggable {
+    cursor: grab;
+}
+
+.scrywp-searchable-field-draggable.scrywp-searchable-field-dragging {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
 .scrywp-searchable-field-group {
     margin: 5px 0;
+}
+
+.scrywp-searchable-field-group-row {
+    background: #f9f9f9;
+    border-radius: 3px;
+    padding-right: 8px;
 }
 
 .scrywp-searchable-field-group-label {
     display: flex;
     align-items: center;
+    flex: 1;
+    min-width: 0;
     padding: 10px;
     font-weight: 600;
-    background: #f9f9f9;
     border-radius: 3px;
     cursor: pointer;
     transition: background 0.2s ease;
 }
 
-.scrywp-searchable-field-group-label:hover {
+.scrywp-searchable-field-group-row:hover {
     background: #f0f0f0;
 }
 

@@ -138,6 +138,8 @@ Change the **default** searchable attributes list used when configuring new inde
 
 Prefer this when aligning defaults with custom document fields. Use `scry_ms_index_searchable_attributes_before_update` when mutating attributes at apply-time for a specific index.
 
+The Index Settings UI lets you drag searchable fields to set their order. On save, checked attributes are sent to Meilisearch as `searchableAttributes` in that list order. Earlier entries are more important under the `attribute` / `attributeRank` ranking rule.
+
 ---
 
 #### `scry_ms_index_filterable_attributes`
@@ -339,6 +341,8 @@ The following filters fire **immediately before** each setting group is applied 
 | **Returns**   | `array`                                                                                                                                                                |
 | **When**      | Before searchable attributes are applied to an index — both when settings are saved and when an index's searchable attributes are configured (e.g. on index creation). |
 
+
+The array is already ordered from the Searchable Fields list (top to bottom) when this filter runs after a settings save.
 
 ```php
 add_filter( 'scry_ms_index_searchable_attributes_before_update', function ( $attributes, $index_name ) {

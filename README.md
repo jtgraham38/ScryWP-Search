@@ -96,7 +96,7 @@ Index settings are configured per-post-type (per Meilisearch index). The “Conf
 Core tabs:
 
 - Ranking rules (built-in + custom `attribute:asc` / `attribute:desc`)
-- Searchable fields
+- Searchable fields (drag to set `searchableAttributes` order)
 - Synonyms / stop words / dictionary
 - Typo tolerance
 - Filterable fields (including taxonomy IDs and `post_date_unix`)

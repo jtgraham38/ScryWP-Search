@@ -1201,6 +1201,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             // Get available fields for this post type
             $available_fields = $this->get_available_fields_for_post_type($post_type);
             $available_filterable_fields = $this->get_available_filterable_fields_for_post_type($post_type);
+            $searchable_attributes = $this->resolve_searchable_attributes_for_ui($searchable_attributes, $available_fields);
 
             //create the return array
             $return_array = array(
@@ -1306,6 +1307,9 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         }
         // Sanitize searchable attributes
         $searchable_attributes = array_map('sanitize_text_field', $searchable_attributes);
+        $searchable_attributes = array_values(array_unique(array_filter($searchable_attributes, function ($attr) {
+            return is_string($attr) && $attr !== '';
+        })));
 
         // Synonyms are submitted as synonyms[base][] = synonym terms (always applied on save; empty clears).
         $synonyms = array();
@@ -1571,10 +1575,10 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         
         // Core post fields
         $core_fields = array(
-            'ID' => __('Post ID', "scry-search"),
             'post_title' => __('Title', "scry-search"),
-            'post_content' => __('Content', "scry-search"),
             'post_excerpt' => __('Excerpt', "scry-search"),
+            'post_content' => __('Content', "scry-search"),
+            'ID' => __('Post ID', "scry-search"),
             'post_date' => __('Post Date', "scry-search"),
             'post_date_gmt' => __('Post Date (GMT)', "scry-search"),
             'post_modified' => __('Modified Date', "scry-search"),
@@ -1774,10 +1778,10 @@ class ScrySearch_IndexesFeature extends PluginFeature {
      */
     public function get_searchable_attributes() {
         $searchable_attributes = array(
-            'ID',
             'post_title',
-            'post_content',
             'post_excerpt',
+            'post_content',
+            'ID',
             'post_date',
             'post_date_gmt',
             'post_modified',
@@ -1795,6 +1799,67 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         $searchable_attributes = apply_filters($this->config('hook_prefix') . 'index_searchable_attributes', $searchable_attributes);
 
         return $searchable_attributes;
+    }
+
+    /**
+     * Collect every field path from an available-fields tree (including group children).
+     *
+     * @param array $fields
+     * @return string[]
+     */
+    public function get_field_paths_from_available_fields($fields) {
+        $paths = array();
+        foreach ((array) $fields as $field) {
+            if (!is_array($field) || !isset($field['path'])) {
+                continue;
+            }
+            $paths[] = (string) $field['path'];
+            if (empty($field['children']) || !is_array($field['children'])) {
+                continue;
+            }
+            foreach ($field['children'] as $child) {
+                if (!is_array($child) || !isset($child['path'])) {
+                    continue;
+                }
+                $paths[] = (string) $child['path'];
+            }
+        }
+
+        return array_values(array_unique($paths));
+    }
+
+    /**
+     * Normalize searchable attributes for the settings UI.
+     * Meilisearch's default ["*"] means every field is searchable.
+     *
+     * @param mixed $searchable_attributes
+     * @param array $available_fields
+     * @return string[]
+     */
+    public function resolve_searchable_attributes_for_ui($searchable_attributes, $available_fields) {
+        if (!is_array($searchable_attributes) || empty($searchable_attributes)) {
+            return $this->get_searchable_attributes();
+        }
+
+        $searchable_attributes = array_values(array_filter($searchable_attributes, 'is_string'));
+        if (!in_array('*', $searchable_attributes, true)) {
+            return $searchable_attributes;
+        }
+
+        $available_paths = $this->get_field_paths_from_available_fields($available_fields);
+        $ordered = array();
+        foreach ($this->get_searchable_attributes() as $path) {
+            if (in_array($path, $available_paths, true)) {
+                $ordered[] = $path;
+            }
+        }
+        foreach ($available_paths as $path) {
+            if (!in_array($path, $ordered, true)) {
+                $ordered[] = $path;
+            }
+        }
+
+        return $ordered;
     }
 
     /**

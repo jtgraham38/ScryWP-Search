@@ -57,7 +57,7 @@ Shape the result data with `scry_ms_autosuggest_results`, or the rendered HTML w
 
 Index any registered post type independently — posts, pages, WooCommerce products, CPTs from other plugins. Each type gets its own Meilisearch index:
 
-* Searchable fields — titles, content, excerpts, taxonomies, author, custom meta (ACF, Meta Box, etc.)
+* Searchable fields — titles, content, excerpts, taxonomies, author, custom meta (ACF, Meta Box, etc.); drag to set relevancy order
 * Filterable fields — post type/status/author, post date, taxonomy IDs (`taxonomies.<name>.id`), and more for facets and advanced filters
 * Ranking rules — drag-and-drop reorder (words, typo, proximity, attribute, sort, exactness) plus custom `attribute:asc` / `attribute:desc` rules per index
 * Search weights — e.g. weight products above blog posts in the merged results
@@ -69,7 +69,7 @@ Search uses Meilisearch federated multi-search: indexes queried together, result
 Per index from the tabbed Index Settings dialog (or via filters):
 
 * Reorder built-in ranking rules and add custom ranking rules
-* Choose which attributes are searchable and which are filterable
+* Choose which attributes are searchable (drag to reorder) and which are filterable
 * Synonyms — nicknames, abbreviations, UK/US spelling, brand aliases
 * Stopwords — drop noise terms that shouldn't affect ranking
 * Dictionary — keep acronyms and multi-word brand names from being split during tokenization

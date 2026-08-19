@@ -1187,6 +1187,10 @@
                                 hydrateTypoToleranceFromObject({});
                             }
 
+                            if (data.data && Array.isArray(data.data.searchable_attributes)) {
+                                hydrateSearchableAttributesFromArray(data.data.searchable_attributes);
+                            }
+
                             updateSettingsRawJsonPanels(data.data || {});
 
                             loadingDiv.style.display = 'none';
@@ -1507,6 +1511,185 @@
                     });
                 });
             }
+            function getSearchableFieldsTree() {
+                return dialog.querySelector('.scrywp-searchable-fields-tree[data-fields-type="searchable"]');
+            }
+
+            function getSearchableDraggablePath(el) {
+                if (!el) return '';
+                if (el.getAttribute('data-field-path')) {
+                    return el.getAttribute('data-field-path');
+                }
+                var checkbox = el.querySelector('.scrywp-searchable-field-checkbox');
+                return checkbox ? (checkbox.getAttribute('data-field-path') || checkbox.value || '') : '';
+            }
+
+            function getSearchableDraggableRank(el, selected) {
+                var path = getSearchableDraggablePath(el);
+                var rank = selected.indexOf(path);
+                if (rank !== -1) {
+                    return rank;
+                }
+                if (el.classList.contains('scrywp-searchable-field-group')) {
+                    var childBoxes = el.querySelectorAll('.scrywp-searchable-field-children .scrywp-searchable-field-checkbox');
+                    var best = -1;
+                    childBoxes.forEach(function (checkbox) {
+                        var childPath = checkbox.getAttribute('data-field-path') || checkbox.value;
+                        var childRank = selected.indexOf(childPath);
+                        if (childRank !== -1 && (best === -1 || childRank < best)) {
+                            best = childRank;
+                        }
+                    });
+                    if (best !== -1) {
+                        return best;
+                    }
+                }
+                return Number.MAX_SAFE_INTEGER;
+            }
+
+            function reorderSearchableDraggables(container, selected) {
+                if (!container) return;
+                var items = Array.from(container.children).filter(function (child) {
+                    return child.classList && child.classList.contains('scrywp-searchable-field-draggable');
+                });
+                items.sort(function (a, b) {
+                    var rankA = getSearchableDraggableRank(a, selected);
+                    var rankB = getSearchableDraggableRank(b, selected);
+                    if (rankA === rankB) {
+                        return items.indexOf(a) - items.indexOf(b);
+                    }
+                    return rankA - rankB;
+                });
+                items.forEach(function (item) {
+                    container.appendChild(item);
+                });
+            }
+
+            function hydrateSearchableAttributesFromArray(attrs) {
+                var tree = getSearchableFieldsTree();
+                if (!tree) return;
+
+                var selected = Array.isArray(attrs)
+                    ? attrs.filter(function (attr) { return typeof attr === 'string' && attr !== ''; })
+                    : [];
+                var checkboxes = tree.querySelectorAll('.scrywp-searchable-field-checkbox');
+                var wildcard = selected.indexOf('*') !== -1;
+                if (wildcard) {
+                    selected = Array.from(checkboxes).map(function (checkbox) {
+                        return checkbox.getAttribute('data-field-path') || checkbox.value;
+                    }).filter(function (path) {
+                        return !!path;
+                    });
+                }
+                var selectedSet = {};
+                selected.forEach(function (attr) {
+                    selectedSet[attr] = true;
+                });
+
+                checkboxes.forEach(function (checkbox) {
+                    var path = checkbox.getAttribute('data-field-path') || checkbox.value;
+                    checkbox.checked = wildcard || !!selectedSet[path];
+                });
+
+                reorderSearchableDraggables(tree, selected);
+                tree.querySelectorAll('.scrywp-searchable-field-group').forEach(function (group) {
+                    var childrenDiv = group.querySelector('.scrywp-searchable-field-children');
+                    reorderSearchableDraggables(childrenDiv, selected);
+                    if (!childrenDiv) return;
+                    var hasCheckedChild = !!childrenDiv.querySelector('.scrywp-searchable-field-checkbox:checked');
+                    var expandButton = group.querySelector('.scrywp-searchable-field-expand');
+                    if (hasCheckedChild) {
+                        childrenDiv.style.display = 'block';
+                        if (expandButton) {
+                            expandButton.textContent = '▼';
+                        }
+                    }
+                });
+            }
+
+            function setupSearchableFieldsDragAndDrop(tree) {
+                if (!tree || tree.dataset.dragListenersAttached === '1') {
+                    return;
+                }
+                tree.dataset.dragListenersAttached = '1';
+
+                var draggedElement = null;
+
+                function getDragListItem(fromEl, dragged) {
+                    var list = dragged.parentNode;
+                    var el = fromEl && fromEl.nodeType === 1 ? fromEl : (fromEl && fromEl.parentElement);
+                    while (el && el !== list) {
+                        if (el.parentNode === list && el.classList.contains('scrywp-searchable-field-draggable')) {
+                            return el;
+                        }
+                        el = el.parentNode;
+                    }
+                    return null;
+                }
+
+                tree.addEventListener('dragstart', function (e) {
+                    if (e.target.closest('input, button, a')) {
+                        e.preventDefault();
+                        return;
+                    }
+                    var item = e.target.closest('.scrywp-searchable-field-draggable');
+                    if (!item || !tree.contains(item)) {
+                        return;
+                    }
+                    draggedElement = item;
+                    item.classList.add('scrywp-searchable-field-dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                    try {
+                        e.dataTransfer.setData('text/plain', getSearchableDraggablePath(item));
+                    } catch (err) {
+                        // Some browsers require setData for the drag to start.
+                    }
+                    e.stopPropagation();
+                });
+
+                tree.addEventListener('dragend', function () {
+                    if (draggedElement) {
+                        draggedElement.classList.remove('scrywp-searchable-field-dragging');
+                    }
+                    tree.querySelectorAll('.scrywp-searchable-field-drag-over').forEach(function (el) {
+                        el.classList.remove('scrywp-searchable-field-drag-over');
+                    });
+                    draggedElement = null;
+                });
+
+                tree.addEventListener('dragover', function (e) {
+                    if (!draggedElement) {
+                        return;
+                    }
+                    var list = draggedElement.parentNode;
+                    if (!list || !list.contains(e.target)) {
+                        return;
+                    }
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+
+                    var item = getDragListItem(e.target, draggedElement);
+                    if (!item || item === draggedElement) {
+                        return;
+                    }
+
+                    var rect = item.getBoundingClientRect();
+                    if (e.clientY < rect.top + (rect.height / 2)) {
+                        list.insertBefore(draggedElement, item);
+                    } else {
+                        list.insertBefore(draggedElement, item.nextSibling);
+                    }
+                });
+
+                tree.addEventListener('drop', function (e) {
+                    if (!draggedElement) {
+                        return;
+                    }
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+            }
+
             function setupFieldTreeInteractions(tree) {
                 if (!tree) return;
 
@@ -1538,6 +1721,10 @@
                         });
                     }
                 });
+
+                if (tree.getAttribute('data-fields-type') === 'searchable') {
+                    setupSearchableFieldsDragAndDrop(tree);
+                }
             }
 
             function setupSearchableFieldsInteractions() {
@@ -1580,6 +1767,7 @@
                     dictionaryChips.syncHiddenInputs();
                     typoDisableWordsChips.syncHiddenInputs();
                     typoDisableAttributesChips.syncHiddenInputs();
+
                     var formData = settingsForm ? new FormData(settingsForm) : new FormData();
                     formData.set('action', scrywpIndexes.actions.updateIndexSettings);
                     formData.set('nonce', scrywpIndexes.nonces.updateIndexSettings);
