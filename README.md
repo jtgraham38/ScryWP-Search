@@ -55,12 +55,12 @@ All hook names use the runtime prefix `scry_ms_` (i.e. `$this->config('hook_pref
 |---|---|---|
 | Document/index shaping | `features/indexes/feature.php` | `scry_ms_should_index`, `scry_ms_should_delete`, `scry_ms_index_prepare_document`, `scry_ms_index_names`, `scry_ms_index_searchable_attributes`, `scry_ms_index_filterable_attributes`, `scry_ms_index_filterable_fields`, `scry_ms_index_typo_tolerance`, `scry_ms_index_fields`, `scry_ms_index_meta_keys`, `scry_ms_bulk_index_query_args`, `scry_ms_bulk_index_batch_size`, `scry_ms_after_index_document` / `after_delete_document` / `after_bulk_index` (actions) |
 | Index settings flow | `features/indexes/feature.php` | `scry_ms_index_settings_ajax`, `scry_ms_index_settings_backup`, `scry_ms_index_*_before_update` (ranking, searchable, synonyms, stop words, filterable attributes, dictionary, typo tolerance), `scry_ms_index_update_settings` (action), `scry_ms_index_settings_restore` / `scry_ms_after_create_index` (on new indexes only), `scry_ms_index_settings_sections_ui` |
-| Federated search | `features/search/feature.php` | `scry_ms_should_search`, `scry_ms_multi_search_index_names`, `scry_ms_multi_search_query_params`, `scry_ms_multi_search_query`, `scry_ms_multi_search_raw_results`, `scry_ms_multi_search_final_results` |
+| Federated search | `features/search/feature.php` | `scry_ms_should_search`, `scry_ms_multi_search_index_names`, `scry_ms_multi_search_query_params`, `scry_ms_multi_search_query` (hybrid via per-index settings), `scry_ms_multi_search_raw_results`, `scry_ms_multi_search_final_results` |
 | Meilisearch client | `features/client/feature.php` | `scry_ms_meilisearch_client` |
 | Highlighting | `features/highlighting/feature.php` | Hooks the federated-search filters above (`multi_search_query` / `raw_results` / `final_results`); no dedicated public hooks |
 | Autosuggest | `features/autosuggest/feature.php` | `scry_ms_autosuggest_query`, `scry_ms_autosuggest_results`, `scry_ms_autosuggest_results_rendered` |
 | Admin shell | `features/admin_page/feature.php` | `scry_ms_admin_pages` |
-| Analytics | `features/analytics/feature.php` | `scry_ms_analytics_event_to_insert` (non-column keys packed into `search_metadata`) |
+| Analytics | `features/analytics/feature.php` | `scry_ms_analytics_event_to_insert` (non-column keys packed into `search_metadata`; core adds `scry_search_hybrid` when hybrid is used) |
 | Premium upgrades | `features/upgrades/feature.php` | `scry_ms_premium_upgrades_display` |
 | Logging | `features/logs/feature.php` | `scry_ms_log_message` |
 | Front-end window | `features/window/feature.php` | `scry_ms_window_localized` |
@@ -100,13 +100,15 @@ Core tabs:
 - Synonyms / stop words / dictionary
 - Typo tolerance
 - Filterable fields (including taxonomy IDs and `post_date_unix`)
+- Hybrid search (embedder CRUD, enable/ratio per index; semantic + keyword blended in federated search)
 
 Each section can expand **View Raw JSON** for the live Meilisearch value.
 
 The dialog uses:
 
-- **AJAX** `get_index_settings` to fetch current settings from Meilisearch (ranking rules, searchable/filterable attributes, synonyms, stop words, dictionary, typo tolerance, and available field trees).
+- **AJAX** `get_index_settings` to fetch current settings from Meilisearch (ranking rules, searchable/filterable attributes, synonyms, stop words, dictionary, typo tolerance, hybrid prefs, and available field trees).
 - **AJAX** `update_index_settings` to persist settings back to Meilisearch and save a local backup option.
+- **AJAX** `list_embedders` / `save_embedder` / `delete_embedder` for per-index embedder definitions (admin key stays server-side).
 
 Security is enforced with:
 
@@ -114,13 +116,13 @@ Security is enforced with:
 - **`manage_options`** capability checks
 - server-side sanitization and allowlists/validators for sensitive arrays (e.g. ranking rules)
 
-Local settings backups include: `ranking_rules`, `searchable_attributes`, `synonyms`, `stop_words`, `filterable_attributes`, `dictionary`, `typo_tolerance`.
+Local settings backups include: `ranking_rules`, `searchable_attributes`, `synonyms`, `stop_words`, `filterable_attributes`, `dictionary`, `typo_tolerance`, `hybrid` (enabled/embedder/ratio plus stored embedder defs for restore).
 
-### Index create vs restore (important for premium / embedders)
+### Index create vs restore (embedders)
 
 On admin load, the indexes feature ensures each configured post-type index exists. **WordPress-backed settings (and `scry_ms_index_settings_restore` / `scry_ms_after_create_index`) run only when an index was just created** — not on every page load.
 
-Re-PATCHing settings on every request kept Meilisearch busy (especially with embedders from the Hybrid premium add-on) and left the Indexes UI stuck on “Indexing…”. Premium plugins that restore Meilisearch settings (embedders, etc.) should do that work in `scry_ms_index_settings_restore` / `scry_ms_after_create_index`, or via their own explicit admin actions — not by relying on a per-request restore loop.
+Embedder definitions are stored in the per-index backup and **restored onto newly created indexes**. Re-PATCHing all settings on every admin load kept Meilisearch busy and left the Indexes UI stuck on “Indexing…”.
 
 ## Matched-term highlighting (`scry_ms_highlighting`)
 
@@ -137,11 +139,13 @@ When enabled it:
 
 `sanitize_highlighted_text()` is **public** so other features (autosuggest) can reuse the same allowlist (`<mark>` only). Front-end styles enqueue on search results pages, and also when autosuggest is enabled.
 
-## Analytics: premium `search_metadata`
+## Analytics: `search_metadata`
 
-Analytics schema version **1.2** stores a `search_metadata` JSON column (renamed from the short-lived `extras` column). Premium plugins extend events via `scry_ms_analytics_event_to_insert`:
+Analytics schema version **1.2** stores a `search_metadata` JSON column (renamed from the short-lived `extras` column).
 
-- Add a **top-level key named for your plugin** (e.g. `scry_search_filters`, `scry_search_hybrid`).
+**Core hybrid tracking:** when a federated search uses hybrid on any index, analytics adds a `scry_search_hybrid` key (embedder + semantic ratio per index) via `scry_ms_analytics_event_to_insert`.
+
+**Premium / custom fields:** add a top-level key named for your plugin (e.g. `scry_search_filters`):
 - After the filter, any keys that are not table columns are packed into `search_metadata` and stored with the row.
 - You may also set `search_metadata` as an array (or JSON string); it is merged with packed plugin keys.
 - CSV export includes the `search_metadata` column.
@@ -192,7 +196,7 @@ REST payload per hit includes `title`, `excerpt`, `url`, and `featured_image` (t
 
 ## Premium Upgrades page
 
-**Scry Search → Premium Upgrades** lists companion add-ons (e.g. **Scry Search Filters**, **Scry Search Hybrid** for semantic/hybrid search with Meilisearch embedders). The catalog is filterable via `scry_ms_premium_upgrades_display` so installed premium plugins can mark themselves active and expose settings UI.
+**Scry Search → Premium Upgrades** lists companion add-ons (e.g. **Scry Search Filters**). Hybrid/semantic search is included in the base plugin as of 1.5.0. The catalog is filterable via `scry_ms_premium_upgrades_display` so installed premium plugins can mark themselves active and expose settings UI.
 
 ## Local development notes
 

@@ -3,12 +3,12 @@ Contributors: jtgraham38
 Tags: meilisearch, search, developer, hooks, extendable
 Requires at least: 5.2
 Tested up to: 7.0
-Stable tag: 1.4.0
+Stable tag: 1.5.0
 Requires PHP: 8.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-Meilisearch for WordPress — by developers for developers, usable without writing code. Headless, documented hooks, drop-in WP_Query search.
+Meilisearch for WordPress — fast keyword search plus optional semantic/hybrid search. By developers for developers, usable without writing code. Headless, documented hooks, drop-in WP_Query search.
 
 == Get Managed Hosting from ScryWP ==
 
@@ -18,14 +18,14 @@ Don't want to run Meilisearch yourself? [ScryWP Search](https://scrywp.com) is m
 
 Scry Search is built by developers for developers — but you don't need to be one to run it.
 
-If you can install a plugin and paste API keys, you can connect Meilisearch, pick post types, index content, tune ranking/filterable fields/synonyms/typo tolerance/weights, and turn on autosuggest from wp-admin. No theme edits required. Existing search forms keep working. WooCommerce products are a first-class post type.
+If you can install a plugin and paste API keys, you can connect Meilisearch, pick post types, index content, tune ranking/filterable fields/synonyms/typo tolerance/hybrid search, and turn on autosuggest from wp-admin. No theme edits required. Existing search forms keep working. WooCommerce products are a first-class post type.
 
 If you *are* a developer, the same plugin is meant to be extended: `scry_ms_*` filters/actions, optional `window.scrySearch`, and a full hook reference in DOCS.md ([GitHub](https://github.com/jtgraham38/ScryWP-Search)). We use this kind of surface on client work and our own products, so the priorities are boring on purpose: stable hook names, easy-to-find call sites, a real docs file, and no forced frontend chrome.
 
 = Works from the admin (no code) =
 
 * Connection Settings — URL and API keys, with a connection test
-* Index Settings — post types, searchable and filterable fields (including meta and taxonomies), ranking rules (including custom attribute:asc/desc), synonyms, stop words, dictionary, and typo tolerance; bulk index / wipe
+* Index Settings — post types, searchable and filterable fields (including meta and taxonomies), ranking rules (including custom attribute:asc/desc), synonyms, stop words, dictionary, typo tolerance, hybrid search embedders; bulk index / wipe
 * Search Settings — post-type weights for federated search, optional autosuggest and matched-term highlighting
 * Task drawer, Logs, and Search Analytics for day-to-day ops
 
@@ -61,8 +61,21 @@ Index any registered post type independently — posts, pages, WooCommerce produ
 * Filterable fields — post type/status/author, post date, taxonomy IDs (`taxonomies.<name>.id`), and more for facets and advanced filters
 * Ranking rules — drag-and-drop reorder (words, typo, proximity, attribute, sort, exactness) plus custom `attribute:asc` / `attribute:desc` rules per index
 * Search weights — e.g. weight products above blog posts in the merged results
+* Hybrid search — per-index embedders, semantic ratio, and optional hybrid ranking in federated search
 
 Search uses Meilisearch federated multi-search: indexes queried together, results merged and re-ranked with your per–post-type weights (not a hand-stitched PHP merge).
+
+= Semantic / hybrid search =
+
+Go beyond exact keyword matching. Meilisearch hybrid search blends traditional full-text relevancy with vector (semantic) similarity so visitors can find content even when they do not use the same words as your posts or products.
+
+From **Index Settings → Configure Index → Hybrid Search** for each post type:
+
+* Create embedders on that index (OpenAI, Hugging Face, Ollama, user-provided vectors, and other Meilisearch-supported sources)
+* Choose which embedder powers hybrid queries and set the semantic vs keyword ratio
+* Turn hybrid on per index — posts, pages, and WooCommerce products can each use different settings
+
+Hybrid applies to the same drop-in `WP_Query` search path and federated multi-search your theme already uses; no separate search endpoint required. After adding or changing embedders, reindex so Meilisearch can build vectors. Search Analytics records when hybrid was used (`search_metadata.scry_search_hybrid`).
 
 = Relevancy, filtering, and language settings =
 
@@ -74,6 +87,7 @@ Per index from the tabbed Index Settings dialog (or via filters):
 * Stopwords — drop noise terms that shouldn't affect ranking
 * Dictionary — keep acronyms and multi-word brand names from being split during tokenization
 * Typo tolerance — enable/disable, min word sizes, and disable on numbers, words, or attributes
+* Hybrid search — create embedders per index, pick one for hybrid queries, set semantic vs keyword ratio
 * View Raw JSON for each settings group when debugging
 
 = WooCommerce =
@@ -88,7 +102,7 @@ Scry Search → Search Analytics:
 * Optional IP anonymization / omit identifying fields
 * Retention period with daily WP-Cron cleanup, plus a manual “delete old events” button
 * CSV export of the analytics table (admin-only, nonce-protected)
-* Extra fields via `scry_ms_analytics_event_to_insert` (non-column keys go into `search_metadata`)
+* Extra fields via `scry_ms_analytics_event_to_insert` (non-column keys go into `search_metadata`, including hybrid search usage when enabled)
 
 = Task monitor =
 
@@ -302,7 +316,7 @@ AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API 
 == Screenshots ==
 
 1. Index Settings Dashboard - Manage post type indexes, view document counts, and trigger indexing operations
-2. Index Configuration Modal - Tabbed settings for ranking rules (including custom rules), searchable/filterable fields, synonyms, stop words, dictionary, and typo tolerance
+2. Index Configuration Modal - Tabbed settings for ranking rules, searchable/filterable fields, synonyms, stop words, dictionary, typo tolerance, and hybrid search embedders
 3. Connection Settings - Configure Meilisearch URL and API keys with connection testing
 4. Search Settings - Configure post type search weights for federated search, enable AJAX autosuggest, and set the class selector for which forms receive predictive search
 5. Task Drawer - Monitor Meilisearch tasks with status, timing, and error details
@@ -310,6 +324,15 @@ AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API 
 7. Search Analytics - Dashboard, privacy/retention settings, CSV export of analytics data
 
 == Changelog ==
+
+= 1.5.0 =
+* Hybrid / semantic search in core — Hybrid Search tab per index with embedder add/edit/delete, semantic ratio, and federated search integration
+* Embedder definitions backed up in WordPress and restored when an index is recreated; preserved when wiping/reindexing
+* Search analytics records hybrid usage in `search_metadata` (`scry_search_hybrid`) when hybrid is active
+* Searchable fields: drag-and-drop reorder (saved as Meilisearch `searchableAttributes` order)
+* Default searchable attribute order prioritizes title, excerpt, then content
+* Index settings UI treats Meilisearch `["*"]` searchable attributes as all fields selected
+* DOCS.md / README updated
 
 = 1.4.0 =
 * Tabbed Index Settings dialog covering ranking rules, searchable fields, filterable fields, synonyms, stop words, dictionary, and typo tolerance
@@ -362,6 +385,9 @@ AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API 
 * Initial release: per-post-type indexes, federated search, ranking/searchable fields, auto + bulk indexing, task drawer, live preview, drop-in WP search
 
 == Upgrade Notice ==
+
+= 1.5.0 =
+Hybrid/semantic search and embedder management are now built into Index Settings, plus draggable searchable-field ordering and analytics for hybrid queries. See DOCS.md.
 
 = 1.4.0 =
 Tabbed Index Settings: filterable fields, custom ranking rules, dictionary, typo tolerance, raw JSON viewers, plus batched bulk indexing and new `scry_ms_*` hooks. See DOCS.md.

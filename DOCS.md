@@ -138,7 +138,7 @@ Change the **default** searchable attributes list used when configuring new inde
 
 Prefer this when aligning defaults with custom document fields. Use `scry_ms_index_searchable_attributes_before_update` when mutating attributes at apply-time for a specific index.
 
-The Index Settings UI lets you drag searchable fields to set their order. On save, checked attributes are sent to Meilisearch as `searchableAttributes` in that list order. Earlier entries are more important under the `attribute` / `attributeRank` ranking rule.
+The Index Settings UI lets you drag searchable fields to set their order. On save, checked attributes are sent to Meilisearch as `searchableAttributes` in that list order. Earlier entries are more important under the `attribute` / `attributeRank` ranking rule. When Meilisearch returns `["*"]` (all fields searchable), the UI expands that to every available field path so checkboxes match reality.
 
 ---
 
@@ -315,7 +315,7 @@ Modify the settings payload that is persisted locally when an index is saved.
 | **When**      | Right before the settings backup is saved.           |
 
 
-`$index_settings_backup` contains: `ranking_rules`, `searchable_attributes`, `synonyms`, `stop_words`, `filterable_attributes`, `dictionary`, `typo_tolerance`.
+`$index_settings_backup` contains: `ranking_rules`, `searchable_attributes`, `synonyms`, `stop_words`, `filterable_attributes`, `dictionary`, `typo_tolerance`, `hybrid` (enabled, embedder, semantic_ratio, and embedders map for restore).
 
 ---
 
@@ -679,7 +679,9 @@ Modify a search analytics record before it is stored.
 
 Keys include: `search_term`, `user_id`, `user_ip`, `user_agent`, `referrer`, `result_count`, `result_ids`, `result_titles`, `post_types_searched`. Use this to further anonymize data, or to attach premium-plugin payloads.
 
-**Premium / extra fields:** add a top-level key named for your plugin (for example `scry_search_filters` or `scry_search_hybrid`). After this filter runs, any keys that are not table columns are packed into the `search_metadata` JSON column and stored with the event. You may also set a `search_metadata` array directly; it is merged with those packed keys. Omit your key when you have nothing to report.
+**Core hybrid tracking (1.5+):** when federated search uses hybrid on any index, the analytics feature adds `scry_search_hybrid` with per-index `embedder` and `semantic_ratio` before this filter runs.
+
+**Premium / extra fields:** add a top-level key named for your plugin (for example `scry_search_filters`). After this filter runs, any keys that are not table columns are packed into the `search_metadata` JSON column and stored with the event. You may also set a `search_metadata` array directly; it is merged with those packed keys. Omit your key when you have nothing to report.
 
 ---
 
@@ -795,7 +797,7 @@ Fires after a saved settings backup is re‑applied to an index.
 | **When**      | After previously saved settings are restored onto an index.                |
 
 
-`$index_settings_backup` has the same shape as the `scry_ms_index_settings_backup` filter (`ranking_rules`, `searchable_attributes`, `synonyms`, `stop_words`, `filterable_attributes`, `dictionary`, `typo_tolerance`).
+`$index_settings_backup` has the same shape as the `scry_ms_index_settings_backup` filter (`ranking_rules`, `searchable_attributes`, `synonyms`, `stop_words`, `filterable_attributes`, `dictionary`, `typo_tolerance`, `hybrid`).
 
 ---
 
