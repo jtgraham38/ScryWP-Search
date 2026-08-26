@@ -156,11 +156,14 @@ See [`DOCS.md`](DOCS.md) for the full contract on that filter.
 
 The front-end “window layer” provides a small runtime other features can build on:
 
-- `window.scrySearch.init()` discovers search forms on the page and constructs `ScrySearch_SearchForm` instances.
+- `window.scrySearch.init()` discovers search forms from `windowLocalized.searchFormSelectors` (CSS selectors that must match `<form>` tags) and constructs `ScrySearch_SearchForm` instances.
+- Defaults include `#adminbarsearch` and `form[role="search"]`. Add more via the `scry_ms_window_localized` filter (`searchFormSelectors` array) — e.g. `form.my-site-search` or `form.wp-block-search`.
 - Once ready, it emits **`document.dispatchEvent(new CustomEvent('scrySearchReady', ...))`** so features can attach behavior without worrying about load order.
 - Features can also call:
   - `window.scrySearch.getSearchForms()`
-  - `window.scrySearch.getSearchFormsByClass(className)`
+  - `window.scrySearch.getSearchFormsByClass(className)` — used by autosuggest when a class is set under Search Settings
+
+See **Form discovery** in [`DOCS.md`](DOCS.md) for PHP/JS examples.
 
 ### `ScrySearch_SearchForm` action pipeline
 
@@ -185,12 +188,15 @@ Actions are instances of `ScrySearch_SubmitAction` and receive:
 
 ## Autosuggest feature (high level)
 
-Autosuggest attaches to search inputs after `scrySearchReady`:
+Autosuggest attaches after `scrySearchReady`:
 
-- For each detected search form, it registers post-AJAX actions to:
+- If Search Settings has a class selector, it uses `getSearchFormsByClass(className)`; otherwise it uses every discovered form
+- For each form, it registers post-AJAX actions to:
   - persist results to `searchForm.data.core.autosuggestResults`
   - render a dropdown UI under the form
 - On each input event (after a small minimum length), it calls `await searchForm.submitAjax()`
+
+To target a custom form: add a CSS class on the `<form>`, include a matching selector in `searchFormSelectors` (via `scry_ms_window_localized` if needed), then set that same class name in the autosuggest class selector setting.
 
 REST payload per hit includes `title`, `excerpt`, `url`, and `featured_image` (thumbnail URL when the post has one). Titles/excerpts are sanitized through the highlighting feature’s allowlist so matched-term `<mark>` tags survive when highlighting is enabled; the dropdown renders a thumbnail when `featured_image` is present.
 

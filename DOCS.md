@@ -4,7 +4,7 @@ This document is the public extension reference for **Scry Search for Meilisearc
 
 1. [PHP filters](#php-filters) — change values as they flow through the plugin.
 2. [PHP actions](#php-actions) — run side effects at key moments.
-3. [JavaScript API](#javascript-api) — the `window.scrySearch` runtime, search‑form action pipeline, and front‑end customization points.
+3. [JavaScript API](#javascript-api) — the `window.scrySearch` runtime, [form discovery](#form-discovery), search‑form action pipeline, and front‑end customization points.
 
 It documents the **contract** of each extension point (purpose, type, arguments, return value, and when it runs). It intentionally does not describe the plugin's internal implementation.
 
@@ -708,7 +708,7 @@ Modify a log message before it is stored.
 
 #### `scry_ms_window_localized`
 
-Modify the data passed from PHP to the front‑end `window.localized` object used by the JavaScript runtime.
+Modify the data passed from PHP to the front‑end `windowLocalized` object used by the JavaScript runtime.
 
 
 |               |                                               |
@@ -719,7 +719,26 @@ Modify the data passed from PHP to the front‑end `window.localized` object use
 | **When**      | When the front‑end window script is enqueued. |
 
 
-Default keys include `restApiUrl` and `autoSuggestEnabled`. Add keys here to expose configuration to your own front‑end code.
+Default keys include:
+
+- `restApiUrl` — REST URL used by form AJAX submits (autosuggest endpoint by default)
+- `autoSuggestEnabled` — whether autosuggest is enabled in settings
+- `searchFormSelectors` — **array of CSS selectors** used to discover `<form>` elements on the page
+
+Use this filter to add discovery selectors for custom theme or builder search forms (see [Form discovery](#form-discovery) below).
+
+```php
+add_filter( 'scry_ms_window_localized', function ( $data ) {
+    if ( empty( $data['searchFormSelectors'] ) || ! is_array( $data['searchFormSelectors'] ) ) {
+        $data['searchFormSelectors'] = array();
+    }
+    // Match any <form> that carries this class.
+    $data['searchFormSelectors'][] = 'form.my-site-search';
+    // Or match a Gutenberg-style block form.
+    $data['searchFormSelectors'][] = 'form.wp-block-search';
+    return $data;
+} );
+```
 
 ---
 
@@ -835,7 +854,60 @@ Echo your own markup from the callback. `$index` includes display fields such as
 
 The plugin ships a small front‑end runtime, `window.scrySearch`, that discovers search forms on the page and gives you ordered hooks to run code before/after a search — both for normal submits and AJAX submits (used by autosuggest and similar features).
 
-The script is enqueued on the front end. Other scripts can declare it as a dependency using the handle `scry_ms_window-script`.
+The script is enqueued on the front end. Other scripts can declare it as a dependency using the handle `scry_ms_window-script`. Configuration is exposed as `windowLocalized` (not a shared `localized` global).
+
+### Form discovery
+
+On init, the runtime calls `discoverSearchForms(windowLocalized.searchFormSelectors)`:
+
+1. Runs `document.querySelectorAll(selectors.join(', '))` for every selector in the array
+2. Keeps only elements whose tag is `<form>`
+3. Wraps each match in a `ScrySearch_SearchForm`
+
+**Built‑in defaults** (from `features/window/feature.php`):
+
+- `#adminbarsearch` — WordPress admin bar search
+- `form[role="search"]` — theme/core forms with `role="search"` (includes the Gutenberg Search block form)
+
+Selectors must resolve to **`<form>` elements**. A selector that only matches an `<input>` (for example `.wp-block-search__input`) will be discarded by the form-tag filter.
+
+#### Add your own selectors (recommended)
+
+Prefer the PHP filter so discovery works on every page load without custom JS:
+
+```php
+add_filter( 'scry_ms_window_localized', function ( $data ) {
+    $data['searchFormSelectors'][] = 'form.my-custom-search';
+    $data['searchFormSelectors'][] = '.header-search form';
+    return $data;
+} );
+```
+
+Mark the form in your theme:
+
+```html
+<form role="search" method="get" class="my-custom-search" action="/">
+  <input type="search" name="s" />
+</form>
+```
+
+#### Limit autosuggest to some discovered forms
+
+Discovery and autosuggest targeting are separate:
+
+1. **Discovery** — which forms become `ScrySearch_SearchForm` instances (`searchFormSelectors`)
+2. **Autosuggest class** — under **Scry Search → Search Settings**, optional class name on the `<form>`
+
+Leave the autosuggest class blank to attach typeahead to **all** discovered forms. Set it to a class like `my-site-search` (the class token only — not `form.my-site-search`) to attach only to forms that have that class.
+
+```js
+// What autosuggest does internally after scrySearchReady:
+if (autoSuggestLocalized.classSelector) {
+    searchForms = window.scrySearch.getSearchFormsByClass(autoSuggestLocalized.classSelector);
+} else {
+    searchForms = window.scrySearch.getSearchForms();
+}
+```
 
 ### Readiness: the `scrySearchReady` event
 
@@ -859,7 +931,7 @@ document.addEventListener('scrySearchReady', function (e) {
 | `registerUpgrade(name, version)`   | `(string, string) => void`            | Register a named extension namespace (see [Upgrades](#upgrades)). |
 
 
-A "search form" is any `<form>` on the page with `role="search"` or that contains a text/search input named `s`.
+A “search form” is any `<form>` matched by `windowLocalized.searchFormSelectors` (see [Form discovery](#form-discovery)).
 
 ### `ScrySearch_SearchForm`
 
@@ -948,6 +1020,6 @@ window.scrySearch.registerUpgrade('my_addon', '1.0.0');
 window.scrySearch.upgrades.my_addon.data.enabled = true;
 ```
 
-### Front‑end configuration via `window.localized`
+### Front‑end configuration via `windowLocalized`
 
-PHP exposes configuration to the runtime through a `localized` object (modifiable with the `[scry_ms_window_localized](#scry_ms_window_localized)` filter). Default keys include `restApiUrl` and `autoSuggestEnabled`. Add your own keys server‑side to read them in your front‑end code.
+PHP exposes configuration to the runtime as the global `windowLocalized` object (modifiable with the [`scry_ms_window_localized`](#scry_ms_window_localized) filter). Default keys include `restApiUrl`, `autoSuggestEnabled`, and `searchFormSelectors`. Add your own keys server‑side to read them in your front‑end code. Autosuggest uses a separate localized object so the two features do not overwrite each other.
