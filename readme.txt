@@ -2,13 +2,13 @@
 Contributors: jtgraham38
 Tags: meilisearch, search, developer, hooks, extendable
 Requires at least: 5.2
-Tested up to: 7.0
+Tested up to: 7.1
 Stable tag: 1.5.0
 Requires PHP: 8.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-Meilisearch for WordPress — fast keyword search plus optional semantic/hybrid search. By developers for developers, usable without writing code. Headless, documented hooks, drop-in WP_Query search.
+Meilisearch for WordPress: fast keyword/semantic search. By developers for developers, usable without writing code. Headless, documented hooks, drop-in WP_Query search.
 
 == Get Managed Hosting from ScryWP ==
 

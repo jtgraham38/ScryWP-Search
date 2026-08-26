@@ -66,7 +66,7 @@ class ScrySearch_AutoSuggestFeature extends PluginFeature {
         // Localize the script with the settings
         wp_localize_script(
             $this->prefixed('autosuggest-script'),
-            'localized',
+            'autoSuggestLocalized',
             array(
                 'classSelector' => $class_selector,
                 'restApiUrl' => $rest_api_url,

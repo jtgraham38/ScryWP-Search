@@ -2,8 +2,8 @@
 //wait for the document to be ready
 document.addEventListener('scrySearchReady', function () {
     //get all search forms with the class selector
-    if (localized.classSelector) {
-        var searchForms = window.scrySearch.getSearchFormsByClass(localized.classSelector);
+    if (autoSuggestLocalized.classSelector) {
+        var searchForms = window.scrySearch.getSearchFormsByClass(autoSuggestLocalized.classSelector);
     } else {
         var searchForms = window.scrySearch.getSearchForms();
     }

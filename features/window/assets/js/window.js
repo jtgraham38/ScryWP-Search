@@ -7,24 +7,12 @@ window.scrySearch = {
     init: function () {
         this.searchForms = document.querySelectorAll('form');
 
-        //first, get all forms on the page
-        candidateFormElements = Array.from(document.querySelectorAll('form'));
-
-        //get search forms
-        var searchFormElements = candidateFormElements.filter(function (form) {
-            if (!form) return false;
-
-            var role = form.getAttribute('role');
-            if (role && role.toLowerCase() === 'search') {
-                return true;
-            }
-
-            return !!form.querySelector('input[type="text"][name="s"], input[type="search"][name="s"]');
-        });
+        //discover all search forms on the page
+        const searchFormElements = this.discoverSearchForms(windowLocalized.searchFormSelectors);
 
         //convert the search form elements to search form objects
         this.searchForms = searchFormElements.map(function (formElement) {
-            return new ScrySearch_SearchForm(formElement);
+            return new ScrySearch_SearchForm(formElement, windowLocalized.searchFormSelector);
         });
 
         //emit a custom event to let other scripts know the window is ready
@@ -35,6 +23,21 @@ window.scrySearch = {
                 upgrades: this.upgrades,
             }
         }));
+
+        console.log('window.localized', windowLocalized);
+    },
+
+    //discover all search forms on the page
+    discoverSearchForms: function (selectors) {
+        //get all elements matching the selector
+        const candidateFormElements = Array.from(document.querySelectorAll(selectors.join(', ')));
+
+        //filter out all that are not form tags
+        const searchFormElements = candidateFormElements.filter(function (form) {
+            return form.tagName.toLowerCase() === 'form';
+        });
+
+        return searchFormElements;
     },
 
     //get all search forms
@@ -140,7 +143,7 @@ class ScrySearch_SearchForm {
             deepSet(formDataObject, path, value);
         }
         //send a request to the rest api
-        var searchResults = await fetch(localized.restApiUrl, {
+        var searchResults = await fetch(windowLocalized.restApiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

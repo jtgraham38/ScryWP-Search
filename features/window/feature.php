@@ -31,9 +31,10 @@ class ScrySearch_WindowFeature extends PluginFeature {
     public function load_assets() {
         
         //load the script and register the localized variables
-        $rest_api_url = rest_url('scry-search/v1/search');
+        $rest_api_url = rest_url('scry-search/v1/autosuggest');
         $auto_suggest_enabled = get_option($this->prefixed('enable_autosuggest'), '0');
-
+        $search_form_selectors = ['#adminbarsearch', 'form[role="search"]'];
+        
         wp_register_script(
             $this->prefixed('window-script'),
             plugin_dir_url(__FILE__) . 'assets/js/window.js',
@@ -47,6 +48,7 @@ class ScrySearch_WindowFeature extends PluginFeature {
         $window_localized = array(
             'restApiUrl' => $rest_api_url,
             'autoSuggestEnabled' => $auto_suggest_enabled,
+            'searchFormSelectors' => $search_form_selectors,
         );
 
         //let other plugins modify the window localized object
@@ -56,7 +58,7 @@ class ScrySearch_WindowFeature extends PluginFeature {
         //localize the script with the rest api url
         wp_localize_script(
             $this->prefixed('window-script'),
-            'localized',
+            'windowLocalized',
             $window_localized
         );
 
