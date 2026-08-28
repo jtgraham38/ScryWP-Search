@@ -8,7 +8,7 @@ Requires PHP: 8.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-Meilisearch for WordPress — keyword + built-in semantic/hybrid search. Drop-in WP_Query, ~45 PHP hooks, no theme changes.
+Meilisearch for WordPress: keyword + built-in semantic/hybrid search. Drop-in WP_Query, ~45 PHP hooks, no theme changes.
 
 == Get Managed Hosting from ScryWP ==
 

@@ -199,13 +199,14 @@ class ScrySearch_SearchFeature extends PluginFeature {
         
         if (isset($search_results['hits']) && is_array($search_results['hits'])) {
             $all_results = $search_results['hits'];
-            $total_hits = $search_results['estimatedTotalHits'];
+            $total_hits = isset($search_results['estimatedTotalHits'])
+                ? (int) $search_results['estimatedTotalHits']
+                : count($all_results);
         }
 
-        //allow other plugins to modify the search results + total hits before the db versions are retrieved
+        //allow other plugins to modify the search results before the db versions are retrieved
         //@HOOK: scry_ms_multi_search_raw_results
         $all_results = apply_filters($this->config('hook_prefix') . 'multi_search_raw_results', $all_results);
-        $total_hits = count($all_results);
    
         // Track search analytics
         try {

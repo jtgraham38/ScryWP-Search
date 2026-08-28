@@ -246,6 +246,13 @@
     align-items: center;
 }
 
+.scrywp-admin-page-card-action .button .dashicons {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    line-height: 1;
+}
+
 @media (max-width: 782px) {
     .scrywp-admin-pages-grid {
         grid-template-columns: 1fr;
