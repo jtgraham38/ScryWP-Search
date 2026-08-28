@@ -23,8 +23,6 @@ window.scrySearch = {
                 upgrades: this.upgrades,
             }
         }));
-
-        console.log('window.localized', windowLocalized);
     },
 
     //discover all search forms on the page

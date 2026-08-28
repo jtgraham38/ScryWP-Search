@@ -162,7 +162,7 @@ class ScrySearch_AdminPageFeature extends PluginFeature {
     public function render_admin_page($file_path) {
         require_once plugin_dir_path(__FILE__) . 'elements/base_layout.php';
     }
-    
+
     /**
      * AJAX handler for fetching tasks from Meilisearch
      */

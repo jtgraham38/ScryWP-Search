@@ -25,11 +25,13 @@ class ScrySearch_EnginesFeature extends PluginFeature {
     Engines are search presets that can be used to customize specific search experiences, and applied to specific bars via a classname.
     Define their schema here.
     A search engine will be stored in its own custom table, and they will be applied to specific bars via a classname.
+    Or should it be via a hidden input field?
 
     Their schema is:
     - id - auto increment
     - name - unique name for the engine.  It must be a string of lowercase alphanumerics and dashes/underscores.  This is how we will generate classnames to apply to bars.
     - classname - it will be programmatically generated from the name.
+    - type - the type of the engine.  For now, this will default to "federated".
     - description - a short description of the engine.  For admin purposes only.
     - settings - a json/serialized object that stores the engine's settings.  This will be used to store meilisearch-specific settings that shoudl be applied to every search that uses this engine.
     - created_at- timestamp when the engine was created.
@@ -41,19 +43,63 @@ class ScrySearch_EnginesFeature extends PluginFeature {
     The settings array will have the following structure:
     (TODO: finish designing this schema)
     {
-        "indexes": [
+        "search_queries":{
             "<index_1_name>": {
-                "search_query": {
-                    todo
+                "resource_type": "search_query",
+                "index_uid": "<index_1_name>",
+                "filters": {
+                    "resource_type": "array",
+                    "items": {
+                        "<field_name> <operator> <value>",
+                        ...
+                    }
+                },
+                "sorts": {
+                    "resource_type": "array",
+                    "items": [
+                        "<field_name>:<direction>",
+                        ...
+                    ]
+                },
+                "hybrid": {
+                    "resource_type": "hyrbrid_search_options",
+                    "embedder": "<embedder_name>",
+                    "semantic_ratio": "<semantic_ratio>"
                 },
                 "federation_options": {
-                    todo
-                },
-                todo
-            }
-        ],
+                    "resource_type": "federation_options",
+                    "weight": <weight>
+                }
+            },
+            "<index_2_name>": {
+                ...
+            },
+            ...
+        }
         "multisearch_federation": {
-            todo
+            "limit": <limit>,
+            "offset": <offset>,
+            "page": <page>,
+            "hits_per_page": <hits_per_page>,
+            "facets_by_index": [
+                "<index_1_name>": [
+                    "<facet_name>",
+                    ...
+                ],
+                "<index_2_name>": [
+                    "<facet_name>",
+                    ...
+                ],
+                ...
+            ],
+            "merge_facets": [
+                TODO
+            ],
+            "distinct": <distinct_string>,
+            "performance_details": <performance_details>,
+            "personalization": {
+                TODO
+            }
         }
     }
 

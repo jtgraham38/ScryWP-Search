@@ -107,6 +107,33 @@ $setup_steps = array(
 		'url'   => home_url('/'),
 	),
 );
+
+// Determine if the semantic search notice should be shown.
+$show_semantic_search_notice = false;
+if (
+	!$show_setup_breadcrumb
+	&& $current_page !== 'scry-search-meilisearch-index-settings'
+	&& !empty($index_names)
+	&& $indexes_feature
+	&& method_exists($indexes_feature, 'get_hybrid_settings')
+) {
+	$show_semantic_search_notice = true;
+    $all_have_semantic_active = true;
+	foreach ($index_names as $index_name) {
+		$hybrid = $indexes_feature->get_hybrid_settings((string) $index_name);
+
+        //if the hybrid settings are not empty
+		if (!empty($hybrid['enabled'])) {
+			$all_have_semantic_active = false;
+			break;
+		}
+	}
+
+    //if all indexes already have semantic active, don't show the notice
+    if ($all_have_semantic_active) {
+        $show_semantic_search_notice = false;
+    }
+}
 ?>
 
 <div class="wrap">
@@ -130,6 +157,15 @@ $setup_steps = array(
             </a>
         <?php endforeach; ?>
     </nav>
+
+    <?php if ($show_semantic_search_notice) : ?>
+        <div class="scry-ms-semantic-search-notice notice notice-info inline">
+            <p>
+                <span class="dashicons dashicons-lightbulb" aria-hidden="true"></span>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=scry-search-meilisearch-index-settings')); ?>"><?php esc_html_e('Get started with semantic search', 'scry-search'); ?></a>
+            </p>
+        </div>
+    <?php endif; ?>
 
     <?php if ($show_setup_breadcrumb) : ?>
         <nav class="scry-ms-setup-breadcrumb" aria-label="<?php esc_attr_e('Setup steps', 'scry-search'); ?>">
