@@ -59,27 +59,37 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             return;
         }
 
+        //flag that tells us whether the post should be indexed
+        $should_index = true;
+
         //ensure this post is of a type that should be indexed
         $indexes = $this->get_index_names();
 
         if (!isset($indexes[$post->post_type])) {
             //log a debug message with the logging feature
             $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Post type %s is not indexed. Exiting index_post.', "scry-search"), $post->post_type));
-            return;
+            $should_index = false;
         }
 
         //ensure the post is published
         if ($post->post_status !== 'publish') {
             //log a debug message with the logging feature
             $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Post %1$d (%2$s) is not published. Exiting index_post.', "scry-search"), $post->ID, $post->post_type));
-            return;
+            $should_index = false;
+        }
+
+        //do not index password protected posts
+        if (post_password_required($post)) {
+            //log a debug message with the logging feature
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Post %1$d (%2$s) is password protected. Exiting index_post.', "scry-search"), $post->ID, $post->post_type));
+            $should_index = false;
         }
 
         //allow other plugins to skip indexing this post
         //@HOOK: scry_ms_should_index
         $should_index = apply_filters($this->config('hook_prefix') . 'should_index', true, $post, 'save');
         if (!$should_index) {
-            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Post %1$d (%2$s) skipped by should_index filter. Exiting index_post.', "scry-search"), $post->ID, $post->post_type));
+            $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Post %1$d (%2$s) indexing skipped. Exiting index_post.', "scry-search"), $post->ID, $post->post_type));
             return;
         }
 
