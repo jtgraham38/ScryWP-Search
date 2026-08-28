@@ -868,7 +868,7 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
                 $line = array();
                 //foreach column, add the value to the line
                 foreach ($columns as $col) {
-                    $line[] = isset($row[$col]) ? $row[$col] : '';
+                    $line[] = $this->sanitize_csv_cell(isset($row[$col]) ? $row[$col] : '');
                 }
                 fputcsv($out, $line);
             }
@@ -884,6 +884,33 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
         fclose($out);
         exit;
     }
+
+    /**
+     * Neutralize CSV formula injection when exports are opened in Excel/Sheets.
+     *
+     * Attacker-controlled fields (search terms, user agents, referrers, etc.) are
+     * prefixed with a single quote when they begin with spreadsheet formula triggers.
+     *
+     * @param mixed $value Raw cell value from the database.
+     * @return string Safe cell value for fputcsv().
+     */
+    private function sanitize_csv_cell($value): string {
+        if (!is_scalar($value)) {
+            return '';
+        }
+
+        $value = (string) $value;
+        if ($value === '') {
+            return '';
+        }
+
+        if (preg_match('/^[=+\-@\t\r]/', $value)) {
+            return "'" . $value;
+        }
+
+        return $value;
+    }
+
     /**
      * AJAX: Get paginated recent searches
      */
