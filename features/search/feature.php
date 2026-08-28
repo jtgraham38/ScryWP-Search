@@ -38,6 +38,11 @@ class ScrySearch_SearchFeature extends PluginFeature {
             return $posts;
         }
 
+        //if this is a search in the admin area, use the native wordpress search
+        if (is_admin()) {
+            return $posts;
+        }
+
         
         // Any query with a search string should use Meilisearch — not only the main
         // front-end is_search view. Programmatic WP_Query (e.g. REST autosuggest) sets
