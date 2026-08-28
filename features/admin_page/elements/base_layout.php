@@ -134,6 +134,13 @@ if (
         $show_semantic_search_notice = false;
     }
 }
+
+if (
+	$show_semantic_search_notice
+	&& !empty($_COOKIE[$this->prefixed('dismiss_semantic_search_notice')])
+) {
+	$show_semantic_search_notice = false;
+}
 ?>
 
 <div class="wrap">
@@ -159,7 +166,7 @@ if (
     </nav>
 
     <?php if ($show_semantic_search_notice) : ?>
-        <div class="scry-ms-semantic-search-notice notice notice-info inline">
+        <div class="scry-ms-semantic-search-notice notice notice-info is-dismissible inline">
             <p>
                 <span class="dashicons dashicons-lightbulb" aria-hidden="true"></span>
                 <a href="<?php echo esc_url(admin_url('admin.php?page=scry-search-meilisearch-index-settings')); ?>"><?php esc_html_e('Get started with semantic search', 'scry-search'); ?></a>

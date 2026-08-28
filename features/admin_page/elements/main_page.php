@@ -48,7 +48,7 @@ $scrywp_logo_url    = $this->get_base_url() . 'assets/images/coai_dark.png';
                 <span class="scrywp-admin-overview-cta-desc"><?php esc_html_e( 'Production-ready hosting, monitoring, and management. Connect in minutes and get back to building.', "scry-search" ); ?></span>
             </div>
             <span class="button button-primary scrywp-admin-overview-cta-button">
-                <?php esc_html_e( 'Start now at scrywp.com', "scry-search" ); ?>
+                <span class="scrywp-admin-overview-cta-button-label"><?php esc_html_e( 'Start now at scrywp.com', "scry-search" ); ?></span>
                 <span class="dashicons dashicons-external" aria-hidden="true"></span>
             </span>
         </div>
@@ -78,7 +78,7 @@ $scrywp_logo_url    = $this->get_base_url() . 'assets/images/coai_dark.png';
                                 /* translators: %s: Page title */
                                 printf(esc_html__('Configure %s', "scry-search"), esc_html($page_data['label'])); 
                                 ?>
-                                <span class="dashicons dashicons-arrow-right-alt" style="margin-left: 5px;"></span>
+                                <span class="dashicons dashicons-arrow-right-alt" aria-hidden="true"></span>
                             </a>
                         </div>
                     </div>

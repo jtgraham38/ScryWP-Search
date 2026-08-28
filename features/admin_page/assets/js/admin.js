@@ -5,6 +5,39 @@
 (function () {
     'use strict';
 
+    var SEMANTIC_NOTICE_COOKIE = 'scry_ms_dismiss_semantic_search_notice';
+    var SEMANTIC_NOTICE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+
+    function setSemanticNoticeDismissCookie() {
+        document.cookie = SEMANTIC_NOTICE_COOKIE + '=1; path=/; max-age=' + SEMANTIC_NOTICE_COOKIE_MAX_AGE + '; SameSite=Lax';
+    }
+
+    function initSemanticSearchNoticeDismiss() {
+        var notice = document.querySelector('.scry-ms-semantic-search-notice.is-dismissible');
+        if (!notice) {
+            return;
+        }
+
+        notice.addEventListener('click', function (event) {
+            var target = event.target;
+            if (!target || !target.classList.contains('notice-dismiss')) {
+                return;
+            }
+
+            setSemanticNoticeDismissCookie();
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initSemanticSearchNoticeDismiss);
+    } else {
+        initSemanticSearchNoticeDismiss();
+    }
+})();
+
+(function () {
+    'use strict';
+
     // Check if scry_ms_Tasks is available (localized script)
     if (typeof scrywpTasks === 'undefined') {
         return;

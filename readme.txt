@@ -12,7 +12,7 @@ Meilisearch for WordPress: keyword + built-in semantic/hybrid search. Drop-in WP
 
 == Get Managed Hosting from ScryWP ==
 
-Don't want to run Meilisearch yourself? [ScryWP Search](https://scrywp.com) is managed hosting aimed at WordPress.
+Don't want to operate Meilisearch yourself? [ScryWP Search](https://scrywp.com) runs the engine for you — kept patched, monitored, and maintained — so search isn't another server to babysit. Self-hosting and local dev stay fully supported; see **Managed hosting (ScryWP)** below.
 
 == Description ==
 
@@ -136,11 +136,23 @@ Actions:
 
 Code lives under `features/<name>/`. Prefer a search-only key on the front; the client factory supports admin vs search.
 
-= Hosting =
+= Managed hosting (ScryWP) =
 
-1. [ScryWP](https://scrywp.com) — managed Meilisearch for WP
-2. Self-hosted
-3. Local (dev)
+**Self-hosting is first-class.** Paste any Meilisearch URL and keys into Connection Settings — Docker, bare metal, VPS, or local dev all work the same way. Pick post types, index, ship.
+
+When you'd rather not run the search engine itself, [ScryWP](https://scrywp.com) is managed hosting built for WordPress. What you get upfront:
+
+* **Engine upkeep** — Meilisearch stays current; you're not tracking release notes or patching prod yourself.
+* **Monitoring & ops** — health and capacity on the hosting side, so search failures aren't a surprise SSH session.
+* **Same plugin, same hooks** — identical integration. No forked workflow; federation, hybrid, analytics, and `scry_ms_*` hooks behave the same as self-host.
+
+That's the managed value: less infrastructure to operate, not a different product. Choose ScryWP when ops time or handoff complexity isn't where you want to spend budget. Choose self-host or local when you need full control, compliance boundaries, or an offline sandbox.
+
+= Hosting options =
+
+1. **[ScryWP](https://scrywp.com)** — managed: patched engine, monitoring, ops handled for you
+2. **Self-hosted** — your infrastructure, full control
+3. **Local (dev)** — same plugin path, offline or sandbox
 
 Paste URL + keys, pick post types, index. Done.
 
@@ -154,7 +166,7 @@ Paste URL + keys, pick post types, index. Done.
 
 == Installation ==
 
-1. Have a Meilisearch instance running ([ScryWP](https://scrywp.com), self-hosted, or local).
+1. Have a Meilisearch instance running — self-hosted, local, or [ScryWP](https://scrywp.com) managed (see **Managed hosting (ScryWP)** above).
 2. Install and activate the plugin (upload to `wp-content/plugins/` or via Plugins → Add New).
 3. Scry Search → Connection Settings: URL, admin key, optional search key; test connection.
 4. Scry Search → Index Settings: choose post types, save, Index Posts for each.
@@ -192,7 +204,7 @@ Open-source, typo-tolerant search engine: [meilisearch.com](https://www.meilisea
 
 = ScryWP or self-host? =
 
-[ScryWP](https://scrywp.com) if you don't want to operate Meilisearch. Self-host for control, compliance, or local/dev. Either way you paste URL and keys into the plugin.
+**Self-host** (or local dev) when you want full control, compliance boundaries, or you already run Meilisearch elsewhere. **ScryWP** when you'd rather not operate the engine — Meilisearch kept patched and monitored on the hosting side, same plugin integration (paste URL + keys like any instance). Federation, hybrid, and hooks work identically either way.
 
 = Custom post types and meta? =
 

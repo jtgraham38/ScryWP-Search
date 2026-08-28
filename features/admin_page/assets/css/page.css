@@ -140,10 +140,19 @@
 }
 
 .scrywp-admin-overview-cta-button .dashicons {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
     width: 18px;
     height: 18px;
     font-size: 18px;
+    line-height: 1;
     margin: 0;
+}
+
+.scrywp-admin-overview-cta-button .dashicons::before {
+    line-height: 1;
 }
 
 @media (max-width: 782px) {
@@ -244,12 +253,21 @@
 .scrywp-admin-page-card-action .button {
     display: inline-flex;
     align-items: center;
+    gap: 5px;
 }
 
 .scrywp-admin-page-card-action .button .dashicons {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
     width: 18px;
     height: 18px;
     font-size: 18px;
+    line-height: 1;
+}
+
+.scrywp-admin-page-card-action .button .dashicons::before {
     line-height: 1;
 }
 
