@@ -87,7 +87,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
 
         //allow other plugins to skip indexing this post
         //@HOOK: scry_ms_should_index
-        $should_index = apply_filters($this->config('hook_prefix') . 'should_index', true, $post, 'save');
+        $should_index = apply_filters($this->config('hook_prefix') . 'should_index', $should_index, $post, 'save');
         if (!$should_index) {
             $this->get_feature('scry_ms_logs')->log('debug', sprintf(__('Post %1$d (%2$s) indexing skipped. Exiting index_post.', "scry-search"), $post->ID, $post->post_type));
             return;

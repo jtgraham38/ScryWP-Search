@@ -63,14 +63,21 @@ class ScrySearch_AutoSuggestFeature extends PluginFeature {
             true
         );
 
-        // Localize the script with the settings
+        //object to localize the autosuggest with
+        $autosuggest_localized = array(
+            'classSelector' => $class_selector,
+            'restApiUrl' => $rest_api_url,
+        );
+
+        //let other plugins modify the autosuggest localized object
+        //@HOOK: scry_ms_autosuggest_localized
+        $autosuggest_localized = apply_filters($this->config('hook_prefix') . 'autosuggest_localized', $autosuggest_localized);
+
+        //localize the script with the settings
         wp_localize_script(
             $this->prefixed('autosuggest-script'),
             'autoSuggestLocalized',
-            array(
-                'classSelector' => $class_selector,
-                'restApiUrl' => $rest_api_url,
-            )
+            $autosuggest_localized
         );
     }
 
