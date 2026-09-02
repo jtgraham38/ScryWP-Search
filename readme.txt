@@ -3,7 +3,7 @@ Contributors: jtgraham38
 Tags: meilisearch, search, developer, hooks, extendable
 Requires at least: 5.2
 Tested up to: 7.1
-Stable tag: 1.5.1
+Stable tag: 1.5.2
 Requires PHP: 8.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -124,7 +124,7 @@ Filters — search / client:
 
 Filters — autosuggest / admin / analytics / logs / window:
 
-* `scry_ms_autosuggest_query`, `scry_ms_autosuggest_results`, `scry_ms_autosuggest_results_rendered`
+* `scry_ms_autosuggest_query`, `scry_ms_autosuggest_results`, `scry_ms_autosuggest_results_rendered`, `scry_ms_autosuggest_localized`
 * `scry_ms_admin_pages`, `scry_ms_analytics_event_to_insert`, `scry_ms_log_message`, `scry_ms_window_localized`
 
 Actions:
@@ -258,6 +258,10 @@ AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API 
 
 == Changelog ==
 
+= 1.5.2 =
+* Fixed a bug with the updated indexing logic
+* Enabled filtering of the localization of autosuggest script
+
 = 1.5.1 =
 * Front-end form discovery via CSS selectors (`#adminbarsearch`, `form[role="search"]` by default), including Gutenberg Search block forms
 * Extend discovery selectors with `scry_ms_window_localized` (`searchFormSelectors`)
@@ -325,6 +329,9 @@ AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API 
 * Initial release: per-post-type indexes, federated search, ranking/searchable fields, auto + bulk indexing, task drawer, live preview, drop-in WP search
 
 == Upgrade Notice ==
+
+= 1.5.2 =
+Bug fixes and added a new hook.
 
 = 1.5.1 =
 Search forms are discovered by CSS selector; extend the list with `scry_ms_window_localized`, and optionally limit autosuggest by form class. See DOCS.md.

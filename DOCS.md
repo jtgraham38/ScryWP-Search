@@ -643,6 +643,35 @@ Default markup matches the client-built structure: `.scry-search-autosuggest-res
 
 ---
 
+#### `scry_ms_autosuggest_localized`
+
+Modify the data passed from PHP to the front‑end `autoSuggestLocalized` object used by the autosuggest script.
+
+
+|               |                                                            |
+| ------------- | ---------------------------------------------------------- |
+| **Type**      | Filter                                                     |
+| **Arguments** | `array $autosuggest_localized`                             |
+| **Returns**   | `array`                                                    |
+| **When**      | When autosuggest is enabled and its front‑end script is enqueued. |
+
+
+Default keys include:
+
+- `classSelector` — optional CSS class (token only) that limits which discovered forms get autosuggest; empty string means all discovered forms
+- `restApiUrl` — REST URL for the autosuggest endpoint (`scry-search/v1/autosuggest`)
+
+This is separate from [`scry_ms_window_localized`](#scry_ms_window_localized) / `windowLocalized`. Use the window filter for form discovery (`searchFormSelectors`); use this filter for autosuggest-only config. Do not put admin API keys here — anything returned is exposed to the browser.
+
+```php
+add_filter( 'scry_ms_autosuggest_localized', function ( $data ) {
+    $data['minChars'] = 2; // read in your own JS; core currently hard-codes 3
+    return $data;
+} );
+```
+
+---
+
 ### Admin UI
 
 #### `scry_ms_admin_pages`
@@ -1022,4 +1051,6 @@ window.scrySearch.upgrades.my_addon.data.enabled = true;
 
 ### Front‑end configuration via `windowLocalized`
 
-PHP exposes configuration to the runtime as the global `windowLocalized` object (modifiable with the [`scry_ms_window_localized`](#scry_ms_window_localized) filter). Default keys include `restApiUrl`, `autoSuggestEnabled`, and `searchFormSelectors`. Add your own keys server‑side to read them in your front‑end code. Autosuggest uses a separate localized object so the two features do not overwrite each other.
+PHP exposes configuration to the runtime as the global `windowLocalized` object (modifiable with the [`scry_ms_window_localized`](#scry_ms_window_localized) filter). Default keys include `restApiUrl`, `autoSuggestEnabled`, and `searchFormSelectors`. Add your own keys server‑side to read them in your front‑end code.
+
+Autosuggest uses a separate global, `autoSuggestLocalized` (modifiable with [`scry_ms_autosuggest_localized`](#scry_ms_autosuggest_localized)), so the two features do not overwrite each other. Default keys there are `classSelector` and `restApiUrl`.

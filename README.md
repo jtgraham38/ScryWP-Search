@@ -58,7 +58,7 @@ All hook names use the runtime prefix `scry_ms_` (i.e. `$this->config('hook_pref
 | Federated search | `features/search/feature.php` | `scry_ms_should_search`, `scry_ms_multi_search_index_names`, `scry_ms_multi_search_query_params`, `scry_ms_multi_search_query` (hybrid via per-index settings), `scry_ms_multi_search_raw_results`, `scry_ms_multi_search_final_results` |
 | Meilisearch client | `features/client/feature.php` | `scry_ms_meilisearch_client` |
 | Highlighting | `features/highlighting/feature.php` | Hooks the federated-search filters above (`multi_search_query` / `raw_results` / `final_results`); no dedicated public hooks |
-| Autosuggest | `features/autosuggest/feature.php` | `scry_ms_autosuggest_query`, `scry_ms_autosuggest_results`, `scry_ms_autosuggest_results_rendered` |
+| Autosuggest | `features/autosuggest/feature.php` | `scry_ms_autosuggest_query`, `scry_ms_autosuggest_results`, `scry_ms_autosuggest_results_rendered`, `scry_ms_autosuggest_localized` |
 | Admin shell | `features/admin_page/feature.php` | `scry_ms_admin_pages` |
 | Analytics | `features/analytics/feature.php` | `scry_ms_analytics_event_to_insert` (non-column keys packed into `search_metadata`; core adds `scry_search_hybrid` when hybrid is used) |
 | Premium upgrades | `features/upgrades/feature.php` | `scry_ms_premium_upgrades_display` |
