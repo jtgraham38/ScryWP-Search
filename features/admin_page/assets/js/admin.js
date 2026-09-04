@@ -44,13 +44,17 @@
     }
 
     // Task Drawer State
+    // Meilisearch /tasks pagination is cursor-based: `from`/`next` are task UIDs, not offsets.
     var taskDrawerState = {
         currentPage: 1,
         limit: 20,
         total: 0,
-        from: 0,
+        from: null,
+        next: null,
         loading: false,
-        totalPages: 0
+        totalPages: 0,
+        // page number → from-cursor (null means "start from newest")
+        pageCursors: { 1: null }
     };
 
     // DOM Elements
@@ -80,7 +84,8 @@
 
         // Load tasks if drawer is empty
         if (drawerList.children.length === 0) {
-            loadTasks(0);
+            taskDrawerState.pageCursors = { 1: null };
+            loadTasks(null, 1);
         }
     }
 
@@ -287,8 +292,13 @@
         var start = (estimatedPage - 1) * limit + 1;
         var end = Math.min(start + tasksCount - 1, total);
 
-        // Update pagination info
-        var infoText = 'Showing ' + start + '-' + end + ' of ' + total + ' tasks';
+        // Avoid inverted ranges when a page returns no rows
+        var infoText;
+        if (tasksCount === 0) {
+            infoText = 'Showing 0 of ' + total + ' tasks';
+        } else {
+            infoText = 'Showing ' + start + '-' + end + ' of ' + total + ' tasks';
+        }
         drawerPaginationInfo.textContent = infoText;
 
         // Update page input - only update if it's not currently being edited
@@ -306,19 +316,34 @@
         drawerPrev.disabled = estimatedPage <= 1;
         drawerNext.disabled = estimatedPage >= totalPages;
 
-        // Update state
-        taskDrawerState.from = data.from || 0;
+        // Update state + cursor map for next/prev navigation
+        taskDrawerState.from = (data.from !== undefined && data.from !== null) ? data.from : null;
+        taskDrawerState.next = (data.next !== undefined && data.next !== null) ? data.next : null;
         taskDrawerState.total = total;
         taskDrawerState.hasMore = data.hasMore;
         taskDrawerState.currentPage = estimatedPage;
         taskDrawerState.totalPages = totalPages;
+
+        if (estimatedPage === 1) {
+            taskDrawerState.pageCursors[1] = null;
+        } else if (taskDrawerState.from !== null) {
+            taskDrawerState.pageCursors[estimatedPage] = taskDrawerState.from;
+        }
+        if (taskDrawerState.next !== null) {
+            taskDrawerState.pageCursors[estimatedPage + 1] = taskDrawerState.next;
+        }
     }
 
     /**
      * Navigate to a specific page
      */
     function goToPage(pageNumber) {
-        if (!pageNumber || pageNumber < 1) {
+        if (taskDrawerState.loading) {
+            return;
+        }
+
+        pageNumber = parseInt(pageNumber, 10);
+        if (isNaN(pageNumber) || pageNumber < 1) {
             pageNumber = 1;
         }
 
@@ -327,17 +352,20 @@
             pageNumber = totalPages;
         }
 
-        // Store the page number we're navigating to
         taskDrawerState.currentPage = pageNumber;
 
-        // Calculate from value (offset for Meilisearch - but Meilisearch uses task UIDs)
-        // For now, we'll use offset-based calculation and let Meilisearch handle it
-        var from = (pageNumber - 1) * taskDrawerState.limit;
+        // Prefer a known UID cursor; otherwise let the server walk the cursor chain
+        var from = null;
+        if (Object.prototype.hasOwnProperty.call(taskDrawerState.pageCursors, pageNumber)) {
+            from = taskDrawerState.pageCursors[pageNumber];
+        }
         loadTasks(from, pageNumber);
     }
 
     /**
      * Load tasks from server
+     * @param {number|null} from Task UID cursor (Meilisearch `from`), or null for the newest page
+     * @param {number} pageNumber 1-based page number
      */
     function loadTasks(from, pageNumber) {
         if (taskDrawerState.loading) {
@@ -364,8 +392,11 @@
         formData.append('action', scrywpTasks.action);
         formData.append('nonce', scrywpTasks.nonce);
         formData.append('limit', taskDrawerState.limit);
-        formData.append('from', from);
         formData.append('page', pageNumber || taskDrawerState.currentPage || 1);
+        // Only send `from` when we have a real task UID cursor (never an offset)
+        if (from !== null && from !== undefined && from !== '') {
+            formData.append('from', from);
+        }
 
         fetch(scrywpTasks.ajaxUrl, {
             method: 'POST',

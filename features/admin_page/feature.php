@@ -149,7 +149,7 @@ class ScrySearch_AdminPageFeature extends PluginFeature {
             $this->prefixed('admin-script'),
             plugin_dir_url(__FILE__) . 'assets/js/admin.js',
             array(),
-            '1.0.0',
+            '1.0.1',
             true
         );
     }
@@ -222,50 +222,63 @@ class ScrySearch_AdminPageFeature extends PluginFeature {
         try {
             // Create Meilisearch client
             $client = $this->get_feature('scry_ms_client')->get_client();
-            
-            // First, get total count to calculate reverse pagination
-            $count_query = (new TasksQuery())
-                ->setLimit(1)
-                ->setIndexUids($managed_index_uids);
-            $count_response = $client->getTasks($count_query);
-            
-            // Handle response - could be array or object with getTotal() method
-            if (is_array($count_response)) {
-                $total = isset($count_response['total']) ? (int) $count_response['total'] : 0;
-            } else {
-                $total = method_exists($count_response, 'getTotal') ? $count_response->getTotal() : 0;
-            }
-            
-            // Calculate pagination
+
+            // Meilisearch /tasks uses cursor pagination: `from` is a task UID, not an offset.
+            // Pass the previous response's `next` as `from` to get the following page.
+            // See: https://www.meilisearch.com/docs/reference/api/pagination#/tasks-endpoint
             $current_page = $page > 0 ? $page : 1;
-            $total_pages = $total > 0 ? (int) ceil($total / $limit) : 1;
-            
-            // Build tasks query
-            // Meilisearch tasks API: `from` is a task UID (not an offset).
-            // Tasks are returned in descending UID order starting from `from`.
-            // If `from` is not set, it starts from the newest task (highest UID).
-            //
-            // Page 1: don't set `from` → returns newest tasks
-            // Page N: set `from` to skip the first (N-1)*limit newest tasks
-            //   Approximation: from_uid = total - 1 - ((N-1) * limit)
+            $has_from = isset($_POST['from']) && $_POST['from'] !== '';
+            $from_uid = $has_from ? absint(wp_unslash($_POST['from'])) : null;
+
+            // Resolve a from-cursor when the client only sent a page number (e.g. jump-to-page).
+            // Walk forward with the max allowed limit to minimize round-trips.
+            if ($current_page > 1 && !$has_from) {
+                $from_uid = $this->resolve_tasks_cursor_for_page($client, $managed_index_uids, $current_page, $limit);
+                if ($from_uid === null) {
+                    // Could not reach this page (past end, or empty task list).
+                    $count_query = (new TasksQuery())
+                        ->setLimit(1)
+                        ->setIndexUids($managed_index_uids);
+                    $count_response = $client->getTasks($count_query);
+                    $total = method_exists($count_response, 'getTotal') ? (int) $count_response->getTotal() : 0;
+                    $total_pages = $total > 0 ? (int) ceil($total / $limit) : 1;
+                    wp_send_json_success(array(
+                        'tasks' => array(),
+                        'total' => $total,
+                        'limit' => $limit,
+                        'from' => null,
+                        'next' => null,
+                        'currentPage' => $current_page,
+                        'totalPages' => $total_pages,
+                        'hasMore' => false,
+                    ));
+                    return;
+                }
+                $has_from = true;
+            }
+
             $tasks_query = (new TasksQuery())
                 ->setLimit($limit)
                 ->setIndexUids($managed_index_uids);
 
-            if ($current_page > 1) {
-                $from_uid = max(0, $total - 1 - (($current_page - 1) * $limit));
+            if ($has_from) {
                 $tasks_query->setFrom($from_uid);
             }
-            
+
             $tasks_response = $client->getTasks($tasks_query);
-            
-            // Format response data - handle both array and object responses
-            if (is_array($tasks_response)) {
-                $tasks = isset($tasks_response['results']) ? $tasks_response['results'] : array();
-            } else {
-                $tasks = method_exists($tasks_response, 'getResults') ? $tasks_response->getResults() : array();
+
+            $tasks = method_exists($tasks_response, 'getResults') ? $tasks_response->getResults() : array();
+            $total = method_exists($tasks_response, 'getTotal') ? (int) $tasks_response->getTotal() : 0;
+            $response_from = method_exists($tasks_response, 'getFrom') ? $tasks_response->getFrom() : $from_uid;
+            // PHP SDK maps JSON null `next` to 0; use total/pages to tell "end" from a real UID 0.
+            $response_next = method_exists($tasks_response, 'getNext') ? $tasks_response->getNext() : null;
+
+            $total_pages = $total > 0 ? (int) ceil($total / $limit) : 1;
+            $has_more = $current_page < $total_pages;
+            if (!$has_more) {
+                $response_next = null;
             }
-            
+
             // Format tasks for display
             $formatted_tasks = array();
             foreach ($tasks as $task) {
@@ -282,16 +295,18 @@ class ScrySearch_AdminPageFeature extends PluginFeature {
                     'finishedAt' => isset($task['finishedAt']) ? esc_html($task['finishedAt']) : null,
                 );
             }
-            
+
             wp_send_json_success(array(
                 'tasks' => $formatted_tasks,
                 'total' => $total,
                 'limit' => $limit,
+                'from' => $response_from,
+                'next' => $response_next,
                 'currentPage' => $current_page,
                 'totalPages' => $total_pages,
-                'hasMore' => $current_page < $total_pages,
+                'hasMore' => $has_more,
             ));
-            
+
         } catch (CommunicationException $e) {
             // Network/connection error
             //log an error message with the logging feature
@@ -317,5 +332,70 @@ class ScrySearch_AdminPageFeature extends PluginFeature {
                 'message' => sprintf(__('Error: %s', "scry-search"), $e->getMessage())
             ));
         }
+    }
+
+    /**
+     * Walk the Meilisearch tasks cursor chain to find the `from` UID for a page.
+     *
+     * Meilisearch does not support offset pagination on /tasks; `from` must be a task UID
+     * (typically the previous page's `next` value).
+     *
+     * @param \Meilisearch\Client $client
+     * @param array $index_uids
+     * @param int $page 1-based page number
+     * @param int $page_limit Tasks per UI page
+     * @return int|null Cursor UID for the requested page, or null if unavailable
+     */
+    private function resolve_tasks_cursor_for_page($client, array $index_uids, $page, $page_limit) {
+        if ($page <= 1) {
+            return null;
+        }
+
+        $skip = ($page - 1) * $page_limit;
+        $walk_limit = 100; // Meilisearch max per request
+        $cursor = null;
+        $skipped = 0;
+
+        while ($skipped < $skip) {
+            $batch_limit = min($walk_limit, $skip - $skipped);
+
+            $walk_query = (new TasksQuery())
+                ->setLimit($batch_limit)
+                ->setIndexUids($index_uids);
+
+            if ($cursor !== null) {
+                $walk_query->setFrom($cursor);
+            }
+
+            $walk_response = $client->getTasks($walk_query);
+            $results = method_exists($walk_response, 'getResults') ? $walk_response->getResults() : array();
+            $total = method_exists($walk_response, 'getTotal') ? (int) $walk_response->getTotal() : 0;
+            $next = method_exists($walk_response, 'getNext') ? $walk_response->getNext() : null;
+
+            $count = count($results);
+            if ($count === 0) {
+                return null;
+            }
+
+            $skipped += $count;
+
+            if ($skipped >= $skip) {
+                // Landed on the boundary; `next` is the from-cursor for the requested page.
+                // If we've already exhausted the list, that page does not exist.
+                if ($skipped >= $total) {
+                    return null;
+                }
+                return $next;
+            }
+
+            // Fewer results than requested means the list ended before the target page.
+            if ($count < $batch_limit || $skipped >= $total) {
+                return null;
+            }
+
+            $cursor = $next;
+        }
+
+        return $cursor;
     }
 }
