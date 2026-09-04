@@ -278,6 +278,7 @@ AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API 
 * Semantic search onboarding notice is dismissible (cookie); overview CTA / card action dashicons alignment polish
 * Readme: stronger managed-hosting (ScryWP) copy while keeping self-host first-class
 * DOCS.md / README updated for new hooks and lifecycle behavior
+* Fixed bug loading tasks in the task pane
 
 = 1.5.2 =
 * Fixed a bug with the updated indexing logic
@@ -352,7 +353,7 @@ AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API 
 == Upgrade Notice ==
 
 = 1.6.0 =
-Lifecycle cleanup on deactivate/uninstall, password-protected post skip, pagination fix, CSV formula hardening, Recent Searches column hooks, and autosuggest localization. See DOCS.md.
+Lifecycle cleanup on deactivate/uninstall, password-protected post skip, pagination fix, CSV formula hardening, Recent Searches column hooks, autosuggest localization, and task pane fixes. See DOCS.md.
 
 = 1.5.2 =
 Bug fixes and added a new hook.
