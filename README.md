@@ -6,7 +6,8 @@ This README is aimed at contributors. It explains the plugin’s structure, nami
 
 ## Repo layout
 
-- `scry_search.php`: plugin bootstrap (loads features, shared config, vendor/autoload, etc.).
+- `scry_search.php`: plugin bootstrap (loads features, shared config, vendor/autoload, deactivation hook, etc.).
+- `includes/class-lifecycle.php` + `uninstall.php`: deactivation cron cleanup and uninstall data removal.
 - `features/<feature>/feature.php`: feature classes (admin pages, REST/AJAX endpoints, asset loading).
 - `features/<feature>/assets/`: feature JS/CSS.
 - `features/<feature>/elements/`: PHP view fragments used by admin pages.

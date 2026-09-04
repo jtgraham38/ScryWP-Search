@@ -3,7 +3,7 @@ Contributors: jtgraham38
 Tags: meilisearch, search, developer, hooks, extendable
 Requires at least: 5.2
 Tested up to: 7.1
-Stable tag: 1.5.2
+Stable tag: 1.6.0
 Requires PHP: 8.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -178,6 +178,16 @@ You can complete the whole flow from wp-admin without custom code. Hooks are the
 
 == Frequently Asked Questions ==
 
+= What happens when I deactivate or uninstall? =
+
+Deactivating clears the plugin's daily cron jobs (analytics and log cleanup) so they stop running while the plugin is inactive. Your settings, API keys, custom tables, and Meilisearch indexes are left in place — reactivating restores normal operation and re-schedules cron.
+
+Deleting the plugin (uninstall) removes the two custom database tables (`scry_ms_search_analytics`, `scry_ms_logs`), all `scry_ms_*` options (connection keys, embedder secrets, index backups, etc.), and any remaining scheduled cron events. It does not delete indexes or documents on your Meilisearch server.
+
+= Will password-protected posts be indexed? =
+
+No for live saves — published posts with a password are skipped before indexing. Use `scry_ms_should_index` on bulk reindex (or always) if you need the same rule there. Already-indexed protected posts stay in Meilisearch until you reindex/wipe.
+
 = What makes this developer-friendly? =
 
 45 documented `scry_ms_*` hooks, call sites marked in source, shared client filter, and a real docs file — not a marketing PDF. Plus the tooling you’d actually use on a site: task pane for Meilisearch jobs, error/debug logs, and search analytics (dashboard + CSV). Start here: [DOCS.md](https://github.com/jtgraham38/ScryWP-Search/blob/main/DOCS.md). Optional `window.scrySearch` if you need front-end glue. No forced search results UI.
@@ -258,6 +268,17 @@ AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API 
 
 == Changelog ==
 
+= 1.6.0 =
+* Plugin lifecycle: `register_deactivation_hook` clears daily analytics/log cron events; `uninstall.php` drops custom tables and deletes all `scry_ms_*` options
+* Password-protected posts are skipped on live indexing (built-in; still filterable via `scry_ms_should_index`)
+* Federated search pagination keeps Meilisearch `estimatedTotalHits` for `found_posts` / `max_num_pages` (no longer overwritten by the current page size)
+* Analytics CSV export sanitizes cells that start with `=`, `+`, `-`, `@`, tab, or CR to prevent spreadsheet formula injection
+* Recent Searches table is extensible: `scry_ms_analytics_recent_searches_columns`, `scry_ms_analytics_recent_searches_column`, and optional `scry_ms_analytics_recent_searches_sortable_columns`; rows expose decoded `search_metadata`
+* Autosuggest: `scry_ms_autosuggest_localized` filter; remove hidden `return_type` input after AJAX so it does not leak into normal form submits
+* Semantic search onboarding notice is dismissible (cookie); overview CTA / card action dashicons alignment polish
+* Readme: stronger managed-hosting (ScryWP) copy while keeping self-host first-class
+* DOCS.md / README updated for new hooks and lifecycle behavior
+
 = 1.5.2 =
 * Fixed a bug with the updated indexing logic
 * Enabled filtering of the localization of autosuggest script
@@ -329,6 +350,9 @@ AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API 
 * Initial release: per-post-type indexes, federated search, ranking/searchable fields, auto + bulk indexing, task drawer, live preview, drop-in WP search
 
 == Upgrade Notice ==
+
+= 1.6.0 =
+Lifecycle cleanup on deactivate/uninstall, password-protected post skip, pagination fix, CSV formula hardening, Recent Searches column hooks, and autosuggest localization. See DOCS.md.
 
 = 1.5.2 =
 Bug fixes and added a new hook.

@@ -1,7 +1,7 @@
 {
     "name": "jtgraham38/wprag",
     "description": "A powerful semantic search plugin with advanced filtering and sorting features.",
-    "version": "1.5.1",
+    "version": "1.6.0",
     "type": "wordpress-plugin",
     "license": "GPLv3",
     "authors": [

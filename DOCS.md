@@ -26,6 +26,17 @@ add_filter( 'scry_ms_index_prepare_document', 'my_callback' );
 
 > All hook names below are shown **with** their full, literal `scry_ms_` prefix so you can copy them directly.
 
+---
+
+## Plugin lifecycle
+
+- **Deactivation** — clears daily WP-Cron hooks (`scry_ms_cleanup_analytics_events`, `scry_ms_cleanup_logs`). Options, tables, and Meilisearch indexes are kept.
+- **Uninstall** (`uninstall.php`) — drops `{prefix}scry_ms_search_analytics` and `{prefix}scry_ms_logs`, deletes all `scry_ms_*` options (including connection keys and index settings backups), and clears cron again. Does **not** delete remote Meilisearch indexes.
+
+Implementation: `includes/class-lifecycle.php`, registered from `scry_search.php` / `uninstall.php`.
+
+---
+
 A quick reminder of the WordPress conventions used throughout:
 
 - **Filters** receive a value and **must return a value** (modified or not).
@@ -48,12 +59,14 @@ Decide whether a post should be indexed.
 | **Type**      | Filter                                                                                   |
 | **Arguments** | `bool $should_index`, `WP_Post $post`, `string $context` (`'save'` or `'bulk'`)          |
 | **Returns**   | `bool` — `true` to index, `false` to skip                                                |
-| **When**      | After built-in type/publish checks, before the document is formatted (live save and bulk). |
+| **When**      | After built-in type / publish / password-protected checks, before the document is formatted (live save and bulk). |
 
+
+Core already skips unpublished and password-protected posts on live save (password check feeds `$should_index` as `false` before this filter). Bulk reindex still goes through this filter with a default of `true` — skip there if needed.
 
 ```php
 add_filter( 'scry_ms_should_index', function ( $should_index, $post, $context ) {
-    if ( post_password_required( $post ) ) {
+    if ( get_post_meta( $post->ID, '_exclude_from_search', true ) ) {
         return false;
     }
     return $should_index;
