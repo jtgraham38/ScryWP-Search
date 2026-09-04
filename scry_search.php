@@ -87,9 +87,9 @@ require_once plugin_dir_path(__FILE__) . '/features/connection_settings/feature.
 $connection_settings_feature = new ScrySearch_ConnectionSettingsFeature();
 $plugin->register_feature("scry_ms_connection_settings", $connection_settings_feature);
 
-// require_once plugin_dir_path(__FILE__) . '/features/upgrades/feature.php';
-// $upgrades_feature = new ScrySearch_UpgradesFeature();
-// $plugin->register_feature("scry_ms_upgrades", $upgrades_feature);
+require_once plugin_dir_path(__FILE__) . '/features/upgrades/feature.php';
+$upgrades_feature = new ScrySearch_UpgradesFeature();
+$plugin->register_feature("scry_ms_upgrades", $upgrades_feature);
 
 require_once plugin_dir_path(__FILE__) . '/features/window/feature.php';
 $window_feature = new ScrySearch_WindowFeature();

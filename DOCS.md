@@ -714,6 +714,64 @@ Keys include: `search_term`, `user_id`, `user_ip`, `user_agent`, `referrer`, `re
 
 ---
 
+#### `scry_ms_analytics_recent_searches_columns`
+
+Add, remove, or reorder columns on the Search Analytics **Recent Searches** table.
+
+
+|               |                                                                 |
+| ------------- | --------------------------------------------------------------- |
+| **Type**      | Filter                                                          |
+| **Arguments** | `array $columns` (map of column slug => heading label)          |
+| **Returns**   | `array`                                                         |
+| **When**      | When the Recent Searches `WP_List_Table` builds its headers.    |
+
+
+Default keys: `search_term`, `user`, `user_ip`, `result_count`, `created_at`. Pair this with `scry_ms_analytics_recent_searches_column` to render added columns. Extra event data from `scry_ms_analytics_event_to_insert` is available on each row as a decoded `search_metadata` array.
+
+```php
+add_filter( 'scry_ms_analytics_recent_searches_columns', function ( $columns ) {
+    $columns['filters'] = __( 'Filters', 'my-plugin' );
+    return $columns;
+} );
+```
+
+---
+
+#### `scry_ms_analytics_recent_searches_column`
+
+Render a custom Recent Searches column cell (or override the default HTML for a slug that has no dedicated `column_*` method).
+
+
+|               |                                                                 |
+| ------------- | --------------------------------------------------------------- |
+| **Type**      | Filter                                                          |
+| **Arguments** | `string $output`, `array $item`, `string $column_name`          |
+| **Returns**   | `string` — HTML for the cell                                    |
+| **When**      | For each cell that falls through `column_default`.              |
+
+
+`$item` is one analytics row (decoded JSON fields plus `search_metadata`). Return already-escaped HTML.
+
+```php
+add_filter( 'scry_ms_analytics_recent_searches_column', function ( $output, $item, $column_name ) {
+    if ( 'filters' !== $column_name ) {
+        return $output;
+    }
+    $metadata = isset( $item['search_metadata'] ) && is_array( $item['search_metadata'] )
+        ? $item['search_metadata']
+        : array();
+    if ( empty( $metadata['scry_search_filters'] ) ) {
+        return '&mdash;';
+    }
+    return esc_html( wp_json_encode( $metadata['scry_search_filters'] ) );
+}, 10, 3 );
+```
+
+Optional: `scry_ms_analytics_recent_searches_sortable_columns` receives the sortable map (`slug => array( orderby, is_default_desc )`). Only slugs that match real SQL columns on the analytics table will sort correctly.
+
+---
+
 ### Logs
 
 #### `scry_ms_log_message`

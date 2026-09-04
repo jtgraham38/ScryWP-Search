@@ -21,24 +21,25 @@ if (!function_exists('is_plugin_active')) {
 // Placeholder for future premium upgrade metadata.
 $premium_upgrades = array(
     array(
-        'name' => 'Scry Search Filters: Filtered Search for WordPress & WooCommerce',
-        'slug' => 'scry-search-filters',
-        'description' => 'Add support for filtered, facetted search to your WordPress & WooCommerce site.',
-        'purchase_url' => 'https://scrywp.com/premium-plugins/scry-search-filters/',
+        'name' => 'Scry Search Facets: Faceted Search for WordPress & WooCommerce',
+        'slug' => 'scry-search-facets',
+        'description' => 'Add support for faceted search to your WordPress & WooCommerce site.',
+        'purchase_url' => 'https://scrywp.com/premium-plugins/scry-search-facets/',
         'active' => false,
     ),
-    array(
-        'name' => 'Scry Search Hybrid: AI-Powered Search for WordPress & WooCommerce',
-        'slug' => 'scry-search-hybrid',
-        'description' => 'Add semantic and hybrid search to your WordPress & WooCommerce site with Meilisearch embedders.',
-        'purchase_url' => 'https://scrywp.com/premium-plugins/scry-search-hybrid/',
-        'active' => false,
-    ),
+    // array(
+    //     'name' => 'Scry Search Hybrid: AI-Powered Search for WordPress & WooCommerce',
+    //     'slug' => 'scry-search-hybrid',
+    //     'description' => 'Add semantic and hybrid search to your WordPress & WooCommerce site with Meilisearch embedders.',
+    //     'purchase_url' => 'https://scrywp.com/premium-plugins/scry-search-hybrid/',
+    //     'active' => false,
+    // ),
 );
 
 // Premium plugins set `active` to true via this filter when installed on the site.
 // @HOOK: scry_ms_premium_upgrades_display — args: $premium_upgrades
 $premium_upgrades = apply_filters($this->prefixed('premium_upgrades_display'), $premium_upgrades);
+
 
 ?>
 
@@ -93,7 +94,7 @@ $premium_upgrades = apply_filters($this->prefixed('premium_upgrades_display'), $
                 <?php if ($is_active && $settings_dialog_id !== '') : ?>
                     <dialog id="<?php echo esc_attr($settings_dialog_id); ?>" class="scrywp-upgrade-settings-dialog">
                         <div class="scrywp-upgrade-settings-dialog-header">
-                            <h3><?php echo esc_html(sprintf(__('Settings: %s', "scry-search"), $upgrade['name'])); ?></h3>
+                            <h3><?php echo esc_html(sprintf(__('%s', "scry-search"), $upgrade['name'])); ?></h3>
                             <button
                                 type="button"
                                 class="scrywp-upgrade-settings-dialog-close-button"
@@ -113,7 +114,7 @@ $premium_upgrades = apply_filters($this->prefixed('premium_upgrades_display'), $
 
                             //if no content was returned, show a default message
                             if (empty($upgrade_settings_ui)) {
-                                $upgrade_settings_ui = '<p>' . esc_html__('No settings are available for this upgrade.', "scry-search") . '</p>';
+                                $upgrade_settings_ui = '<p>' . esc_html__('Nothing to configure for this upgrade.', "scry-search") . '</p>';
                             }
 
                             //output the content

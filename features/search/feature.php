@@ -38,6 +38,14 @@ class ScrySearch_SearchFeature extends PluginFeature {
             return $posts;
         }
 
+        //allow other plugins to skip Meilisearch and fall back to native WP search
+        //@HOOK: scry_ms_should_search
+        $should_search = apply_filters($this->config('hook_prefix') . 'should_search', true, $query);
+        if (!$should_search) {
+            $this->get_feature('scry_ms_logs')->log('debug', __('Search skipped by should_search filter. Falling back to native WordPress search.', "scry-search"));
+            return $posts;
+        }
+
         //if this is a search in the admin area, use the native wordpress search
         if (is_admin()) {
             return $posts;
@@ -50,14 +58,6 @@ class ScrySearch_SearchFeature extends PluginFeature {
         $search_term = $query->get('s');
         if ((!is_string($search_term) || '' === $search_term) && !$query->is_search) {
             //DO NOT LOG here, since that would result in a flooded log due to all non-search queries
-            return $posts;
-        }
-
-        //allow other plugins to skip Meilisearch and fall back to native WP search
-        //@HOOK: scry_ms_should_search
-        $should_search = apply_filters($this->config('hook_prefix') . 'should_search', true, $query);
-        if (!$should_search) {
-            $this->get_feature('scry_ms_logs')->log('debug', __('Search skipped by should_search filter. Falling back to native WordPress search.', "scry-search"));
             return $posts;
         }
 
@@ -77,7 +77,15 @@ class ScrySearch_SearchFeature extends PluginFeature {
             //DO NOT LOG here, since that would result in a flooded log due to all non-search queries
             $post_types_values = array($post_types_values);
         }
-        $post_types_to_search = array_intersect($post_types_values, $indexed_post_types);
+
+        //if the array contains "any" just search all indexed post types
+        if (in_array('any', $post_types_values)) {
+            $post_types_to_search = $indexed_post_types;
+        }else{
+            $post_types_to_search = array_intersect($post_types_values, $indexed_post_types);
+        }
+
+        
         //if there are no post types to search, search all indexed post types
         if (empty($post_types_to_search)) {
             //DO NOT LOG here, since that would result in a flooded log due to all non-search queries
@@ -186,7 +194,8 @@ class ScrySearch_SearchFeature extends PluginFeature {
             // die;
 
         } catch (Exception $e) {
-
+            var_dump($e->getMessage());
+            die;
             //log an error message with the logging feature
             $this->get_feature('scry_ms_logs')->log('error', sprintf(__('Error in Meilisearch multi search (exiting Scry Search): %s', "scry-search"), $e->getMessage()));
             //fall back to the wordpress search

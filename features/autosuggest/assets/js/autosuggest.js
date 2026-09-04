@@ -32,6 +32,9 @@ var scrySearch_autosuggest = function (searchForm) {
     //add the render autosuggest results action to the search form, this should run last after all other actions
     searchForm.addPostSubmitAjaxAction(scrySearch_renderAutosuggestResults, 999);
 
+    //remove the return format input after an ajax request
+    searchForm.addPostSubmitAjaxAction(scrySearch_removeReturnTypeInput, 1);
+
     //attach an event listener to the search input
     searchInput.addEventListener('input', async function (e) {
 
@@ -52,11 +55,25 @@ var scrySearch_autosuggest = function (searchForm) {
 
 //add a hidden input with name "return_type" and value "html" to the search form
 var scrySearch_addReturnTypeInput = function (searchForm) {
+    //check if the return type input already exists
+    var returnTypeInput = searchForm.formElement.querySelector('input[name="return_type"]');
+    if (returnTypeInput) {
+        return;
+    }
+
+    //add return type input
     var returnTypeInput = document.createElement('input');
     returnTypeInput.type = 'hidden';
     returnTypeInput.name = 'return_type';
     returnTypeInput.value = 'html';
     searchForm.formElement.appendChild(returnTypeInput);
+}
+
+var scrySearch_removeReturnTypeInput = function (searchForm) {
+    var returnTypeInput = searchForm.formElement.querySelector('input[name="return_type"]');
+    if (returnTypeInput) {
+        returnTypeInput.remove();
+    }
 }
 
 //save the autosuggest results to the search form data, so it can be read by other actions

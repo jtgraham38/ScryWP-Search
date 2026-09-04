@@ -38,27 +38,54 @@ class ScrySearch_Recent_Searches_Table extends WP_List_Table {
     }
 
     /**
+     * Hook prefix from the analytics feature (`scry_ms_`).
+     */
+    private function hook_prefix() {
+        if ($this->analytics_feature && method_exists($this->analytics_feature, 'config')) {
+            return (string) $this->analytics_feature->config('hook_prefix');
+        }
+
+        return 'scry_ms_';
+    }
+
+    /**
      * Define table columns
      */
     public function get_columns() {
-        return array(
+        $columns = array(
             'search_term'  => __('Search Term', 'scry-search'),
             'user'         => __('User', 'scry-search'),
             'user_ip'      => __('IP Address', 'scry-search'),
             'result_count' => __('Results', 'scry-search'),
             'created_at'   => __('Date', 'scry-search'),
         );
+
+        //@HOOK: scry_ms_analytics_recent_searches_columns
+        $filtered = apply_filters($this->hook_prefix() . 'analytics_recent_searches_columns', $columns);
+        if (is_array($filtered) && $filtered !== array()) {
+            $columns = $filtered;
+        }
+
+        return $columns;
     }
 
     /**
      * Define sortable columns
      */
     public function get_sortable_columns() {
-        return array(
+        $sortable = array(
             'search_term'  => array('search_term', false),
             'result_count' => array('result_count', false),
             'created_at'   => array('created_at', true), // default sort desc
         );
+
+        //@HOOK: scry_ms_analytics_recent_searches_sortable_columns
+        $filtered = apply_filters($this->hook_prefix() . 'analytics_recent_searches_sortable_columns', $sortable);
+        if (is_array($filtered)) {
+            $sortable = $filtered;
+        }
+
+        return $sortable;
     }
 
     /**
@@ -105,6 +132,15 @@ class ScrySearch_Recent_Searches_Table extends WP_List_Table {
             $row['result_titles'] = json_decode($row['result_titles'], true);
             $row['post_types_searched'] = json_decode($row['post_types_searched'], true);
 
+            $search_metadata = array();
+            if (!empty($row['search_metadata']) && is_string($row['search_metadata'])) {
+                $decoded_metadata = json_decode($row['search_metadata'], true);
+                if (is_array($decoded_metadata)) {
+                    $search_metadata = $decoded_metadata;
+                }
+            }
+            $row['search_metadata'] = $search_metadata;
+
             if (!empty($row['user_id'])) {
                 $user = get_userdata((int) $row['user_id']);
                 $row['user_display_name'] = $user ? $user->display_name : __('Unknown User', 'scry-search');
@@ -131,9 +167,24 @@ class ScrySearch_Recent_Searches_Table extends WP_List_Table {
 
     /**
      * Default column renderer
+     *
+     * Core columns have dedicated `column_*` methods. Custom columns added via
+     * scry_ms_analytics_recent_searches_columns are rendered here and through
+     * scry_ms_analytics_recent_searches_column.
      */
     public function column_default($item, $column_name) {
-        return esc_html($item[$column_name] ?? '');
+        $output = '';
+        if (isset($item[$column_name]) && is_scalar($item[$column_name])) {
+            $output = esc_html((string) $item[$column_name]);
+        }
+
+        //@HOOK: scry_ms_analytics_recent_searches_column
+        return apply_filters(
+            $this->hook_prefix() . 'analytics_recent_searches_column',
+            $output,
+            $item,
+            $column_name
+        );
     }
 
     /**

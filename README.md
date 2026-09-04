@@ -60,7 +60,7 @@ All hook names use the runtime prefix `scry_ms_` (i.e. `$this->config('hook_pref
 | Highlighting | `features/highlighting/feature.php` | Hooks the federated-search filters above (`multi_search_query` / `raw_results` / `final_results`); no dedicated public hooks |
 | Autosuggest | `features/autosuggest/feature.php` | `scry_ms_autosuggest_query`, `scry_ms_autosuggest_results`, `scry_ms_autosuggest_results_rendered`, `scry_ms_autosuggest_localized` |
 | Admin shell | `features/admin_page/feature.php` | `scry_ms_admin_pages` |
-| Analytics | `features/analytics/feature.php` | `scry_ms_analytics_event_to_insert` (non-column keys packed into `search_metadata`; core adds `scry_search_hybrid` when hybrid is used) |
+| Analytics | `features/analytics/feature.php` | `scry_ms_analytics_event_to_insert` (non-column keys packed into `search_metadata`; core adds `scry_search_hybrid` when hybrid is used), `scry_ms_analytics_recent_searches_columns`, `scry_ms_analytics_recent_searches_column` |
 | Premium upgrades | `features/upgrades/feature.php` | `scry_ms_premium_upgrades_display` |
 | Logging | `features/logs/feature.php` | `scry_ms_log_message` |
 | Front-end window | `features/window/feature.php` | `scry_ms_window_localized` |

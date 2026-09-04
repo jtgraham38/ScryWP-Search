@@ -125,7 +125,7 @@ Filters — search / client:
 Filters — autosuggest / admin / analytics / logs / window:
 
 * `scry_ms_autosuggest_query`, `scry_ms_autosuggest_results`, `scry_ms_autosuggest_results_rendered`, `scry_ms_autosuggest_localized`
-* `scry_ms_admin_pages`, `scry_ms_analytics_event_to_insert`, `scry_ms_log_message`, `scry_ms_window_localized`
+* `scry_ms_admin_pages`, `scry_ms_analytics_event_to_insert`, `scry_ms_analytics_recent_searches_columns`, `scry_ms_analytics_recent_searches_column`, `scry_ms_log_message`, `scry_ms_window_localized`
 
 Actions:
 
