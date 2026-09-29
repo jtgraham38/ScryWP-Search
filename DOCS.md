@@ -588,6 +588,29 @@ Modify the final array of posts returned to WordPress.
 
 ### Autosuggest
 
+#### `scry_ms_autosuggest_posts_per_page`
+
+Change how many results autosuggest requests (default `5`).
+
+
+|               |                                                                 |
+| ------------- | --------------------------------------------------------------- |
+| **Type**      | Filter                                                          |
+| **Arguments** | `int $posts_per_page` (default `5`)                             |
+| **Returns**   | `int` — number of hits to request                               |
+| **When**      | Before the autosuggest `WP_Query` args are built.               |
+
+
+The value is cast to an integer; values below `1` fall back to `5`. It becomes `posts_per_page` on the query that Meilisearch intercepts (and thus the federated search `limit`). You can still override `posts_per_page` later via `scry_ms_autosuggest_query`.
+
+```php
+add_filter( 'scry_ms_autosuggest_posts_per_page', function ( $posts_per_page ) {
+    return 10;
+} );
+```
+
+---
+
 #### `scry_ms_autosuggest_query`
 
 Modify the query used to build autosuggest results.
@@ -601,7 +624,7 @@ Modify the query used to build autosuggest results.
 | **When**      | Before the autosuggest query runs.         |
 
 
-The array contains standard `WP_Query` arguments such as `s`, `post_type`, `posts_per_page`, and `no_found_rows`.
+The array contains standard `WP_Query` arguments such as `s`, `post_type`, `posts_per_page`, and `no_found_rows`. Default `posts_per_page` comes from [`scry_ms_autosuggest_posts_per_page`](#scry_ms_autosuggest_posts_per_page).
 
 ---
 

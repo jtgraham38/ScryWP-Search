@@ -127,11 +127,18 @@ class ScrySearch_AutoSuggestFeature extends PluginFeature {
         $indexed_post_types = $this->get_feature('scry_ms_indexes')->get_index_names();
         $indexed_post_types = array_keys($indexed_post_types);
 
+        //make posts per page filterable
+        //@HOOK: scry_ms_autosuggest_posts_per_page
+        $posts_per_page = (int) apply_filters($this->config('hook_prefix') . 'autosuggest_posts_per_page', 5);
+        if ($posts_per_page < 1) {
+            $posts_per_page = 5;
+        }
+
         //autosuggest query
         $autosuggest_query = array(
             's' => $query,
             'post_type' => ((is_string($post_type) && $post_type !== '') || is_array($post_type)) ? $post_type : $indexed_post_types,
-            'posts_per_page' => 5,
+            'posts_per_page' => $posts_per_page,
             'no_found_rows' => true,
         );
 

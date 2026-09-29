@@ -50,6 +50,13 @@ window.scrySearch = {
         });
     },
 
+    //get the search form instance for a given html element
+    getSearchFormByElement: function (element) {
+        return this.searchForms.find(function (form) {
+            return form?.formElement === element;
+        });
+    },
+
     //add an upgrade to the window object
     registerUpgrade: function (name, version) {
         if (!this.upgrades[name]) {
