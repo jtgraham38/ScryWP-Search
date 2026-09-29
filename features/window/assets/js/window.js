@@ -95,6 +95,9 @@ class ScrySearch_SearchForm {
 
         // Ensure *all* callers hit the debounce (even external code calling form.submitAjax()).
         this.submitAjax = this.debounceAjaxSubmit(this.submitAjax.bind(this));
+
+        //save the endpoint to submit an ajax request to
+        this.ajaxEndpoint = windowLocalized.restApiUrl;
     }
 
     //submit the search form
@@ -148,7 +151,7 @@ class ScrySearch_SearchForm {
             deepSet(formDataObject, path, value);
         }
         //send a request to the rest api
-        var searchResults = await fetch(windowLocalized.restApiUrl, {
+        var searchResults = await fetch(this.ajaxEndpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

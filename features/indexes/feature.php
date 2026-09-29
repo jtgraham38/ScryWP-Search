@@ -915,6 +915,17 @@ class ScrySearch_IndexesFeature extends PluginFeature {
         // Add post meta data
         $post_meta = get_post_meta($post->ID);
         if (!empty($post_meta)) {
+            //for any post meta with a numeric value, convert it to a number
+            //also do this for any post meta with arrays of numbers, or associative arrays with numbers as values
+            foreach ($post_meta as $key => $value) {
+                if (is_numeric($value)) {
+                    $post_meta[$key] = (int) $value;
+                }
+                if (is_array($value)) {
+                    $post_meta[$key] = array_map('intval', $value);
+                }
+            }
+            //add the post meta
             $document['post_meta'] = $post_meta;
         }
 
