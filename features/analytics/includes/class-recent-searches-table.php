@@ -57,6 +57,7 @@ class ScrySearch_Recent_Searches_Table extends WP_List_Table {
             'user'         => __('User', 'scry-search'),
             'user_ip'      => __('IP Address', 'scry-search'),
             'result_count' => __('Results', 'scry-search'),
+            'is_autosuggest' => __('Autosuggest', 'scry-search'),
             'created_at'   => __('Date', 'scry-search'),
         );
 
@@ -76,6 +77,7 @@ class ScrySearch_Recent_Searches_Table extends WP_List_Table {
         $sortable = array(
             'search_term'  => array('search_term', false),
             'result_count' => array('result_count', false),
+            'is_autosuggest' => array('is_autosuggest', false),
             'created_at'   => array('created_at', true), // default sort desc
         );
 
@@ -122,6 +124,11 @@ class ScrySearch_Recent_Searches_Table extends WP_List_Table {
         // Zero results filter
         if (isset($_REQUEST['zero_results']) && $_REQUEST['zero_results'] === '1') {
             $args['has_results'] = false;
+        }
+
+        // Autosuggest filter: blank = all, 1 = autosuggest only, 0 = full searches only.
+        if (isset($_REQUEST['is_autosuggest']) && $_REQUEST['is_autosuggest'] !== '') {
+            $args['is_autosuggest'] = sanitize_text_field(wp_unslash($_REQUEST['is_autosuggest'])) === '1' ? 1 : 0;
         }
 
         $data = $this->analytics_feature->query_search_analytics($args);
@@ -263,6 +270,17 @@ class ScrySearch_Recent_Searches_Table extends WP_List_Table {
     }
 
     /**
+     * Autosuggest column
+     */
+    public function column_is_autosuggest($item) {
+        if (!empty($item['is_autosuggest'])) {
+            return esc_html__('Yes', 'scry-search');
+        }
+
+        return esc_html__('No', 'scry-search');
+    }
+
+    /**
      * Date column
      */
     public function column_created_at($item) {
@@ -291,6 +309,7 @@ class ScrySearch_Recent_Searches_Table extends WP_List_Table {
         $date_from = !empty($_REQUEST['date_from']) ? sanitize_text_field(wp_unslash($_REQUEST['date_from'])) : gmdate('Y-m-d', strtotime('-30 days'));
         $date_to = !empty($_REQUEST['date_to']) ? sanitize_text_field(wp_unslash($_REQUEST['date_to'])) : gmdate('Y-m-d');
         $zero_results = isset($_REQUEST['zero_results']) && $_REQUEST['zero_results'] === '1';
+        $is_autosuggest = isset($_REQUEST['is_autosuggest']) ? sanitize_text_field(wp_unslash($_REQUEST['is_autosuggest'])) : '';
         ?>
         <div class="alignleft actions">
             <label for="scry-date-from"><?php esc_html_e('From:', 'scry-search'); ?></label>
@@ -298,6 +317,13 @@ class ScrySearch_Recent_Searches_Table extends WP_List_Table {
 
             <label for="scry-date-to"><?php esc_html_e('To:', 'scry-search'); ?></label>
             <input type="date" id="scry-date-to" name="date_to" value="<?php echo esc_attr($date_to); ?>" />
+
+            <label for="scry-is-autosuggest" class="screen-reader-text"><?php esc_html_e('Autosuggest', 'scry-search'); ?></label>
+            <select id="scry-is-autosuggest" name="is_autosuggest">
+                <option value=""><?php esc_html_e('All searches', 'scry-search'); ?></option>
+                <option value="1" <?php selected($is_autosuggest, '1'); ?>><?php esc_html_e('Autosuggest only', 'scry-search'); ?></option>
+                <option value="0" <?php selected($is_autosuggest, '0'); ?>><?php esc_html_e('Full searches only', 'scry-search'); ?></option>
+            </select>
 
             <label for="scry-zero-results">
                 <input type="checkbox" id="scry-zero-results" name="zero_results" value="1" <?php checked($zero_results); ?> />

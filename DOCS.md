@@ -742,11 +742,39 @@ Modify a search analytics record before it is stored.
 | **When**      | Before each analytics event is written. |
 
 
-Keys include: `search_term`, `user_id`, `user_ip`, `user_agent`, `referrer`, `result_count`, `result_ids`, `result_titles`, `post_types_searched`. Use this to further anonymize data, or to attach premium-plugin payloads.
+Keys include: `search_term`, `user_id`, `user_ip`, `user_agent`, `referrer`, `result_count`, `result_ids`, `result_titles`, `post_types_searched`, `is_autosuggest`. Use this to further anonymize data, or to attach premium-plugin payloads.
+
+`is_autosuggest` is `0` unless the insert payload sets it (the hidden field autosuggest adds before its AJAX search).
 
 **Core hybrid tracking (1.5+):** when federated search uses hybrid on any index, the analytics feature adds `scry_search_hybrid` with per-index `embedder` and `semantic_ratio` before this filter runs.
 
 **Premium / extra fields:** add a top-level key named for your plugin (for example `scry_search_filters`). After this filter runs, any keys that are not table columns are packed into the `search_metadata` JSON column and stored with the event. You may also set a `search_metadata` array directly; it is merged with those packed keys. Omit your key when you have nothing to report.
+
+---
+
+#### `scry_ms_should_insert_analytics_event`
+
+Decide whether a prepared analytics event is written to the database.
+
+
+|               |                                                                 |
+| ------------- | --------------------------------------------------------------- |
+| **Type**      | Filter                                                          |
+| **Arguments** | `bool $should_insert`, `array $event_to_insert`                 |
+| **Returns**   | `bool` — `true` to insert, `false` to skip                      |
+| **When**      | After `scry_ms_analytics_event_to_insert` and metadata packing, immediately before the database insert. |
+
+
+The default is `true`. `$event_to_insert` is the packed row (table columns plus `search_metadata` JSON). Returning `false` skips the insert and `insert_search_analytics_event()` returns `false`.
+
+```php
+add_filter( 'scry_ms_should_insert_analytics_event', function ( $should_insert, $event ) {
+    if ( strlen( $event['search_term'] ) < 3 ) {
+        return false;
+    }
+    return $should_insert;
+}, 10, 2 );
+```
 
 ---
 
@@ -763,7 +791,7 @@ Add, remove, or reorder columns on the Search Analytics **Recent Searches** tabl
 | **When**      | When the Recent Searches `WP_List_Table` builds its headers.    |
 
 
-Default keys: `search_term`, `user`, `user_ip`, `result_count`, `created_at`. Pair this with `scry_ms_analytics_recent_searches_column` to render added columns. Extra event data from `scry_ms_analytics_event_to_insert` is available on each row as a decoded `search_metadata` array.
+Default keys: `search_term`, `user`, `user_ip`, `result_count`, `is_autosuggest`, `created_at`. Pair this with `scry_ms_analytics_recent_searches_column` to render added columns. Extra event data from `scry_ms_analytics_event_to_insert` is available on each row as a decoded `search_metadata` array.
 
 ```php
 add_filter( 'scry_ms_analytics_recent_searches_columns', function ( $columns ) {

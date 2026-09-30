@@ -26,6 +26,9 @@ var scrySearch_autosuggest = function (searchForm) {
     //add the return type "html" to the search forms for autosuggest
     searchForm.addPreSubmitAjaxAction(scrySearch_addReturnTypeInput, 1);
 
+    //add the add autosuggest request input action to the search form, this should run before most everything else
+    searchForm.addPreSubmitAjaxAction(scrySearch_addAutosuggestRequestInput, 1);
+
     //add the save autosuggest results action to the search form, this should run before most everything else
     searchForm.addPostSubmitAjaxAction(scrySearch_saveAutosuggestResults, 9);
 
@@ -34,6 +37,9 @@ var scrySearch_autosuggest = function (searchForm) {
 
     //remove the return format input after an ajax request
     searchForm.addPostSubmitAjaxAction(scrySearch_removeReturnTypeInput, 1);
+
+    //remove the autosuggest request input after an ajax request
+    searchForm.addPostSubmitAjaxAction(scrySearch_removeAutosuggestRequestInput, 1);
 
     //attach an event listener to the search input
     searchInput.addEventListener('input', async function (e) {
@@ -73,6 +79,31 @@ var scrySearch_removeReturnTypeInput = function (searchForm) {
     var returnTypeInput = searchForm.formElement.querySelector('input[name="return_type"]');
     if (returnTypeInput) {
         returnTypeInput.remove();
+    }
+}
+
+//add a hidden input with name "is_autosuggest" and value "1" to the search form
+var scrySearch_addAutosuggestRequestInput = function (searchForm) {
+
+    //check if the autosuggest request input already exists
+    var autosuggestRequestInput = searchForm.formElement.querySelector('input[name="is_autosuggest"]');
+    if (autosuggestRequestInput) {
+        return;
+    }
+
+    //add the autosuggest request input
+    autosuggestRequestInput = document.createElement('input');
+    autosuggestRequestInput.type = 'hidden';
+    autosuggestRequestInput.name = 'is_autosuggest';
+    autosuggestRequestInput.value = '1';
+    searchForm.formElement.appendChild(autosuggestRequestInput);
+}
+
+var scrySearch_removeAutosuggestRequestInput = function (searchForm) {
+
+    var autosuggestRequestInput = searchForm.formElement.querySelector('input[name="is_autosuggest"]');
+    if (autosuggestRequestInput) {
+        autosuggestRequestInput.remove();
     }
 }
 

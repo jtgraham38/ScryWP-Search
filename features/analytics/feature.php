@@ -14,8 +14,9 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
     /**
      * Current database schema version.
      * 1.1 added the extras column; 1.2 renames it to search_metadata.
+     * 1.3 adds is_autosuggest.
      */
-    private $db_version = '1.2';
+    private $db_version = '1.3';
 
     /**
      * Hybrid applied on this request, keyed by Meili index uid.
@@ -131,6 +132,7 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
             result_titles longtext DEFAULT '',
             post_types_searched text DEFAULT '',
             search_metadata longtext DEFAULT '',
+            is_autosuggest tinyint(1) NOT NULL DEFAULT 0,
             created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
             KEY idx_search_term (search_term),
@@ -184,6 +186,9 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
             return false;
         }
 
+        // Default off. Set when the caller passes is_autosuggest.
+        $is_autosuggest = !empty($event['is_autosuggest']) ? 1 : 0;
+
         //event to insert
         $event_to_insert = array(
                 'search_term'        => $search_term,
@@ -195,6 +200,7 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
                 'result_ids'         => wp_json_encode(isset($event['result_ids']) ? array_map('absint', $event['result_ids']) : array()),
                 'result_titles'      => wp_json_encode(isset($event['result_titles']) ? array_map('sanitize_text_field', $event['result_titles']) : array()),
                 'post_types_searched' => wp_json_encode(isset($event['post_types_searched']) ? array_map('sanitize_text_field', $event['post_types_searched']) : array()),
+                'is_autosuggest'     => $is_autosuggest,
         );
 
         // Let other plugins modify the event to insert (add premium keys, anonymize further, etc.)
@@ -209,11 +215,19 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
         // Pack any non-column keys (e.g. scry_search_filters) into the search_metadata JSON column.
         $event_to_insert = $this->pack_analytics_event_search_metadata($event_to_insert);
 
-        // Insert the event. Format has 10 placeholders: original 9 columns + search_metadata (%s).
+        //allow others to control if the event should be inserted
+        //@HOOK: scry_ms_should_insert_analytics_event
+        $should_insert = true;
+        $should_insert = apply_filters($this->config('hook_prefix') . 'should_insert_analytics_event', $should_insert, $event_to_insert);
+        if (!$should_insert) {
+            return false;
+        }
+
+        // Insert the event. Formats match the packed row: 9 original columns, is_autosuggest, search_metadata.
         $result = $wpdb->insert(
             $table_name,
             $event_to_insert,
-            array('%s', '%d', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s')
+            array('%s', '%d', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%d', '%s')
         );
 
         return $result !== false;
@@ -306,6 +320,7 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
             'result_ids',
             'result_titles',
             'post_types_searched',
+            'is_autosuggest',
         );
 
         // Accumulator for the search_metadata JSON object (plugin bags keyed by plugin name).
@@ -339,6 +354,10 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
         // Rebuild a clean insert row: known columns first, then search_metadata as JSON (or empty string).
         $row = array();
         foreach ($known_columns as $column) {
+            if ($column === 'is_autosuggest') {
+                $row[$column] = !empty($event_to_insert[$column]) ? 1 : 0;
+                continue;
+            }
             // Preserve filtered values; default missing columns to empty string for a stable insert shape.
             $row[$column] = isset($event_to_insert[$column]) ? $event_to_insert[$column] : '';
         }
@@ -391,6 +410,7 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
             'result_count_min' => null,
             'result_count_max' => null,
             'has_results'      => null,
+            'is_autosuggest'   => null,
             'date_from'        => '',
             'date_to'          => '',
             'orderby'          => 'created_at',
@@ -449,6 +469,12 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
             }
         }
 
+        // null means no filter; 0 and 1 both restrict the column.
+        if ($args['is_autosuggest'] !== null && $args['is_autosuggest'] !== '') {
+            $where[] = 'is_autosuggest = %d';
+            $values[] = !empty($args['is_autosuggest']) ? 1 : 0;
+        }
+
         if (!empty($args['date_from'])) {
             $where[] = 'created_at >= %s';
             $values[] = sanitize_text_field($args['date_from']) . ' 00:00:00';
@@ -482,7 +508,7 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
         }
 
         // Validate orderby to prevent SQL injection
-        $allowed_orderby = array('id', 'search_term', 'user_id', 'user_ip', 'result_count', 'created_at');
+        $allowed_orderby = array('id', 'search_term', 'user_id', 'user_ip', 'result_count', 'is_autosuggest', 'created_at');
         $orderby = in_array($args['orderby'], $allowed_orderby, true) ? $args['orderby'] : 'created_at';
         $order = strtoupper($args['order']) === 'ASC' ? 'ASC' : 'DESC';
 
@@ -836,6 +862,7 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
             'post_types_searched',
             // search_metadata: JSON from premium plugins (see pack_analytics_event_search_metadata)
             'search_metadata',
+            'is_autosuggest',
             'created_at',
         );
         fputcsv($out, $columns);

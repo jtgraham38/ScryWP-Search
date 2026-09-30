@@ -142,6 +142,14 @@ class ScrySearch_AutoSuggestFeature extends PluginFeature {
             'no_found_rows' => true,
         );
 
+        // Hidden is_autosuggest field arrives as JSON, not $_POST. Put it on the query
+        // so posts_pre_query (Meilisearch search) can tell this apart from a normal search.
+        $is_autosuggest = $request->get_param('is_autosuggest');
+        if ($is_autosuggest !== null && $is_autosuggest !== '') {
+            $autosuggest_query['is_autosuggest'] = sanitize_text_field((string) $is_autosuggest);
+        }
+
+
         //let other plugins modify the autosuggest query
         //@HOOK: scry_ms_autosuggest_query
         $autosuggest_query = apply_filters($this->config('hook_prefix') . 'autosuggest_query', $autosuggest_query);

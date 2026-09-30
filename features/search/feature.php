@@ -227,6 +227,7 @@ class ScrySearch_SearchFeature extends PluginFeature {
                     'result_ids'          => array_column($all_results, 'ID'),
                     'result_titles'       => array_column($all_results, 'post_title'),
                     'post_types_searched' => array_values($post_types_to_search),
+                    'is_autosuggest'      => $query->get( 'is_autosuggest' ), // '1' for autosuggest, empty for a normal search
                 ));
             }
         } catch (Exception $e) {
