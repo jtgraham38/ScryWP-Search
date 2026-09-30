@@ -847,8 +847,16 @@ Default keys include:
 - `restApiUrl` — REST URL used by form AJAX submits (autosuggest endpoint by default)
 - `autoSuggestEnabled` — whether autosuggest is enabled in settings
 - `searchFormSelectors` — **array of CSS selectors** used to discover `<form>` elements on the page
+- `debounceMs` — milliseconds `submitAjax()` waits after the last call before sending (default `250`). Read as `windowLocalized.debounceMs`.
 
-Use this filter to add discovery selectors for custom theme or builder search forms (see [Form discovery](#form-discovery) below).
+Use this filter to add discovery selectors for custom theme or builder search forms (see [Form discovery](#form-discovery) below), or to change the AJAX debounce.
+
+```php
+add_filter( 'scry_ms_window_localized', function ( $data ) {
+    $data['debounceMs'] = 400;
+    return $data;
+} );
+```
 
 ```php
 add_filter( 'scry_ms_window_localized', function ( $data ) {
@@ -1127,7 +1135,7 @@ document.addEventListener('scrySearchReady', function () {
 
 #### Triggering an AJAX search yourself
 
-`submitAjax()` is debounced and returns a promise, so you can call it directly and await the result:
+`submitAjax()` is debounced (`windowLocalized.debounceMs`, default 250) and returns a promise, so you can call it directly and await the result:
 
 ```js
 const [form] = window.scrySearch.getSearchForms();
@@ -1145,6 +1153,6 @@ window.scrySearch.upgrades.my_addon.data.enabled = true;
 
 ### Front‑end configuration via `windowLocalized`
 
-PHP exposes configuration to the runtime as the global `windowLocalized` object (modifiable with the [`scry_ms_window_localized`](#scry_ms_window_localized) filter). Default keys include `restApiUrl`, `autoSuggestEnabled`, and `searchFormSelectors`. Add your own keys server‑side to read them in your front‑end code.
+PHP exposes configuration to the runtime as the global `windowLocalized` object (modifiable with the [`scry_ms_window_localized`](#scry_ms_window_localized) filter). Default keys include `restApiUrl`, `autoSuggestEnabled`, `searchFormSelectors`, and `debounceMs` (AJAX debounce in milliseconds, default `250`). Add your own keys server‑side to read them in your front‑end code.
 
 Autosuggest uses a separate global, `autoSuggestLocalized` (modifiable with [`scry_ms_autosuggest_localized`](#scry_ms_autosuggest_localized)), so the two features do not overwrite each other. Default keys there are `classSelector` and `restApiUrl`.

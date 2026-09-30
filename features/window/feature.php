@@ -50,7 +50,7 @@ class ScrySearch_WindowFeature extends PluginFeature {
             'restApiUrl' => $rest_api_url,
             'autoSuggestEnabled' => $auto_suggest_enabled,
             'searchFormSelectors' => $search_form_selectors,
-            'debouncMs' => $debounce_ms,
+            'debounceMs' => $debounce_ms,
         );
 
         //let other plugins modify the window localized object

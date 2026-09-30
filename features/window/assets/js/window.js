@@ -94,7 +94,7 @@ class ScrySearch_SearchForm {
         });
 
         // Ensure *all* callers hit the debounce (even external code calling form.submitAjax()).
-        this.submitAjax = this.debounceAjaxSubmit(this.submitAjax.bind(this), windowLocalized.debouncMs);
+        this.submitAjax = this.debounceAjaxSubmit(this.submitAjax.bind(this), windowLocalized.debounceMs);
 
         //save the endpoint to submit an ajax request to
         this.ajaxEndpoint = windowLocalized.restApiUrl;

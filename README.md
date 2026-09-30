@@ -182,7 +182,7 @@ Actions are instances of `ScrySearch_SubmitAction` and receive:
 
 `searchForm.submitAjax()`:
 
-- is **debounced** to avoid overwhelming the server during rapid typing
+- is **debounced** (`windowLocalized.debounceMs`, default 250ms; change it with `scry_ms_window_localized`) to avoid overwhelming the server during rapid typing
 - serializes native `<form>` inputs via `FormData` into a JSON-able object (supports bracket syntax like `filters[facets][]`)
 - POSTs JSON to the autosuggest REST endpoint (see `features/autosuggest/feature.php`)
 - dispatches post-AJAX actions with the returned JSON response
