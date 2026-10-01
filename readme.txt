@@ -3,7 +3,7 @@ Contributors: jtgraham38
 Tags: meilisearch, search, developer, hooks, extendable
 Requires at least: 5.2
 Tested up to: 7.1
-Stable tag: 1.6.0
+Stable tag: 1.7.0
 Requires PHP: 8.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -268,6 +268,15 @@ AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API 
 
 == Changelog ==
 
+= 1.7.0 =
+* Autosuggest result count is filterable with `scry_ms_autosuggest_posts_per_page` (default 5; values below 1 fall back to 5)
+* AJAX submit debounce is configurable via `scry_ms_window_localized` (`debounceMs`, default 250ms)
+* Search analytics records `is_autosuggest` (schema 1.3, applied when wp-admin loads). Recent Searches shows the column, can filter autosuggest vs full searches, and CSV export includes it
+* New filter `scry_ms_should_insert_analytics_event` can skip inserting an analytics row
+* Indexed post meta stores numeric values as integers, including arrays of numbers
+* Autosuggest class selector placeholder is a class name (`scrywp-search-form`)
+* DOCS.md / README updated for the new hooks
+
 = 1.6.0 =
 * Plugin lifecycle: `register_deactivation_hook` clears daily analytics/log cron events; `uninstall.php` drops custom tables and deletes all `scry_ms_*` options
 * Password-protected posts are skipped on live indexing (built-in; still filterable via `scry_ms_should_index`)
@@ -351,6 +360,9 @@ AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API 
 * Initial release: per-post-type indexes, federated search, ranking/searchable fields, auto + bulk indexing, task drawer, live preview, drop-in WP search
 
 == Upgrade Notice ==
+
+= 1.7.0 =
+Autosuggest posts-per-page and AJAX debounce are filterable. Analytics adds an `is_autosuggest` column (upgrades when you open wp-admin) and a filter to skip inserts. See DOCS.md.
 
 = 1.6.0 =
 Lifecycle cleanup on deactivate/uninstall, password-protected post skip, pagination fix, CSV formula hardening, Recent Searches column hooks, autosuggest localization, and task pane fixes. See DOCS.md.

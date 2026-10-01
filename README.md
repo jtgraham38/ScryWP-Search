@@ -210,6 +210,17 @@ REST payload per hit includes `title`, `excerpt`, `url`, and `featured_image` (t
 - This plugin expects a reachable Meilisearch instance and valid keys configured in wp-admin.
 - The admin UI is designed to function even when Meilisearch settings fetch fails (defaults are shown where possible).
 
+## Changelog
+
+### 1.7.0
+
+- `scry_ms_autosuggest_posts_per_page` sets how many autosuggest hits to request (default 5; values below 1 fall back to 5).
+- `scry_ms_window_localized` can set `debounceMs` (default 250), read on the front end as `windowLocalized.debounceMs`.
+- Analytics schema 1.3 adds `is_autosuggest`. Recent Searches shows it, can filter on it, and CSV export includes it. The column is added by `dbDelta` on `admin_init`.
+- `scry_ms_should_insert_analytics_event` can skip writing an analytics row.
+- Indexed `post_meta` stores numeric values as integers, including arrays of numbers.
+- Autosuggest class selector placeholder is a class name (`scrywp-search-form`).
+
 ## License
 
 GPL v3: see [GPL v3](https://www.gnu.org/licenses/gpl-3.0.html).
