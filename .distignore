@@ -29,3 +29,5 @@ Thumbs.db
 /vendor/**/tmp-*
 scoper.inc.php
 **/setup.sh
+scripts
+_scripts
