@@ -85,7 +85,11 @@ class ScrySearch_SearchForm {
         this.preSubmitAjaxActions = []; //a list of ScrySearch_SubmitAction objects to call before the form is submitted via AJAX
         this.postSubmitAjaxActions = []; //a list of ScrySearch_SubmitAction objects to call after the form is submitted via AJAX
 
-        this.searchInput = formElement.querySelector('input[type="text"][name="s"], input[type="search"][name="s"]');
+        this.searchInput = formElement.querySelector(windowLocalized.searchFormElementQuerySelector);
+        if (!this.searchInput) {
+            console.error('Search input not found, skipping', windowLocalized.searchFormElementQuerySelector);
+            return;
+        }
 
         //ensure when the formElement is submitted, we always call the submit function first
         this.formElement.addEventListener('submit', (e) => {
@@ -103,26 +107,26 @@ class ScrySearch_SearchForm {
     //submit the search form
     submit() {
 
-        //sort and call the pre submit handles
+        //sort and call the pre submit handles (lower numbers run first)
         this.preSubmitActions.sort((a, b) => a.order - b.order).forEach(action => action.call(this));
 
         //submit the form
         this.formElement.submit();
 
-        //sort and call the post submit actions
+        //sort and call the post submit actions (lower numbers run first)
         //these will likely not be used much due to the page refresh on submit
         this.postSubmitActions.sort((a, b) => a.order - b.order).forEach(action => action.call(this));
     }
 
     //submit the search form via AJAX
     async submitAjax() {
-        //sort and call the pre submit ajax handles
+        //sort and call the pre submit ajax handles (lower numbers run first)
         this.preSubmitAjaxActions.sort((a, b) => a.order - b.order).forEach(action => action.call(this));
 
         //submit the form via AJAX
         var data = await this._handleAjaxSubmit();
 
-        //sort and call the post submit ajax actions
+        //sort and call the post submit ajax actions (lower numbers run first)
         this.postSubmitAjaxActions.sort((a, b) => a.order - b.order).forEach(action => action.call(this, data));
 
         //return the data

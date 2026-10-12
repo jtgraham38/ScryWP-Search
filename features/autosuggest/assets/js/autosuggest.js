@@ -23,8 +23,8 @@ var scrySearch_autosuggest = function (searchForm) {
         return;
     }
 
-    //add the return type "html" to the search forms for autosuggest
-    searchForm.addPreSubmitAjaxAction(scrySearch_addReturnTypeInput, 1);
+    //set the should render autosuggest key to true on the form.data.core object
+    searchForm.data.core.shouldRenderAutosuggest = true;
 
     //add the add autosuggest request input action to the search form, this should run before most everything else
     searchForm.addPreSubmitAjaxAction(scrySearch_addAutosuggestRequestInput, 1);
@@ -34,9 +34,6 @@ var scrySearch_autosuggest = function (searchForm) {
 
     //add the render autosuggest results action to the search form, this should run last after all other actions
     searchForm.addPostSubmitAjaxAction(scrySearch_renderAutosuggestResults, 999);
-
-    //remove the return format input after an ajax request
-    searchForm.addPostSubmitAjaxAction(scrySearch_removeReturnTypeInput, 1);
 
     //remove the autosuggest request input after an ajax request
     searchForm.addPostSubmitAjaxAction(scrySearch_removeAutosuggestRequestInput, 1);
@@ -58,29 +55,6 @@ var scrySearch_autosuggest = function (searchForm) {
         //TODO: right now, we just contnuously appen new results objects.  this is bad!  Circle back around and fix this
     });
 };
-
-//add a hidden input with name "return_type" and value "html" to the search form
-var scrySearch_addReturnTypeInput = function (searchForm) {
-    //check if the return type input already exists
-    var returnTypeInput = searchForm.formElement.querySelector('input[name="return_type"]');
-    if (returnTypeInput) {
-        return;
-    }
-
-    //add return type input
-    var returnTypeInput = document.createElement('input');
-    returnTypeInput.type = 'hidden';
-    returnTypeInput.name = 'return_type';
-    returnTypeInput.value = 'html';
-    searchForm.formElement.appendChild(returnTypeInput);
-}
-
-var scrySearch_removeReturnTypeInput = function (searchForm) {
-    var returnTypeInput = searchForm.formElement.querySelector('input[name="return_type"]');
-    if (returnTypeInput) {
-        returnTypeInput.remove();
-    }
-}
 
 //add a hidden input with name "is_autosuggest" and value "1" to the search form
 var scrySearch_addAutosuggestRequestInput = function (searchForm) {
@@ -115,6 +89,11 @@ var scrySearch_saveAutosuggestResults = function (searchForm, data) {
 //render the autosuggest results under the search input
 var scrySearch_renderAutosuggestResults = function (searchForm) {
 
+    //return early if the key for should render autosuggest is false on the form.data.core object
+    if (!searchForm.data.core?.shouldRenderAutosuggest) {
+        return;
+    }
+
     //first, check if the autosuggest results container already exists, and if so, remove it
     if (searchForm.data.core?.autoSuggestElement) {
         searchForm.data.core.autoSuggestElement.remove();
@@ -140,7 +119,7 @@ var scrySearch_renderAutosuggestResults = function (searchForm) {
     autosuggestResults.innerHTML = searchForm.data.core.autosuggestResults.rendered;
 
     //add an event listener to the close button
-    autosuggestResults.querySelector('.scry-search-autosuggest-results-close-button').addEventListener('click', function () {
+    autosuggestResults.querySelector('.scry-search-autosuggest-results-close-button')?.addEventListener('click', function () {
         autosuggestResults.remove();
         searchForm.data.core.autoSuggestElement = null;
     });

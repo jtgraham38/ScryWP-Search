@@ -35,6 +35,7 @@ class ScrySearch_WindowFeature extends PluginFeature {
         $auto_suggest_enabled = get_option($this->prefixed('enable_autosuggest'), '0');
         $search_form_selectors = ['#adminbarsearch', 'form[role="search"]'];
         $debounce_ms = 250;
+        $search_form_element_query_selector = 'input[type="text"][name="s"], input[type="search"][name="s"]';
         
         wp_register_script(
             $this->prefixed('window-script'),
@@ -51,6 +52,7 @@ class ScrySearch_WindowFeature extends PluginFeature {
             'autoSuggestEnabled' => $auto_suggest_enabled,
             'searchFormSelectors' => $search_form_selectors,
             'debounceMs' => $debounce_ms,
+            'searchFormElementQuerySelector' => $search_form_element_query_selector,
         );
 
         //let other plugins modify the window localized object
