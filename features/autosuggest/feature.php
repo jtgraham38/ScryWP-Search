@@ -55,10 +55,13 @@ class ScrySearch_AutoSuggestFeature extends PluginFeature {
             '1.0.0'
         );
         
+        //NOTE: IF scry-search-facets script is enqueued, it must be loaded BEFORE this script
+        //IF it is not enqueued (meaning filters aren't being used), then this script will load anyway.
+        //The script itself handles checking whether filters are being used
         wp_enqueue_script(
             $this->prefixed('autosuggest-script'),
             plugin_dir_url(__FILE__) . 'assets/js/autosuggest.js',
-            array($this->prefixed('window-script')),
+            array($this->prefixed('window-script'), 'scry-search-facets'),
             '1.0.0',
             true
         );

@@ -23,6 +23,21 @@ var scrySearch_autosuggest = function (searchForm) {
         return;
     }
 
+    //trigger an autosuggest search whenever any facets applied to this search form are changed
+    //NOTE: this only applies when the filters plugin is installed and configured
+    //TODO: skip this for now, as it currently has no way to know which search form to trigger autosuggest for if the facets are applied to multiple search forms
+    // so the autosuggest interface will apply to all search forms it applies to, which is not right
+    // if (searchForm.data.filters?.filtersForms?.length > 0) {
+    //     searchForm.data.filters.filtersForms.forEach(filterForm => {
+    //         //trigger an ajax search on this ajax search form
+    //         filterForm.filtersElement.addEventListener('scrySearchFiltersFacetChange', function (event) {
+    //             if (event.target === filterForm.filtersElement) {
+    //                 searchForm.submitAjax();
+    //             }
+    //         }.bind(this))
+    //     });
+    // }
+
     //set the should render autosuggest key to true on the form.data.core object
     searchForm.data.core.shouldRenderAutosuggest = true;
 
