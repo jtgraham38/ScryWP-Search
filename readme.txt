@@ -3,7 +3,7 @@ Contributors: jtgraham38
 Tags: meilisearch, search, developer, hooks, extendable
 Requires at least: 5.2
 Tested up to: 7.1
-Stable tag: 1.7.0
+Stable tag: 1.8.0
 Requires PHP: 8.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -135,6 +135,17 @@ Actions:
 **JS:** `window.scrySearch` (handle `scry_ms_window-script`). Wait for `scrySearchReady`. Forms from `windowLocalized.searchFormSelectors`; filter `scry_ms_window_localized` to add selectors (e.g. `form.my-search`). Per-form pre/post submit + AJAX hooks for custom front-end behavior.
 
 Code lives under `features/<name>/`. Prefer a search-only key on the front; the client factory supports admin vs search.
+
+= Premium plugins =
+
+**The free plugin is the search engine.** Indexing, federated search, hybrid, analytics, and `scry_ms_*` hooks stay in core. Premium add-ons sit on top when you want ready-made UI for building Meilisearch search interfaces — without replacing your theme’s results templates.
+
+Browse the catalog at [scrywp.com/premium-plugins](https://scrywp.com/premium-plugins). Two upgrades in particular:
+
+* **[Scry Search Facets](https://scrywp.com/premium-plugins/scry-search-facets/)** - shortcode-driven facet UI (taxonomies, date ranges, and more) that turns visitor choices into Meilisearch filters on the same search path core already owns.
+* **[Scry Search Ajax](https://scrywp.com/premium-plugins/scry-search-ajax/)** - ajax search UI on top of the base `window.scrySearch` / `submitAjax()` runtime, so results can update without a full page reload.
+
+Same connection, same indexes, same hooks. Install from Scry Search → Premium Upgrades when you’re ready; skip them when a custom front end or the built-in autosuggest is enough.
 
 = Managed hosting (ScryWP) =
 
@@ -268,6 +279,15 @@ AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API 
 
 == Changelog ==
 
+= 1.8.0 =
+* Search input discovery is configurable via `scry_ms_window_localized` (`searchFormElementQuerySelector`; default `input[type="text"][name="s"], input[type="search"][name="s"]`). Forms with no matching input are skipped
+* Autosuggest sets `searchForm.data.core.shouldRenderAutosuggest` so the dropdown only renders when that flag is true (other AJAX consumers can suppress it)
+* Removed unused autosuggest `return_type` hidden field — the REST endpoint always returns both `data` and `rendered`
+* Autosuggest script declares a soft dependency on `scry-search-facets` so the Facets add-on loads before autosuggest when both are present
+* Premium Upgrades lists Scry Search Ajax alongside Facets
+* Internal: `_scripts/release.sh` build helper; `.distignore` excludes `scripts` / `_scripts`
+* DOCS.md / README updated for `searchFormElementQuerySelector`
+
 = 1.7.0 =
 * Autosuggest result count is filterable with `scry_ms_autosuggest_posts_per_page` (default 5; values below 1 fall back to 5)
 * AJAX submit debounce is configurable via `scry_ms_window_localized` (`debounceMs`, default 250ms)
@@ -360,6 +380,9 @@ AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API 
 * Initial release: per-post-type indexes, federated search, ranking/searchable fields, auto + bulk indexing, task drawer, live preview, drop-in WP search
 
 == Upgrade Notice ==
+
+= 1.8.0 =
+Configurable search-input selector, autosuggest render gate (`shouldRenderAutosuggest`), unused `return_type` field removed, Facets script load order fix, and Scry Search Ajax on Premium Upgrades. See DOCS.md.
 
 = 1.7.0 =
 Autosuggest posts-per-page and AJAX debounce are filterable. Analytics adds an `is_autosuggest` column (upgrades when you open wp-admin) and a filter to skip inserts. See DOCS.md.

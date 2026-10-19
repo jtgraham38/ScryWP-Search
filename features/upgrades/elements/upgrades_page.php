@@ -27,13 +27,13 @@ $premium_upgrades = array(
         'purchase_url' => 'https://scrywp.com/premium-plugins/scry-search-facets/',
         'active' => false,
     ),
-    // array(
-    //     'name' => 'Scry Search Hybrid: AI-Powered Search for WordPress & WooCommerce',
-    //     'slug' => 'scry-search-hybrid',
-    //     'description' => 'Add semantic and hybrid search to your WordPress & WooCommerce site with Meilisearch embedders.',
-    //     'purchase_url' => 'https://scrywp.com/premium-plugins/scry-search-hybrid/',
-    //     'active' => false,
-    // ),
+    array(
+        'name' => 'Scry Search Ajax: Ajax Search for WordPress & WooCommerce',
+        'slug' => 'scry-search-ajax',
+        'description' => 'Add support for ajax search to your WordPress & WooCommerce site.',
+        'purchase_url' => 'https://scrywp.com/premium-plugins/scry-search-ajax/',
+        'active' => false,
+    ),
 );
 
 // Premium plugins set `active` to true via this filter when installed on the site.

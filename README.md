@@ -187,14 +187,16 @@ Actions are instances of `ScrySearch_SubmitAction` and receive:
 - POSTs JSON to the autosuggest REST endpoint (see `features/autosuggest/feature.php`)
 - dispatches post-AJAX actions with the returned JSON response
 
+Each `ScrySearch_SearchForm` finds its search input with `windowLocalized.searchFormElementQuerySelector` (default `input[type="text"][name="s"], input[type="search"][name="s"]`). Forms with no match are skipped.
+
 ## Autosuggest feature (high level)
 
 Autosuggest attaches after `scrySearchReady`:
 
 - If Search Settings has a class selector, it uses `getSearchFormsByClass(className)`; otherwise it uses every discovered form
-- For each form, it registers post-AJAX actions to:
+- For each form, it sets `searchForm.data.core.shouldRenderAutosuggest = true` and registers post-AJAX actions to:
   - persist results to `searchForm.data.core.autosuggestResults`
-  - render a dropdown UI under the form
+  - render a dropdown UI under the form only when `shouldRenderAutosuggest` is true
 - On each input event (after a small minimum length), it calls `await searchForm.submitAjax()`
 
 To target a custom form: add a CSS class on the `<form>`, include a matching selector in `searchFormSelectors` (via `scry_ms_window_localized` if needed), then set that same class name in the autosuggest class selector setting.
@@ -211,6 +213,15 @@ REST payload per hit includes `title`, `excerpt`, `url`, and `featured_image` (t
 - The admin UI is designed to function even when Meilisearch settings fetch fails (defaults are shown where possible).
 
 ## Changelog
+
+### 1.8.0
+
+- `scry_ms_window_localized` can set `searchFormElementQuerySelector` (default `input[type="text"][name="s"], input[type="search"][name="s"]`). Forms with no matching input are skipped.
+- Autosuggest sets `searchForm.data.core.shouldRenderAutosuggest`; the dropdown only renders when that flag is true.
+- Unused autosuggest `return_type` hidden field removed — the REST endpoint always returns both `data` and `rendered`.
+- Autosuggest script depends on `scry-search-facets` when the Facets add-on is present so that script loads first.
+- Premium Upgrades lists Scry Search Ajax.
+- Internal: `_scripts/release.sh`; `.distignore` excludes `scripts` / `_scripts`.
 
 ### 1.7.0
 
