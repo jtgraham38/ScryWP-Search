@@ -61,9 +61,12 @@ class ScrySearch_AutoSuggestFeature extends PluginFeature {
         //The script itself handles checking whether filters are being used
         $dependencies = array($this->prefixed('window-script'));
         //if the scry search facets plugin is active on the site, add scry-search-facets to the dependencies
-        if (wp_script_is('scry-search-facets', 'enqueued') || wp_script_is('scry-search-facets', 'registered')) {
+        // 'enqueued' also matches other scripts that *list* this handle as a dep (e.g. Ajax),
+        // even when Facets never registered it. Only 'registered' means the script actually exists.
+        if (wp_script_is('scry-search-facets', 'registered')) {
             $dependencies[] = 'scry-search-facets';
         }
+
         wp_enqueue_script(
             $this->prefixed('autosuggest-script'),
             plugin_dir_url(__FILE__) . 'assets/js/autosuggest.js',
