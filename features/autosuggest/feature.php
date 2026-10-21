@@ -25,7 +25,8 @@ class ScrySearch_AutoSuggestFeature extends PluginFeature {
         add_action('admin_init', array($this, 'register_settings'));
 
         // Load the autosuggest assets on the frontend if autosuggest is enabled
-        add_action('wp_enqueue_scripts', array($this, 'load_assets'));
+        // Priority 11: after Facets (priority 10) so we can detect scry-search-facets.
+        add_action('wp_enqueue_scripts', array($this, 'load_assets'), 11);
 
         // Register the rest api route for autosuggest
         add_action('rest_api_init', array($this, 'register_rest_api_route'));
@@ -58,10 +59,15 @@ class ScrySearch_AutoSuggestFeature extends PluginFeature {
         //NOTE: IF scry-search-facets script is enqueued, it must be loaded BEFORE this script
         //IF it is not enqueued (meaning filters aren't being used), then this script will load anyway.
         //The script itself handles checking whether filters are being used
+        $dependencies = array($this->prefixed('window-script'));
+        //if the scry search facets plugin is active on the site, add scry-search-facets to the dependencies
+        if (wp_script_is('scry-search-facets', 'enqueued') || wp_script_is('scry-search-facets', 'registered')) {
+            $dependencies[] = 'scry-search-facets';
+        }
         wp_enqueue_script(
             $this->prefixed('autosuggest-script'),
             plugin_dir_url(__FILE__) . 'assets/js/autosuggest.js',
-            array($this->prefixed('window-script'), 'scry-search-facets'),
+            $dependencies,
             '1.0.0',
             true
         );
