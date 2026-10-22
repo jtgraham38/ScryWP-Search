@@ -1,6 +1,6 @@
 === Scry Search: Meilisearch for WordPress ===
 Contributors: jtgraham38
-Tags: meilisearch, search, developer, hooks, extendable
+Tags: meilisearch, search, developer, hooks, woocommerce
 Requires at least: 5.2
 Tested up to: 7.1
 Stable tag: 1.8.0

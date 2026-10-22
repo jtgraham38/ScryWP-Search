@@ -214,6 +214,11 @@ REST payload per hit includes `title`, `excerpt`, `url`, and `featured_image` (t
 
 ## Changelog
 
+### 1.8.1
+
+- Autosuggest only depends on `scry-search-facets` when that handle is registered (Facets add-on present). Avoids a WP 6.9 `_doing_it_wrong` notice when Facets is inactive.
+- Autosuggest assets enqueue at `wp_enqueue_scripts` priority 11 so Facets can register first.
+
 ### 1.8.0
 
 - `scry_ms_window_localized` can set `searchFormElementQuerySelector` (default `input[type="text"][name="s"], input[type="search"][name="s"]`). Forms with no matching input are skipped.
