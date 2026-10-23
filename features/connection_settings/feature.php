@@ -53,7 +53,7 @@ class ScrySearch_ConnectionSettingsFeature extends PluginFeature {
             $this->prefixed('connection-type-input-script'),
             plugin_dir_url(__FILE__) . 'assets/js/connection_type_input.js',
             array(),
-            '1.0.0',
+            $this->config('version'),
             true
         );
         

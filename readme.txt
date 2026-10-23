@@ -20,6 +20,8 @@ Scry Search wires Meilisearch into WordPress the way you'd want it on a client p
 
 **Docs (start here):** [DOCS.md on GitHub](https://github.com/jtgraham38/ScryWP-Search/blob/main/DOCS.md) — every filter/action, args, return values, when it fires, plus the `window.scrySearch` JS API. Same file ships in the plugin zip.
 
+**Live demo:** [scrywp.com/premium-plugins](https://scrywp.com/premium-plugins) — the free plugin with Scry Search Facets and Scry Search Ajax.
+
 You get over **40 PHP hooks** (`scry_ms_*`) covering indexing, documents, index settings, federated search, autosuggest, analytics, logs, and the front-end runtime. Call sites are marked in source. If you can install a plugin and paste API keys, you can run it without writing code. If you ship WordPress for a living, you can bend it without forking.
 
 = No theme changes. Not glued to a results UI. =
@@ -140,7 +142,7 @@ Code lives under `features/<name>/`. Prefer a search-only key on the front; the 
 
 **The free plugin is the search engine.** Indexing, federated search, hybrid, analytics, and `scry_ms_*` hooks stay in core. Premium add-ons sit on top when you want ready-made UI for building Meilisearch search interfaces — without replacing your theme’s results templates.
 
-Browse the catalog at [scrywp.com/premium-plugins](https://scrywp.com/premium-plugins). Two upgrades in particular:
+Browse the catalog — and a live demo of the free plugin plus both upgrades — at [scrywp.com/premium-plugins](https://scrywp.com/premium-plugins). Two upgrades in particular:
 
 * **[Scry Search Facets](https://scrywp.com/premium-plugins/scry-search-facets/)** - shortcode-driven facet UI (taxonomies, date ranges, and more) that turns visitor choices into Meilisearch filters on the same search path core already owns.
 * **[Scry Search Ajax](https://scrywp.com/premium-plugins/scry-search-ajax/)** - ajax search UI on top of the base `window.scrySearch` / `submitAjax()` runtime, so results can update without a full page reload.

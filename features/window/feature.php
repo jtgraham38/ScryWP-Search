@@ -41,7 +41,7 @@ class ScrySearch_WindowFeature extends PluginFeature {
             $this->prefixed('window-script'),
             plugin_dir_url(__FILE__) . 'assets/js/window.js',
             array(),
-            '1.0.0',
+            $this->config('version'),
             true
         );
         wp_enqueue_script($this->prefixed('window-script'));

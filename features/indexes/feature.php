@@ -464,7 +464,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             $this->prefixed('show-indexes-script'),
             plugin_dir_url(__FILE__) . 'assets/js/show_indexes.js',
             array('jquery'),
-            '1.0.0',
+            $this->config('version'),
             true
         );
 
@@ -537,7 +537,7 @@ class ScrySearch_IndexesFeature extends PluginFeature {
             $this->prefixed('hybrid-embedders-script'),
             plugin_dir_url(__FILE__) . 'assets/js/hybrid_embedders.js',
             array(),
-            (string) filemtime(plugin_dir_path(__FILE__) . 'assets/js/hybrid_embedders.js'),
+            $this->config('version'),
             true
         );
 

@@ -149,7 +149,7 @@ class ScrySearch_AdminPageFeature extends PluginFeature {
             $this->prefixed('admin-script'),
             plugin_dir_url(__FILE__) . 'assets/js/admin.js',
             array(),
-            '1.0.1',
+            $this->config('version'),
             true
         );
     }

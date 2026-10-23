@@ -680,7 +680,7 @@ class ScrySearch_AnalyticsFeature extends PluginFeature {
             $this->prefixed('analytics-script'),
             plugin_dir_url(__FILE__) . 'assets/js/analytics.js',
             array('jquery', $this->prefixed('chartjs')),
-            '1.0.0',
+            $this->config('version'),
             true
         );
 

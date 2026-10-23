@@ -148,7 +148,7 @@ class ScrySearch_LogsFeature extends PluginFeature {
             $this->prefixed('logs-script'),
             plugin_dir_url(__FILE__) . 'assets/js/logs.js',
             array(),
-            '1.0.0',
+            $this->config('version'),
             true
         );
 

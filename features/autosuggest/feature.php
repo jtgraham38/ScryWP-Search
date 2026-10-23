@@ -71,7 +71,7 @@ class ScrySearch_AutoSuggestFeature extends PluginFeature {
             $this->prefixed('autosuggest-script'),
             plugin_dir_url(__FILE__) . 'assets/js/autosuggest.js',
             $dependencies,
-            '1.0.0',
+            $this->config('version'),
             true
         );
 
