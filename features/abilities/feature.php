@@ -30,5 +30,7 @@ class ScrySearch_AbilitiesFeature extends PluginFeature {
     //- reading/updating plugin settings (not including api keys)
     //- reading analytics events
 
+    //this should all hook directly into functions provided in other features of this plugin, for minimal code duplication
+
     
 }
