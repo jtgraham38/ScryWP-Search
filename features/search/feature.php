@@ -194,8 +194,6 @@ class ScrySearch_SearchFeature extends PluginFeature {
             // die;
 
         } catch (Exception $e) {
-            var_dump($e->getMessage());
-            die;
             //log an error message with the logging feature
             $this->get_feature('scry_ms_logs')->log('error', sprintf(__('Error in Meilisearch multi search (exiting Scry Search): %s', "scry-search"), $e->getMessage()));
             //fall back to the wordpress search
