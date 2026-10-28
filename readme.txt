@@ -3,7 +3,7 @@ Contributors: jtgraham38
 Tags: meilisearch, search, developer, hooks, woocommerce
 Requires at least: 5.2
 Tested up to: 7.1
-Stable tag: 1.8.0
+Stable tag: 1.8.2
 Requires PHP: 8.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -281,6 +281,12 @@ AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API 
 
 == Changelog ==
 
+= 1.8.2 =
+* Remove error dump and die on multisearch fail.
+
+= 1.8.1 =
+* Bug fixes.
+
 = 1.8.0 =
 * Search input discovery is configurable via `scry_ms_window_localized` (`searchFormElementQuerySelector`; default `input[type="text"][name="s"], input[type="search"][name="s"]`). Forms with no matching input are skipped
 * Autosuggest sets `searchForm.data.core.shouldRenderAutosuggest` so the dropdown only renders when that flag is true (other AJAX consumers can suppress it)
@@ -382,6 +388,12 @@ AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API 
 * Initial release: per-post-type indexes, federated search, ranking/searchable fields, auto + bulk indexing, task drawer, live preview, drop-in WP search
 
 == Upgrade Notice ==
+
+= 1.8.2 =
+Remove error dump and die on multisearch fail.
+
+= 1.8.1 =
+Bug fixes.
 
 = 1.8.0 =
 Configurable search-input selector, autosuggest render gate (`shouldRenderAutosuggest`), unused `return_type` field removed, Facets script load order fix, and Scry Search Ajax on Premium Upgrades. See DOCS.md.
