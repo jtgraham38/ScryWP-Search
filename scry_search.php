@@ -3,7 +3,7 @@
  * Plugin Name:	Scry Search: Meilisearch for WordPress
  * Plugin URI:	https://scrywp.com
  * Description:	Meilisearch for WordPress: keyword + built-in semantic/hybrid search. Drop-in WP_Query, ~45 PHP hooks, no theme changes.
- * Version:	1.8.2
+ * Version:	1.8.3
  * Requires at least: 5.2
  * Requires PHP:      8.1
  * Author:	ScryWP
@@ -34,7 +34,7 @@ $config = array(
     'hook_prefix' => 'scry_ms_',    //set a separate prefix because changing it will break dependent plugins
     // Hybrid search defaults (Configure Index → Hybrid Search).
     // Meilisearch source names are camelCase as in their embedders API.
-    'version' => '1.8.1',
+    'version' => '1.8.3',
     'default_semantic_ratio' => 0.5, // 0 = keyword, 1 = fully semantic
     'default_document_template' => "{{doc.post_title}}\n{{doc.post_excerpt}}",
     'embedder_sources' => array(

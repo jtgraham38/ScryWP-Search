@@ -3,7 +3,7 @@ Contributors: jtgraham38
 Tags: meilisearch, search, developer, hooks, woocommerce
 Requires at least: 5.2
 Tested up to: 7.1
-Stable tag: 1.8.2
+Stable tag: 1.8.3
 Requires PHP: 8.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -281,6 +281,9 @@ AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API 
 
 == Changelog ==
 
+= 1.8.3 =
+* Indexed post meta keeps text as text. Numbers are stored as integers or floats, boolean strings as booleans, and serialized arrays (ACF, Meta Box groups and repeaters) are unpacked so nested values cast the same way
+
 = 1.8.2 =
 * Remove error dump and die on multisearch fail.
 
@@ -388,6 +391,9 @@ AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API 
 * Initial release: per-post-type indexes, federated search, ranking/searchable fields, auto + bulk indexing, task drawer, live preview, drop-in WP search
 
 == Upgrade Notice ==
+
+= 1.8.3 =
+Post meta indexing no longer turns non-numeric fields into 0. Reindex so existing documents pick up the corrected values.
 
 = 1.8.2 =
 Remove error dump and die on multisearch fail.

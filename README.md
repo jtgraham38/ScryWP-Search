@@ -214,6 +214,14 @@ REST payload per hit includes `title`, `excerpt`, `url`, and `featured_image` (t
 
 ## Changelog
 
+### 1.8.3
+
+- Indexed `post_meta` keeps non-numeric values as strings. Integers and floats are stored as numbers, boolean strings (`true` / `false` / `yes` / `no` / `on` / `off`) as booleans, and serialized arrays are unpacked before casting so nested numbers inside groups and repeaters are stored as numbers.
+
+### 1.8.2
+
+- Remove error dump and die on multisearch fail.
+
 ### 1.8.1
 
 - Autosuggest only depends on `scry-search-facets` when that handle is registered (Facets add-on present). Avoids a WP 6.9 `_doing_it_wrong` notice when Facets is inactive.
