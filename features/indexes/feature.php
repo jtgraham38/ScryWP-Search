@@ -914,17 +914,63 @@ class ScrySearch_IndexesFeature extends PluginFeature {
 
         // Add post meta data
         $post_meta = get_post_meta($post->ID);
-        if (!empty($post_meta)) {
-            //for any post meta with a numeric value, convert it to a number
-            //also do this for any post meta with arrays of numbers, or associative arrays with numbers as values
-            foreach ($post_meta as $key => $value) {
-                if (is_numeric($value)) {
-                    $post_meta[$key] = (int) $value;
-                }
-                if (is_array($value)) {
-                    $post_meta[$key] = array_map('intval', $value);
+        $cast_handle = function($value, $depth = 0) use (&$cast_handle){
+            //only recurse 99 levels deep
+            if ($depth++ > 99) {
+                return $value;
+            }
+
+            //echo '============================== (depth: ' . $depth . ') ==============================';
+
+            //get_post_meta() leaves values serialized; unpack arrays and scalars, leave objects as stored
+            if (is_string($value)) {
+                $unserialized = maybe_unserialize($value);
+                if ($unserialized !== $value && !is_object($unserialized)) {
+                    $value = $unserialized;
                 }
             }
+
+            //recursive case, if it is an array, then call the function on each value
+            if (is_array($value)) {
+                // echo 'array case';
+                // var_dump($value);
+                return array_map(fn($item) => $cast_handle($item, $depth), $value);
+            }
+
+            //already a concrete type (int, float, bool, null)
+            if (!is_string($value)) {
+                return $value;
+            }
+
+            //end condition: is string, then just check if is an int, float, bool, or string, and return the right type
+            if (filter_var($value, FILTER_VALIDATE_INT) !== false) {
+                // echo 'int case';
+                // var_dump((int) $value);
+                return (int) $value;
+            }
+            //float case
+            if (filter_var($value, FILTER_VALIDATE_FLOAT) !== false) {
+                // echo 'float case';
+                // var_dump((float) $value);
+                return (float) $value;
+            }
+            //bool case. NULL_ON_FAILURE so "false"/"no"/"off" match; "" and other words stay strings
+            $bool = ($value === '') ? null : filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if ($bool !== null) {
+                // echo 'bool case';
+                // var_dump((bool) $value);
+                return $bool;
+            }
+            //string case
+            // echo 'string case';
+            // var_dump($value);
+            return $value;
+        };
+
+        //cast the post meta
+        $post_meta = $cast_handle($post_meta);
+
+        if (!empty($post_meta)) {
             //add the post meta
             $document['post_meta'] = $post_meta;
         }
