@@ -3,7 +3,7 @@ Contributors: jtgraham38
 Tags: meilisearch, search, developer, hooks, woocommerce
 Requires at least: 5.2
 Tested up to: 7.1
-Stable tag: 1.8.3
+Stable tag: 1.8.4
 Requires PHP: 8.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -19,8 +19,6 @@ Don't want to operate Meilisearch yourself? [ScryWP Search](https://scrywp.com) 
 Scry Search wires Meilisearch into WordPress the way you'd want it on a client project: fast keyword search, optional AI/semantic (hybrid) search, and a big extension surface — without ripping out your theme.
 
 **Docs (start here):** [DOCS.md on GitHub](https://github.com/jtgraham38/ScryWP-Search/blob/main/DOCS.md) — every filter/action, args, return values, when it fires, plus the `window.scrySearch` JS API. Same file ships in the plugin zip.
-
-**Live demo:** [scrywp.com/premium-plugins](https://scrywp.com/premium-plugins) — the free plugin with Scry Search Facets and Scry Search Ajax.
 
 You get over **40 PHP hooks** (`scry_ms_*`) covering indexing, documents, index settings, federated search, autosuggest, analytics, logs, and the front-end runtime. Call sites are marked in source. If you can install a plugin and paste API keys, you can run it without writing code. If you ship WordPress for a living, you can bend it without forking.
 
@@ -281,6 +279,9 @@ AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API 
 
 == Changelog ==
 
+= 1.8.4 =
+* Indexed content and excerpts keep a space where block-level HTML separated words (table cells, headings, paragraphs, lists, and line breaks), so product codes and neighboring terms stay searchable. Reindex to apply
+
 = 1.8.3 =
 * Indexed post meta keeps text as text. Numbers are stored as integers or floats, boolean strings as booleans, and serialized arrays (ACF, Meta Box groups and repeaters) are unpacked so nested values cast the same way
 
@@ -391,6 +392,9 @@ AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API 
 * Initial release: per-post-type indexes, federated search, ranking/searchable fields, auto + bulk indexing, task drawer, live preview, drop-in WP search
 
 == Upgrade Notice ==
+
+= 1.8.4 =
+Indexed text no longer glues words together when they were only separated by HTML tags. Reindex so existing documents pick up the corrected text.
 
 = 1.8.3 =
 Post meta indexing no longer turns non-numeric fields into 0. Reindex so existing documents pick up the corrected values.

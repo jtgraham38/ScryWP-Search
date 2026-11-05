@@ -214,6 +214,10 @@ REST payload per hit includes `title`, `excerpt`, `url`, and `featured_image` (t
 
 ## Changelog
 
+### 1.8.4
+
+- Indexed `post_content` and custom excerpts insert a space after block-level tags and `<br>` / `<hr>` before tags are stripped, then collapse leftover whitespace. Words that were only separated by table cells, headings, paragraphs, or list items stay separate (for example `monofilament SN765` instead of `monofilamentSN765`). Reindex to update existing documents.
+
 ### 1.8.3
 
 - Indexed `post_meta` keeps non-numeric values as strings. Integers and floats are stored as numbers, boolean strings (`true` / `false` / `yes` / `no` / `on` / `off`) as booleans, and serialized arrays are unpacked before casting so nested numbers inside groups and repeaters are stored as numbers.

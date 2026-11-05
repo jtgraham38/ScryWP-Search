@@ -873,12 +873,29 @@ class ScrySearch_IndexesFeature extends PluginFeature {
      * Format a WordPress post for Meilisearch indexing
      */
     private function format_post_for_meilisearch($post) {
-        // Get post content (strip HTML tags and shortcodes)
+        // Get post content (strip HTML tags and shortcodes).
+        // Leave a space after block tags and breaks so neighboring words are not merged when tags are removed.
         $content = do_shortcode($post->post_content);
+        $content = preg_replace(
+            '#</(?:p|div|li|td|th|tr|table|ul|ol|h[1-6]|blockquote|section|article)>|<(?:br|hr)\b[^>]*>#i',
+            '$0 ',
+            $content
+        );
         $content = wp_strip_all_tags($content);
-        
-        // Get post excerpt
-        $excerpt = !empty($post->post_excerpt) ? wp_strip_all_tags($post->post_excerpt) : wp_trim_words($content, 55);
+        $content = trim(preg_replace('/\s+/u', ' ', $content));
+
+        // Get post excerpt, with the same spacing so words are not merged
+        if (!empty($post->post_excerpt)) {
+            $excerpt = preg_replace(
+                '#</(?:p|div|li|td|th|tr|table|ul|ol|h[1-6]|blockquote|section|article)>|<(?:br|hr)\b[^>]*>#i',
+                '$0 ',
+                $post->post_excerpt
+            );
+            $excerpt = wp_strip_all_tags($excerpt);
+            $excerpt = trim(preg_replace('/\s+/u', ' ', $excerpt));
+        } else {
+            $excerpt = wp_trim_words($content, 55);
+        }
 
         // Format the document
         $document = array(
