@@ -1,6 +1,6 @@
 === Scry Search: Meilisearch for WordPress ===
 Contributors: jtgraham38
-Tags: meilisearch, search, developer, hooks, woocommerce
+Tags: meilisearch, search, facets, semantic, hybrid
 Requires at least: 5.2
 Tested up to: 7.1
 Stable tag: 1.8.4
@@ -8,37 +8,53 @@ Requires PHP: 8.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-Meilisearch for WordPress: keyword + built-in semantic/hybrid search. Drop-in WP_Query, ~45 PHP hooks, no theme changes.
+Meilisearch for large WordPress sites: keyword + semantic/hybrid search, drop-in WP_Query, ~45 PHP hooks, no theme changes.
 
 == Get Managed Hosting from ScryWP ==
 
-Don't want to operate Meilisearch yourself? [ScryWP Search](https://scrywp.com) runs the engine for you — kept patched, monitored, and maintained — so search isn't another server to babysit. Self-hosting and local dev stay fully supported; see **Managed hosting (ScryWP)** below.
+Don't want to run Meilisearch yourself? [ScryWP Search](https://scrywp.com) runs the engine for you — kept patched, monitored, and maintained — so search isn't another server to babysit. Self-hosting and local dev stay fully supported. Details are under **Managed hosting (ScryWP)** below.
 
 == Description ==
 
-Scry Search wires Meilisearch into WordPress the way you'd want it on a client project: fast keyword search, optional AI/semantic (hybrid) search, and a big extension surface — without ripping out your theme.
+WordPress search is fine on a small blog. On a store with tens of thousands of products, or an archive that has been growing for years, it is not. WordPress is searching the database. Shoppers miss the product they came for, or the page sits there while MySQL grinds through `post_content`.
 
-**Docs (start here):** [DOCS.md on GitHub](https://github.com/jtgraham38/ScryWP-Search/blob/main/DOCS.md) — every filter/action, args, return values, when it fires, plus the `window.scrySearch` JS API. Same file ships in the plugin zip.
+Scry Search sends that search to Meilisearch, then hands WordPress normal posts back through `WP_Query`. You get fast keyword search, optional AI/semantic (hybrid) search, and a big extension surface, without ripping out your theme. If you can install a plugin and paste API keys, you can run it without writing code. If you ship WordPress for a living, you can bend it without forking it.
 
-You get over **40 PHP hooks** (`scry_ms_*`) covering indexing, documents, index settings, federated search, autosuggest, analytics, logs, and the front-end runtime. Call sites are marked in source. If you can install a plugin and paste API keys, you can run it without writing code. If you ship WordPress for a living, you can bend it without forking.
+**Docs (start here):** [DOCS.md on GitHub](https://github.com/jtgraham38/ScryWP-Search/blob/main/DOCS.md) — every filter/action, args, return values, when it fires, plus the `window.scrySearch` JS API. The same file ships in the plugin zip.
+
+**Live demo:** [demo.scrywp.com/search-demo](https://demo.scrywp.com/search-demo/) — the free plugin with Scry Search Facets and Scry Search Ajax.
+
+You get over **40 PHP hooks** (`scry_ms_*`) covering indexing, documents, index settings, federated search, autosuggest, analytics, logs, and the front-end runtime. Call sites are marked in the source.
+
+= Built for a lot of content =
+
+A huge catalog should still be searchable. That is the case this plugin is built for.
+
+* Search does not scan `wp_posts` with a SQL `LIKE`. Meilisearch holds the index, so a query stays a search when the library of posts or products gets large.
+* Each post type gets its own index (posts, pages, `product`, custom post types). A big product catalog does not have to live in the same pile of data as the blog.
+* Federated multi-search merges those indexes using the weights you set in Search Settings. Meilisearch does that merge, not a PHP loop that pulls every hit into memory and sorts it there.
+* Bulk indexing runs in batches, so a full reindex of a large catalog does not have to load every post at once. The batch size is filterable with `scry_ms_bulk_index_batch_size`.
+* Saves, trashing, deletes, and untrashes update the index as you go, so a big catalog does not quietly drift out of date.
+* Typo tolerance, synonyms, stop words, and ranking rules are per index. When nobody can browse the catalog by hand, that is how a misspelled product code still finds the right item.
+* The task pane is there for the long jobs. If a bulk index of a large site stalls, or a settings update fails without saying so, that drawer shows status, duration, and errors.
 
 = No theme changes. Not glued to a results UI. =
 
-This is the important bit:
+Search gets upgraded without asking you to change the theme.
 
-* We do **not** replace your search results template. `search.php` (or whatever your theme / builder uses) still renders the results.
-* We do **not** require a shortcode, block, or widget. Autosuggest and highlighting are optional and off unless you turn them on.
-* Existing search forms keep working. Gutenberg Search block, classic `searchform.php`, Elementor/Divi/Beaver search widgets — they still POST to WordPress; we intercept the query.
+* It does **not** replace your search results template. `search.php` (or whatever your theme or builder uses) still renders the results.
+* It does **not** require a shortcode, block, or widget. Autosuggest and highlighting are optional, and they stay off unless you turn them on.
+* Existing search forms keep working. Gutenberg Search block, classic `searchform.php`, Elementor/Divi/Beaver search widgets — they still POST to WordPress, and the plugin intercepts the query.
 
-Admin-side tuning is a different story: ranking, searchable/filterable fields, synonyms, typo tolerance, hybrid embedders, federated weights, etc. are all in wp-admin (see below). You’re not stuck editing Meilisearch JSON by hand — you’re just not locked into a plugin-owned results page.
+Admin-side tuning is a different story. Ranking, searchable and filterable fields, synonyms, typo tolerance, hybrid embedders, federated weights, and the rest are all in wp-admin (see below). You're not stuck editing Meilisearch JSON by hand, and you're not locked into a plugin-owned results page.
 
-Under the hood we hook `posts_pre_query`, run the search in Meilisearch, and hand WordPress normal `WP_Post` objects. Same loop, same template tags, same pagination assumptions your theme already has.
+Under the hood the plugin hooks `posts_pre_query`, runs the search in Meilisearch, and hands WordPress normal `WP_Post` objects. Same loop, same template tags, same pagination assumptions your theme already has.
 
-Need native WP search for one query? `scry_ms_should_search`.
+Need native WordPress search for one query? `scry_ms_should_search`.
 
 = Built-in semantic / hybrid search =
 
-Keyword search is the baseline. Hybrid search is built into the core plugin (not a separate SKU): Meilisearch blends full-text ranking with vector similarity so "fuzzy intent" queries still hit the right posts/products.
+Keyword search is the baseline. Hybrid search lives in the core plugin, not in a separate product you have to buy. Meilisearch blends full-text ranking with vector similarity, so a "fuzzy intent" query can still land on the right post or product. On a large catalog, people often don't know the exact name of the thing they want. That is when this helps.
 
 Per index, under **Index Settings → Configure Index → Hybrid Search**:
 
@@ -46,11 +62,11 @@ Per index, under **Index Settings → Configure Index → Hybrid Search**:
 * Pick which embedder to use and the semantic vs keyword ratio
 * Enable hybrid per post type — products can differ from posts
 
-Same `WP_Query` path as keyword search. No second endpoint, no alternate results page. Reindex after embedder changes so vectors exist. Analytics can record hybrid usage in `search_metadata`.
+Same `WP_Query` path as keyword search. No second endpoint, no alternate results page. Reindex after embedder changes so the vectors exist. Analytics can record hybrid usage in `search_metadata`.
 
 = What you configure in wp-admin =
 
-Most of Meilisearch’s knobs are in WordPress — you don’t need to curl the instance for day-to-day tuning.
+Most of Meilisearch's knobs are in WordPress — you don't need to curl the instance for day-to-day tuning.
 
 **Connection** — URL, admin key, optional search-only key, connection test.
 
@@ -69,34 +85,36 @@ Most of Meilisearch’s knobs are in WordPress — you don’t need to curl the 
 
 **Ops** — task pane, Logs, Search Analytics (see **For developers**).
 
-You can go live from these screens alone. Hooks kick in when a project needs something the UI doesn’t cover.
+You can go live from these screens alone. The hooks are there for when a project needs something the screens do not cover.
 
 = Autosuggest + highlighting (optional front-end extras) =
 
-These are the only front-end UI pieces the plugin ships, and both are off by default. Your theme’s results page stays yours either way.
+These are the only front-end UI pieces the plugin ships, and both are off unless you turn them on. Your theme's results page stays yours either way. On a large site, typeahead helps someone find a product without scrolling a huge catalog. Leave it off if you don't want it.
 
 **Autosuggest** — Search Settings toggle. The front-end runtime finds forms via CSS selectors (defaults: `#adminbarsearch`, `form[role="search"]`, including the core Search block). Debounced AJAX, same indexes as full search. Optional form class if you only want typeahead on specific forms. Thumbnails when a featured image exists. Extend discovery selectors with `scry_ms_window_localized` — details in DOCS.md. Shape data with `scry_ms_autosuggest_results` or markup with `scry_ms_autosuggest_results_rendered`.
 
-**Highlighting** — optional matched-term markup in results / autosuggest (class `.scry-ms-highlight`). Style it in your theme; we don’t force a look.
+**Highlighting** — optional matched-term markup in results / autosuggest (class `.scry-ms-highlight`). Style it in your theme; the plugin doesn't force a look.
 
 = Indexes and federation =
 
-Each registered post type can get its own Meilisearch index (posts, pages, `product`, CPTs). Federated multi-search merges them with your Search Settings weights — not a home-rolled PHP merge.
+Each registered post type can get its own Meilisearch index (posts, pages, `product`, custom post types). Federated multi-search merges them with your Search Settings weights — Meilisearch's multi-search, not a home-rolled PHP merge.
 
-WooCommerce: select `product`, pick product fields/meta, set weights if you also search posts/pages. Catalog search upgrades; theme and checkout stay as they are.
+WooCommerce is a good fit when the catalog is large: select `product`, pick product fields and meta, and set weights if you also search posts or pages. Catalog search upgrades. Theme and checkout stay as they are.
 
 = Ops: indexing =
 
-* Auto-index on save; remove on trash/delete; re-index on untrash. Bulk index / wipe from Index Settings.
-* Task pane, Logs, and Search Analytics are covered under **For developers** below (they’re useful for site owners too, but they’re built as day-to-day ops tooling).
+* Auto-index on save; remove on trash/delete; re-index on untrash. Bulk index / wipe from Index Settings. Bulk runs in batches so a large library does not have to be loaded all at once.
+* Task pane, Logs, and Search Analytics are covered under **For developers** below. They're useful for site owners too, and they're day-to-day ops tooling — which is what you want when the index is big enough that a failed job isn't obvious from the front of the site.
 
 = For developers =
 
+If you write code on top of this, start with the docs. The full reference lives there, not in a marketing PDF.
+
 **Full hook reference + JS API:** [DOCS.md on GitHub](https://github.com/jtgraham38/ScryWP-Search/blob/main/DOCS.md)
 
-**45 PHP hooks** documented there (filters + actions). Names below; args/returns/timing in the docs. Call sites tagged `//@HOOK: scry_ms_…` in source.
+**45 PHP hooks** documented there (filters + actions). Names below; args, return values, and timing are in the docs. Call sites are tagged `//@HOOK: scry_ms_…` in the source.
 
-**Task pane** — drawer on plugin admin screens for Meilisearch tasks on indexes this plugin owns: status, duration, errors, paginated history. Shared Meilisearch instances won’t dump unrelated tasks. Useful when bulk indexing stalls or a settings update fails silently.
+**Task pane** — a drawer on the plugin admin screens for Meilisearch tasks on indexes this plugin owns: status, duration, errors, and paginated history. A shared Meilisearch instance won't dump unrelated tasks into it. Useful when a bulk index of a large site stalls, or a settings update fails without saying so.
 
 **Error / debug logs** — Scry Search → Logs. Debug and Error levels, filterable viewer, DB-backed newest-first with load-more, API keys/tokens redacted before storage, retention + daily cleanup (or clean on demand). Hook `scry_ms_log_message` if you need to divert or annotate lines.
 
@@ -138,26 +156,26 @@ Code lives under `features/<name>/`. Prefer a search-only key on the front; the 
 
 = Premium plugins =
 
-**The free plugin is the search engine.** Indexing, federated search, hybrid, analytics, and `scry_ms_*` hooks stay in core. Premium add-ons sit on top when you want ready-made UI for building Meilisearch search interfaces — without replacing your theme’s results templates.
+**The free plugin is the search engine.** Indexing, federated search, hybrid, analytics, and the `scry_ms_*` hooks stay in core. Premium add-ons sit on top when you want a ready-made UI for building Meilisearch search interfaces, without replacing your theme's results templates. Facets in particular are how a large catalog becomes browsable, not just searchable.
 
-Browse the catalog — and a live demo of the free plugin plus both upgrades — at [scrywp.com/premium-plugins](https://scrywp.com/premium-plugins). Two upgrades in particular:
+Browse the catalog at [scrywp.com/premium-plugins](https://scrywp.com/premium-plugins), and try the live demo of the free plugin plus both upgrades at [demo.scrywp.com/search-demo](https://demo.scrywp.com/search-demo/). Two upgrades in particular:
 
 * **[Scry Search Facets](https://scrywp.com/premium-plugins/scry-search-facets/)** - shortcode-driven facet UI (taxonomies, date ranges, and more) that turns visitor choices into Meilisearch filters on the same search path core already owns.
 * **[Scry Search Ajax](https://scrywp.com/premium-plugins/scry-search-ajax/)** - ajax search UI on top of the base `window.scrySearch` / `submitAjax()` runtime, so results can update without a full page reload.
 
-Same connection, same indexes, same hooks. Install from Scry Search → Premium Upgrades when you’re ready; skip them when a custom front end or the built-in autosuggest is enough.
+Same connection, same indexes, same hooks. Install them from Scry Search → Premium Upgrades when you are ready. Skip them when a custom front end, or the built-in autosuggest, is enough.
 
 = Managed hosting (ScryWP) =
 
-**Self-hosting is first-class.** Paste any Meilisearch URL and keys into Connection Settings — Docker, bare metal, VPS, or local dev all work the same way. Pick post types, index, ship.
+**Self-hosting is first-class.** Paste any Meilisearch URL and keys into Connection Settings — Docker, bare metal, a VPS, or local dev all work the same way. Pick post types, index, ship. A large catalog doesn't change that path. It just means the engine has more documents to hold, which is what Meilisearch is for.
 
-When you'd rather not run the search engine itself, [ScryWP](https://scrywp.com) is managed hosting built for WordPress. What you get upfront:
+When you'd rather not run the search engine itself, [ScryWP](https://scrywp.com) is managed hosting built for WordPress. On a big site, the index is large enough that "who patches Meilisearch" stops being a theoretical question. What you get upfront:
 
 * **Engine upkeep** — Meilisearch stays current; you're not tracking release notes or patching prod yourself.
 * **Monitoring & ops** — health and capacity on the hosting side, so search failures aren't a surprise SSH session.
 * **Same plugin, same hooks** — identical integration. No forked workflow; federation, hybrid, analytics, and `scry_ms_*` hooks behave the same as self-host.
 
-That's the managed value: less infrastructure to operate, not a different product. Choose ScryWP when ops time or handoff complexity isn't where you want to spend budget. Choose self-host or local when you need full control, compliance boundaries, or an offline sandbox.
+That is the managed value: less infrastructure for you to operate, not a different product. Choose ScryWP when ops time or handoff complexity is not where you want to spend the budget. Choose self-host or local when you need full control, a compliance boundary, or an offline sandbox.
 
 = Hosting options =
 
@@ -185,63 +203,67 @@ Paste URL + keys, pick post types, index. Done.
 6. Optional: enable autosuggest or highlighting under Search Settings.
 7. Optional: open DOCS.md and add your first `add_filter( 'scry_ms_…' )`.
 
-You can complete the whole flow from wp-admin without custom code. Hooks are there when you need them.
+You can do that whole flow from wp-admin without custom code. On a large site, step 4 is the one that takes a while. Use the task pane while Index Posts runs. The hooks are there when you need them.
 
 == Frequently Asked Questions ==
 
+= Will this handle a site with a huge amount of content? =
+
+Yes. WordPress search queries the database, and that falls over once you have a large catalog or a long archive. Scry Search keeps the index in Meilisearch. Each post type gets its own index, federated search merges them there (not in a PHP loop), and bulk indexing runs in batches so a full reindex doesn't have to load every post at once (`scry_ms_bulk_index_batch_size`). A big WooCommerce catalog and a big content library are both in scope. After you connect, run Index Posts and watch the task pane. The first index of a large site takes a while. Later saves update one document at a time.
+
 = What happens when I deactivate or uninstall? =
 
-Deactivating clears the plugin's daily cron jobs (analytics and log cleanup) so they stop running while the plugin is inactive. Your settings, API keys, custom tables, and Meilisearch indexes are left in place — reactivating restores normal operation and re-schedules cron.
+Deactivating clears the plugin's daily cron jobs (analytics and log cleanup) so they stop running while the plugin is inactive. Your settings, API keys, custom tables, and Meilisearch indexes are left in place — reactivating restores normal operation and re-schedules cron. On a large site, that means the Meilisearch documents stay put. You are not rebuilding tens of thousands of records just because you deactivated the plugin.
 
 Deleting the plugin (uninstall) removes the two custom database tables (`scry_ms_search_analytics`, `scry_ms_logs`), all `scry_ms_*` options (connection keys, embedder secrets, index backups, etc.), and any remaining scheduled cron events. It does not delete indexes or documents on your Meilisearch server.
 
 = Will password-protected posts be indexed? =
 
-No for live saves — published posts with a password are skipped before indexing. Use `scry_ms_should_index` on bulk reindex (or always) if you need the same rule there. Already-indexed protected posts stay in Meilisearch until you reindex/wipe.
+No for live saves — published posts with a password are skipped before indexing. Use `scry_ms_should_index` on bulk reindex (or always) if you need the same rule there. Already-indexed protected posts stay in Meilisearch until you reindex or wipe.
 
 = What makes this developer-friendly? =
 
-45 documented `scry_ms_*` hooks, call sites marked in source, shared client filter, and a real docs file — not a marketing PDF. Plus the tooling you’d actually use on a site: task pane for Meilisearch jobs, error/debug logs, and search analytics (dashboard + CSV). Start here: [DOCS.md](https://github.com/jtgraham38/ScryWP-Search/blob/main/DOCS.md). Optional `window.scrySearch` if you need front-end glue. No forced search results UI.
+45 documented `scry_ms_*` hooks, call sites marked in the source, a shared client filter, and a real docs file — not a marketing PDF. Plus the tooling you'd actually use on a site: a task pane for Meilisearch jobs, error and debug logs, and search analytics (dashboard + CSV). Start here: [DOCS.md](https://github.com/jtgraham38/ScryWP-Search/blob/main/DOCS.md). Optional `window.scrySearch` if you need front-end glue. No forced search results UI.
 
 = Can non-developers use it? =
 
-Yes. Connect Meilisearch, pick post types, index, tune ranking/synonyms/weights/hybrid/autosuggest from wp-admin. Bring a developer when you need behavior the screens don't cover.
+Yes, including on a large catalog. Connect Meilisearch, pick post types, index, and tune ranking, synonyms, weights, hybrid search, and autosuggest from wp-admin. Bring a developer in when you need behavior the screens do not cover.
 
 = Do I need semantic / AI search? =
 
-Optional. Keyword search works without it. Hybrid is in core when you want vector similarity alongside full-text — configure embedders per index, reindex, same results templates.
+Optional. Keyword search works without it, and keyword search is already a large upgrade once the catalog is big. Hybrid is in core when you want vector similarity alongside full-text — configure embedders per index, reindex, same results templates.
 
 = Do I have to use a frontend UI from the plugin? =
 
-No. We don’t own your results page — your theme (or builder) still displays posts from `WP_Query`. Ranking, fields, synonyms, typo tolerance, hybrid, weights, etc. are configured in wp-admin. Autosuggest and highlighting are the optional front-end extras; leave them off and you’re indexing + query routing only.
+No. The plugin doesn't take over your results page. Your theme (or builder) still displays posts from `WP_Query`. Ranking, fields, synonyms, typo tolerance, hybrid, weights, and the rest are configured in wp-admin. Autosuggest and highlighting are the optional front-end extras. Leave them off and you're doing indexing and query routing only.
 
 = Do I need to change my theme? =
 
-No. Forms and `search.php` (or equivalent) keep working. We swap the query engine, not the markup. Page-builder search boxes that hit WordPress search work the same way.
+No. Forms and `search.php` (or the equivalent) keep working. The plugin swaps the query engine, not the markup. Page-builder search boxes that hit WordPress search work the same way.
 
 = What is Meilisearch? =
 
-Open-source, typo-tolerant search engine: [meilisearch.com](https://www.meilisearch.com/). This plugin assumes you already chose it (or will via ScryWP); we focus on the WordPress integration.
+An open-source, typo-tolerant search engine: [meilisearch.com](https://www.meilisearch.com/). This plugin is the WordPress integration. Meilisearch handles indexing and retrieval, including libraries of content that are too big for a SQL `LIKE`. Use your own instance, or ScryWP.
 
 = ScryWP or self-host? =
 
-**Self-host** (or local dev) when you want full control, compliance boundaries, or you already run Meilisearch elsewhere. **ScryWP** when you'd rather not operate the engine — Meilisearch kept patched and monitored on the hosting side, same plugin integration (paste URL + keys like any instance). Federation, hybrid, and hooks work identically either way.
+**Self-host** (or local dev) when you want full control, a compliance boundary, or you already run Meilisearch elsewhere. **ScryWP** when you would rather not operate the engine — Meilisearch kept patched and monitored on the hosting side, same plugin integration (paste a URL and keys like any other instance). Federation, hybrid, and hooks work the same either way. A large index does not push you toward one or the other. It is the same plugin.
 
 = Custom post types and meta? =
 
-Yes. Each selected post type gets its own index. Meta shows up in searchable fields; tweak via admin or `scry_ms_index_fields` / `scry_ms_index_meta_keys` / `scry_ms_index_prepare_document`.
+Yes. Each selected post type gets its own index, which is what you want when one of those types has a huge number of records. Meta shows up in searchable fields. Tweak it in the admin, or with `scry_ms_index_fields` / `scry_ms_index_meta_keys` / `scry_ms_index_prepare_document`.
 
 = How does federated search work? =
 
-Meilisearch multi-search with federation across your indexes, using the weights you set in Search Settings. Adjust the request with `scry_ms_multi_search_*`.
+Meilisearch multi-search, with federation across your indexes, using the weights you set in Search Settings. The merge happens in Meilisearch, which matters when each index is large. Adjust the request with `scry_ms_multi_search_*`.
 
 = Will this work with WooCommerce? =
 
-Yes. Index `product`, choose fields/meta, set weights if you federate with other types. Theme and checkout stay unchanged.
+Yes, including a large product catalog. Index `product`, choose fields and meta, and set weights if you also search other post types. Theme and checkout stay unchanged.
 
 = Synonyms, stopwords, dictionary, and typo tolerance? =
 
-Yes — per index in the Index Settings dialog (dedicated tabs), no Meilisearch config files required. Also filterable from code when you need that.
+Yes — per index, in the Index Settings dialog (dedicated tabs). No Meilisearch config files. Also filterable from code when you need that. On a big catalog, this is how a misspelling or a brand nickname still finds the product.
 
 = Can I configure filterable fields from WordPress? =
 
@@ -249,23 +271,23 @@ Yes. The Filterable Fields tab lets you pick core fields, taxonomy IDs, and rela
 
 = How do I customize with code? =
 
-Hook list is under **For developers** above. Common starters: `scry_ms_should_index`, `scry_ms_index_prepare_document`, `scry_ms_meilisearch_client`, `scry_ms_autosuggest_results` / `scry_ms_autosuggest_results_rendered`, `scry_ms_admin_pages`. Full signatures: [DOCS.md](https://github.com/jtgraham38/ScryWP-Search/blob/main/DOCS.md).
+The hook list is under **For developers** above. Common starters: `scry_ms_should_index`, `scry_ms_index_prepare_document`, `scry_ms_meilisearch_client`, `scry_ms_autosuggest_results` / `scry_ms_autosuggest_results_rendered`, `scry_ms_admin_pages`. Full signatures: [DOCS.md](https://github.com/jtgraham38/ScryWP-Search/blob/main/DOCS.md).
 
 = JavaScript API? =
 
-Optional. Wait for `scrySearchReady`, then `window.scrySearch` + per-form pre/post (and AJAX) hooks. Skip it if you're not doing front-end work. Examples in DOCS.md.
+Optional. Wait for `scrySearchReady`, then use `window.scrySearch` and the per-form pre/post (and AJAX) hooks. Skip it if you are not doing front-end work. Examples are in DOCS.md.
 
 = How do I debug indexing? =
 
-Task pane for Meilisearch tasks on managed indexes; Scry Search → Logs for plugin debug/error lines (secrets redacted, retention available). See **For developers**.
+Use the task pane for Meilisearch tasks on the indexes this plugin manages, and Scry Search → Logs for plugin debug and error lines (secrets redacted, retention available). On a large bulk index, start with the task pane. See **For developers**.
 
 = Can I export analytics? =
 
-Yes — Search Analytics includes CSV export, retention/cleanup, privacy options, and `scry_ms_analytics_event_to_insert` for extra fields. Covered under **For developers**.
+Yes — Search Analytics includes CSV export, retention and cleanup, privacy options, and `scry_ms_analytics_event_to_insert` for extra fields. Covered under **For developers**.
 
 = Is it secure? =
 
-AJAX nonces, capability checks, sanitized/escaped I/O. Prefer a search-only API key for front-end paths; the client factory supports `admin` vs `search` keys.
+AJAX nonces, capability checks, and sanitized/escaped I/O. Prefer a search-only API key for front-end paths. The client factory supports `admin` vs `search` keys.
 
 == Screenshots ==
 
